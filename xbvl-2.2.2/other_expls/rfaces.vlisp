@@ -1,0 +1,11 @@
+;;
+; Animation de visages realistes composes sur des bitmaps
+;;
+
+(setq face-dir "/solair/people/damien/xbvl/dea/tete/")
+
+;;
+; Les visages sont repartis en class avec pour chaque des ajouts possibles
+;;
+
+(

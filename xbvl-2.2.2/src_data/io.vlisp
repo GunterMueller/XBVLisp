@@ -1,0 +1,152 @@
+;listes partagees. entrees-sorties;
+(de part-pr (l fl m)
+  (cond ((atom l) (princh l))
+        ((setq m (assq l partages))
+           (garder)
+           (princh ":")
+           (prnom (cdr m)))
+       (t (pr-seq l fl))))
+
+(de pr-seq (l fl)
+  (princh "(")
+  (while l
+    (part-pr (nextl l) fl)
+    (ifn l nil
+         (princh " ")
+         (ifn (atom l)
+              (let (m (assq l partages))
+                   (ifn m nil
+                        (garder)
+                        (princh ". :")
+                        (prnom (cdr m))
+                        (setq l nil)))
+               (princh ". ")
+               (princh l)
+               (setq l nil))))
+  (princh ")"))
+
+(de pr-tot (l loc-part)
+  (part-pr l t)
+  (terpri)
+  (while loc-part
+         (let (part (nextl loc-part))
+              (prnom (cdr part))
+              (princh ":")
+              (pr-seq (car part))
+              (terpri))))
+
+(de garder () (and fl (not (memq m loc-part)) (setq loc-part [m . loc-part])))
+
+(de prnom (nom)
+ (if (numbp nom)
+      (princh "p"))
+  (princh nom))
+
+(de pointeur () (incr pointeur))
+
+(df contexte (g%%%%g ;; affectes %cars%% %cdrs%% partages)
+  (let (%nom%% (nextl g%%%%g))
+       (%lire g%%%%g)
+       (setq table (nconc table partages))
+       %nom%%))
+
+(setq table ())
+
+(de pr-ctx (x tous)
+  (let ((partages table) (pointeur 0))
+    (partager x)
+    (pr-tot x)))
+(de pr-tout (l loc-part tous)
+  (let (partages table)
+    (part-pr l t)
+    (terpri)
+    (tout loc-part)))
+(de tout (l ;; loc-part)
+  (mapc l (lambda (part)
+    (if (memq part tous) nil
+        (prnom (cdr part))
+        (princh ":")
+        (pr-seq (car part) t)
+        (terpri))))
+  (ifn loc-part nil
+       (setq tous (nconc tous l))
+       (tout loc-part)))
+(de %lire (%exp%%)
+  (cond ((atom %exp%%)nil)
+        ((eq (caar %exp%%) ':) ;((: . nom) ... );
+         (%affecter (cdar %exp%%) '%cars%%)
+         (care-cont))
+        ((eq (cadr %exp%%) ':) ;(elt : . nom);
+         (%lire (car %exp%%))
+         (%affecter (cddr %exp%%) '%cdrs%%))
+        ((and (eq (caadr %exp%%) ':) (listp (cdadr %exp%%)))
+                 ;(nom (: . (a1 ... an)) ...);
+         (let (s (cdadr %exp%%))
+              (%substituer (car %exp%%)
+                           (progn (rplaca %exp%% s)
+                                  (rplacd %exp%% (cddr %exp%%))
+                                  s))
+              (care-cont)))
+        (t (%lire (nextl %exp%%))
+           (%lire %exp%%))))
+
+
+(de care-cont ()
+    (if (eq (cadr %exp%%) ':)
+        (%affecter (cddr %exp%%) '%cdrs%%)
+        (%lire (cdr %exp%%))))
+
+(de %affecter (%boite%% %l%%)
+  (if (memq %boite%% affectes)
+      (if (eq %l%% '%cdrs%%)
+          (rplacd %exp%% (car %boite%%))
+          (rplaca %exp%% (car %boite%%)))
+      (let (%m%% (assq %boite%% (car %l%%)))
+           (if %m%%
+                (attach %exp%% (cdr %m%%))
+               (set %l%% [[%boite%% %exp%%] . (car %l%%)])))))
+
+(de %substituer (%boite%% %liste%%)
+ (newl affectes %boite%%)
+  (set %boite%% %liste%%)
+  (newl partages [%liste%% . %boite%%])
+  (%lire %liste%%)
+  (let ((s1 (cassq %boite%% %cars%%))
+        (s2 (cassq %boite%% %cdrs%%)))
+       (ifn (or s1 s2) nil
+            (mapc s1 (lambda (s) (rplaca s %liste%%)))
+            (mapc s2 (lambda (s) (rplacd s %liste%%))) )))
+
+( de partager (l)
+  (cond ((atom l) nil)
+        ((assq l partages) nil)
+       ((memq l tous)
+         (setq partages [[l . (pointeur)] . partages]))
+        (t (setq tous [l . tous])
+           (partager (nextl l))
+           (partager l))))
+
+(de pr-part (l pointeur tous partages)
+  (ifn pointeur (setq pointeur 0))
+  (partager l)
+  (part-pr l)
+  (terpri)
+  (pr-c partages))
+
+(de pr-c (part)
+  (mapc part (lambda (part)
+                         (princh "p")
+                         (princh (cdr part))
+                         (princh ":")
+                         (pr-seq (car part))
+                         (terpri))))
+
+(dmc : ()
+     [': . (read)])
+ 
+(de iopart ()
+  (while t 
+   (setq it (eval (read)))
+   (princh "= ")
+   (pr-ctx it)))
+

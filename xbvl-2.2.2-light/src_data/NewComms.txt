@@ -1,0 +1,13 @@
+atan2
+(atan2 x y)
+	retourne l'arc tangente de x / y. La valeur
+	retournée sera comprise entre -PI et PI selon le signe de x et
+	de y
+
+(GLlookat ex ey ez cx cy cz upx upy upz)
+
+	ex ey ez = position de l'oeuil
+	cx cy cz = point sur la ligne du point de vue
+	upx upy upz = indique quelle direction est la direction
+		verticale (du bas en haut du volume visualisé).
+

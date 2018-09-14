@@ -1,0 +1,21 @@
+(de ShowSettings (tn)
+    (ifn (%find TETE_SETTINGS tn) (print "Pas d'affectations pour " tn)
+	 (mapc (%find TETE_SETTINGS tn)
+	       (lambda (x)
+		 (princ "Parametre " (car x))
+		 (if (get (cadr x) 'test-type)
+		     (let (v (cadr x))
+		       (princ " Test = " (get v 'test-type) 
+			      (get v 'test-value))))
+		 (if (get (cadr x) 'ctype) 
+		     (princ " Type = " (get (cadr x) 'ctype)))
+		 (print " Methode " (get (cadr x) 'meth))))))
+
+(de ShowAllSettings ()
+    (mapc TETE_SETTINGS
+	  (lambda (x) 
+	    (print "--- Visage " (car x) " ---")
+	    (ShowSettings (car x)))))
+	    
+	  
+		       

@@ -1,0 +1,239 @@
+; ;
+; Fonctions de creations des widgets pour view ;
+; ;
+;            Fichier view-widgets.vlisp ;
+;            D.Ploix Mars 93 ;
+; ;
+
+(print 'view-widgets)
+(setq --x-- careful careful nil)
+
+(setq bitmap-dir  "/solair/people/damien/xbvl/dea/bitmap/")
+(setq set-fonts   "8x16romankana")
+
+					; dessin et autres ;
+(de viewer-initWidgets ()
+    (setq tmp-root (xCreateWidget (get view-root 'name) "ApplicationShell"))
+    (setq tmp-form (xCreateWidget "viewer-Form" "awForm" tmp-root))
+					; commandes ;
+    (setq tmp-quit (xCreateCom tmp-form "               Quit               " ()))
+    (setq tmp      (xCreateCom tmp-form "           Tree Switch            " tmp-quit))
+    (xAddCallback tmp "callback" (strcat "(tree-switch '" view-root ")"))
+
+    (setq tmp-com (xCreateCom tmp-form "      Montre les modification     " () tmp-quit))
+    (xAddCallback tmp-com "callback" (strcat "(display-settings '" view-root " '" tmp-com ")"))
+
+    (setq tmp     (xCreateCom tmp-form "   Modification des affectations  " tmp-com tmp-quit))
+    (xAddCallback tmp "callback" (strcat "(enter-settings '" view-root " '" tmp ")"))
+		
+    (put view-root 'in-hist (xCreateCom tmp-form "Install Historic" () tmp-com))
+    (put view-root 'in-symb (xCreateCom tmp-form "Install Symbolic" 
+					(get view-root 'in-hist) tmp-com))
+    (put view-root 'in-face (xCreateCom tmp-form "Install Visages " 
+					(get view-root 'in-symb) tmp-com))
+    (put view-root 'in-vari (xCreateCom tmp-form "Install Donnees " 
+					(get view-root 'in-face) tmp-com))
+
+    (put view-root 'stepper (xCreateCom tmp-form "          Active Stepper          " 
+					() (get view-root 'in-hist)))
+    (put view-root 'cont    (xCreateCom tmp-form  "     Continue   " 
+					(get view-root 'stepper) (get view-root 'in-hist)))
+    (put view-root 'break    (xCreateCom tmp-form "      Break     " 
+					 (get view-root 'cont) (get view-root 'in-hist)))
+
+    (put view-root 'label  (xCreateLabel  tmp-form " " 430 () (get view-root 'break) t t))
+    (xSetValues (get view-root 'stepper) "foreground" 0 "background" step-color)
+    (xSetValues (get view-root 'cont) "foreground" 0 "background" step-color)
+    (xSetValues (get view-root 'break) "foreground" 0 "background" step-color)
+    (xAddCallback tmp-quit "callback" (strcat "(quit-widget '" view-root ")"))
+    (xAddCallback (get view-root 'in-hist) "callback" (strcat "(init-historic '" view-root ")"))
+    (xAddCallback (get view-root 'in-symb) "callback" (strcat "(init-symbolic '" view-root ")"))
+    (xAddCallback (get view-root 'in-face) "callback" (strcat "(init-face '" view-root ")"))
+    (xAddCallback (get view-root 'in-vari) "callback" (strcat "(init-variables '" view-root ")"))
+    (xAddCallback (get view-root 'stepper) "callback" (strcat "(stepper '" view-root ")"))
+    (xRealize tmp-root)
+    (init-symbolic-widgets)
+    (init-face-widgets)
+    (init-settings tmp-root)
+    (init-historic-widgets)
+    (init-meters-widgets))
+
+(de init-historic-widgets ()
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Historique"
+				   "iconName" "Historique"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (put view-root 'hist-label (xCreateLabel tmp-form " " 500 () () t))
+    (setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form
+				   "width" 500 "height" 150
+				   "allowHoriz" "True" "allowVert" "True"
+				   "top" 0 "left" "ChainLeft"))
+    (put view-root 'hist-tree (xCreateWidget (gensym) "awTree" tmp-view "vSpace" 1 "hSpace" 1))
+    (xSetValues tmp-view "vertDistance" (xGetVert (get view-root 'hist-label)))
+    (xSetValues tmp-root "iconPixmap" (strcat bitmap-dir "historique.bmp")))
+
+(de init-symbolic-widgets ()
+					; variables ;
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Variables" "iconName" "Variables"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (setq tmp-label (xCreateLabel tmp-form "Variable" 160 () () nil t))
+    (setq tmp-label (xCreateLabel tmp-form "Valeur" 135 tmp-label))
+    (setq tmp-label (xCreateLabel tmp-form "Type" 43 tmp-label))
+    (setq tmp-label (xCreateLabel tmp-form "Mod" 32 tmp-label))
+    (setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form 
+				  "width" 383 "height" 200
+				  "allowVert" "True" "allowHoriz" "True"
+				  "top" 0 "left" "ChainLeft"
+				  "vertDistance" (xGetVert tmp-label)))
+    (put view-root 'var  (xCreateWidget (gensym) "Drawxbvl" tmp-view
+					"width" 365 "height" 300))
+    (xSetValues tmp-root "iconPixmap" (strcat bitmap-dir "vars.bmp"))
+					; arbre d'appel ;
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Flux de control"
+				   "iconName" "Flux de control"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (setq tmp-label (xCreateLabel tmp-form "Modifie" 90))
+    (xSetValues tmp-label "background" mod-color "foreground" 0)
+    (setq tmp-label (xCreateLabel tmp-form "Definie" 90 tmp-label))
+    (xSetValues tmp-label "background" def-color "foreground" 0)
+    (setq tmp-label (xCreateLabel tmp-form "Utilise" 90 tmp-label))
+    (xSetValues tmp-label "background" util-color "foreground" 0)
+    (setq tmp-label (xCreateLabel tmp-form "Influence" 100 tmp-label))
+    (xSetValues tmp-label "background" putil-color "foreground" 1)
+    (setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form
+				   "width" 384 "height" 200 
+				   "allowHoriz" "True" "allowVert" "True"
+				   "top" 0))
+    (put view-root 'func-tree (xCreateWidget (gensym) "awTree" tmp-view
+					     "hSpace" 7 "vSpace" 7))
+    (xSetValues tmp-view "vertDistance" (xGetVert tmp-label))
+    (xSetValues tmp-root "iconPixmap" (strcat bitmap-dir "tree.bmp"))
+					; labels ;
+    (put view-root 'tstack    (xCreate "awTree" "Stack" (strcat bitmap-dir "stack.bmp") 
+				       450 200 t nil '(("gravity" "bottom") ("vSpace" 3))))
+    (put view-root 'func-widget (xCreate "Xbvlisp" "Sources" (strcat bitmap-dir "sources.bmp") 
+					 200 450 nil nil '(("font" "6X10")))))
+
+
+(de init-face-widgets ()
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Visages"
+				   "iconName" "Visages"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (put view-root 'reinit-f (xCreateCom tmp-form "Reinit Visages" ()))
+    (put view-root 'face-label (xCreateLabel tmp-form " " 500 (get view-root 'reinit-f)))
+    (setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form
+				   "width" 600 "height" 590
+				   "allowHoriz" "True" "allowVert" "True"
+				   "top" 0))
+    (put view-root 'face-tree (xCreateWidget (gensym) "awTree" tmp-view "vSpace" 5 "hSpace" 5))
+    (xSetValues tmp-view "vertDistance" (xGetVert (get view-root 'reinit-f)))
+    (xSetValues tmp-root "iconPixmap" (strcat bitmap-dir "visages.bmp"))
+    (xAddCallback (get view-root 'reinit-f) "callback" (strcat "(reinit-face-system '" view-root ")")))
+
+					; initialisation des popups ;
+
+(de get-settings-string (aSet value)
+    (ifn value "                                               "
+	 (let (aValue aSet)
+	   (ifn aValue ""
+		(if (eq value (cdar aValue)) (caar aValue)
+		  (self (cdr aValue)))))))
+
+(de init-settings (root)
+
+    (put view-root 'displ-set (xCreateWidget (gensym) "OverrideShell" root))
+    (xSetValues (get view-root 'displ-set) "x" 0 "y" 0)
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get view-root 'displ-set)))
+    (xSetValues tmp-form "background" 2)
+    (setq tmp ())
+    (let ((set FACE_SETTINGS)
+	  (comp (get-settings-string FACE_COMPONANT (caar FACE_SETTINGS)))
+	  (val  (get-settings-string FACE_METHODS   (cdar FACE_SETTINGS))))
+      (ifn set ()
+	   (setq tmp-label (xCreateWidget (gensym) "awLabel" tmp-form
+					  "label" (strcat comp " = " val)
+					  "font" set-fonts))
+	   (xSetValues tmp-label "vertDistance" (xGetVert tmp))
+	   (put tmp-label 'value (car set))
+	   (setq tmp tmp-label)
+	   (if (cdr set)
+	       (self (cdr set)
+		     (get-settings-string FACE_COMPONANT (caar (cdr set)))
+		     (get-settings-string FACE_METHODS   (cdar (cdr set)))))))
+
+    (put view-root 'comp-popup (xCreateWidget (gensym) "OverrideShell" root))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get view-root 'comp-popup)))
+    (xSetValues tmp-form "background" 2)
+    (setq tmp (xCreateWidget (gensym) "awLabel" tmp-form
+				 "label" " Parametres du visage "
+				 "foreground" 0 "background" 1))
+    (xSetValues tmp "font" set-fonts)
+    (mapc FACE_COMPONANT
+	  (lambda (x)
+	    (setq tmp-com (xCreateWidget (gensym) "awCommand" tmp-form
+					 "label" (car x)
+					 "font" set-fonts))
+	    (xSetValues tmp-com "vertDistance" (xGetVert tmp))
+	    (xAddCallback tmp-com "callback" 
+			  (strcat "(modif-componant (print '" tmp-com ") (print '" (cdr x) "))"))
+	    (setq tmp tmp-com)))
+
+    (put view-root 'meth-popup (xCreateWidget (gensym) "OverrideShell" root))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get view-root 'meth-popup)))
+    (xSetValues tmp-form "background" 2)
+    (setq tmp-com (xCreateWidget (gensym) "awLabel" tmp-form
+				 "label" "             Methodes de calcul                "
+				 "font" set-fonts
+				 "foreground" 0 "background" 1))
+    (setq tmp (xCreateWidget (gensym) "awCommand" tmp-form
+			     "label" "Supprime le parametre                          "
+			     "font" set-fonts))
+    (xSetValues tmp "vertDistance" (xGetVert tmp-com))
+    (xAddCallback tmp "callback" "(modif-methode)")
+    (mapc FACE_METHODS
+	  (lambda (x)
+	    (cond
+	     ((stringp x) 
+	      (setq tmp-com (xCreateWidget (gensym) "awLabel" tmp-form
+						  "label" x
+						  "font" set-fonts))
+	      (xSetValues tmp-com "foreground" 0 "background" 1))
+	     (t
+	      (setq tmp-com (xCreateWidget (gensym) "awCommand" tmp-form
+						  "label" (car x)
+						  "font" set-fonts))
+	      (xAddCallback tmp-com "callback" (strcat "(modif-methode '" (cdr x) ")"))))
+	     (xSetValues tmp-com "vertDistance" (xGetVert tmp))
+	     (setq tmp tmp-com))))
+	     
+
+
+(de init-meters-widgets ()
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Meters"
+				  "iconName" "Meters"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (put view-root 'meters (xCreateWidget (gensym) "Drawxbvl" tmp-form
+					  "width" 100 "height" 140 "font" "9x15"
+					  "top" 0 "left" "ChainLeft"))
+    (put view-root 'm-popup-1 (xCreateWidget (gensym) "OverrideShell" tmp-root))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get view-root 'm-popup-1)))
+    (setq tmp-label (xCreateWidget (gensym) "awLabel" tmp-form "label" "Portee de la visualisation"))
+    (put view-root 'm-cmd-glo (xCreateWidget (gensym) "awCommand"tmp-form
+					     "label" "           Globale        "))
+    (put view-root 'm-cmd-loc (xCreateWidget (gensym) "awCommand" tmp-form 
+					     "label" "           Locale         "))
+    (xSetValues (get view-root 'm-cmd-glo) "vertDistance" (xGetVert tmp-label))
+    (xSetValues (get view-root 'm-cmd-loc) "vertDistance" (xGetVert (get view-root 'm-cmd-glo)))
+    (put view-root 'm-popup-2 (xCreateWidget (gensym) "OverrideShell" tmp-root))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get view-root 'm-popup-2)))
+    (setq tmp-label (xCreateWidget (gensym) "awLabel" tmp-form "label" "Type de visualisation"))
+    (put view-root 'm-cmd-val (xCreateWidget (gensym) "awCommand" tmp-form 
+					     "label" "       Valeur       "))
+    (put view-root 'm-cmd-bar (xCreateWidget (gensym) "awCommand" tmp-form 
+					     "label" "       Barre        "))
+    (put view-root 'm-cmd-cir (xCreateWidget (gensym) "awCommand" tmp-form 
+					     "label" "       Horloge      "))
+    (xSetValues (get view-root 'm-cmd-bar) "vertDistance" (+ (xGetVert tmp-label) 5))
+    (xSetValues (get view-root 'm-cmd-cir) "vertDistance" (xGetVert (get view-root 'm-cmd-bar)))
+    (put view-root 'metering ()))
+
+(setq careful --x--)

@@ -1,0 +1,26 @@
+; ------ La trace standard (provisoire: ameliorable avec internal) ------ ;
+
+;(setq --x-- careful)
+;(setq careful ())
+
+(setq --x-- 'careful careful nil)
+
+(df trace (f)
+  (mapc f (lambda (f)
+		(let (fv (fval f))
+		  (put f 'trace fv)
+		  (fval f [(car fv) ['trin f (car fv)] ['trout f (cdr fv)]]))))
+  f)
+
+(df trin (-e-)
+  (print (nextl -e-) '---> (if (atom (car -e-)) (eval (car -e-))
+			       (evlis (car -e-)))))
+
+(df trout (-e- ;; -r-)
+  (setq -r- (eprogn (cadr -e-)))
+  (print (car -e-) '<--- -r-))
+
+(df untrace (f)
+  (mapc f (lambda (f) (fval f (get f 'trace)) (remprop f 'trace)))
+  f)
+

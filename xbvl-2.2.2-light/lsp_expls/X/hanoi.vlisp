@@ -1,0 +1,114 @@
+; Tours de Hanoï utilisant une représentation graphique de la résolution.
+; Algo de la représentation donné par Benjamin Drieu (10/97).
+
+(setq LARGEUR 400 HAUTEUR 200)
+
+(de hanoi (n)
+    (if (not (and (boundp 'interface-hanoi)) (iswidget interface-hanoi))
+	(initialise-hanoi n)
+      (changer-tours n)
+      (do-hanoi n 1 2 3)))
+
+; algo standard pour hanoi : 
+(de do-hanoi (n Dep Arr Int)
+    (if (= n 0) nil
+      (do-hanoi (1- n) Dep Int Arr)
+      (deplace n Dep Arr)
+      (do-hanoi (1- n) Int Arr Dep)))
+
+; deplace gèrera aussi l'initialisation de l'interface
+(de deplace (taille De Vers)
+      (disques-sur-tour Vers 1)
+      (efface-disque De taille)
+      (affiche-disque Vers taille)
+      (disques-sur-tour De -1))
+
+; Initialisation de l'interface graphique pour les tours de Hanoi
+(de initialise-hanoi (n)
+    ; création de l'interface
+    (let (root (xCreateWidget 'a "ApplicationShell" "title" "Tours de Hanoï"))
+      (let (fm (xCreateWidget 'f "awForm" root))
+	(let (quit (xCreateWidget 'q "awCommand" fm "label" "Quitter"))
+	  (let (plus (xCreateWidget 'p "awCommand" fm "label" "+" "fromHoriz" quit))
+	    (let (moins (xCreateWidget 'm "awCommand" fm "label" "-" "fromHoriz" plus))
+	      (let (go (xCreateWidget 'go "awCommand" fm "label" "GO" "fromHoriz" moins))
+		(xAddCallback quit "callback" (strcat "(quite-hanoi '" root ")"))
+		(xAddCallback plus "callback" "(changer-tours 1)")
+		(xAddCallback moins "callback" "(changer-tours -1)")
+		(xAddCallback go   "callback" "(reinit-hanoi)")
+		(setq interface-hanoi 
+		      (xCreateWidget 'd "Drawxbvl" fm "width" LARGEUR "height" HAUTEUR
+				     "fromVert" quit "background" "white")))))))
+      (xRealize root))
+    ; initialisation des compteurs pour les tours
+    (put interface-hanoi 1 n   2 0   3 0 'total n)
+    (dessine-hanoi n))
+
+; on quite ...
+(de quite-hanoi (root-w)
+    (xRemoveWidget root-w)
+    (setq interface-hanoi 'undef))
+
+; lancement de la résolution...
+(de reinit-hanoi ()
+    (changer-tour 0)
+    (do-hanoi (taille-hanoi) 1 3 2))
+
+; gestion du nombre de disques en jeu
+(de taille-hanoi () (get interface-hanoi 'total))
+(de changer-tours (incr) 
+    (put interface-hanoi 'total (+ incr (taille-hanoi))
+	                 1 (+ incr (taille-hanoi)) 2 0 3 0)
+    (dessine-hanoi (taille-hanoi)))
+
+; modification/consultation du contenu des tours
+(de disques-sur-tour (tour incr)
+    (if incr (put interface-hanoi tour (+ incr (get interface-hanoi tour)))
+      (get interface-hanoi tour)))
+	       
+; fonctions de dessin
+
+; dessin du plan initial
+(de dessine-hanoi (n)
+    ; on efface
+    (xSetForeground interface-hanoi "white")
+    (xFillRectangles interface-hanoi 0 0 LARGEUR HAUTEUR)
+    ; et on dessine la base des tours
+    (xSetForeground interface-hanoi "black")
+    (xFillRectangles interface-hanoi 10 (- HAUTEUR 20) (- LARGEUR 20) 10)
+    ; dessin des axes
+    (dessine-batons 3))
+
+(de dessine-batons (n)
+    (unless (= n 0)
+      (xSetForeground interface-hanoi "black")
+      (xFillRectangles interface-hanoi (* n (/ LARGEUR 4)) 10 10 (- HAUTEUR 20))
+      (xSetForeground interface-hanoi "red")
+      (dessine-disques n (disques-sur-tour n))
+      (dessine-batons (1- n))))
+
+(de dessine-disques (tour n)
+    (unless (= n 0)
+      (dessine-un-disque tour (1+ (- (taille-hanoi) n)) n)
+      (dessine-disques tour (1- n))))
+
+(de affiche-disque (tour taille)
+    (xSetForeground interface-hanoi "red") 
+    (dessine-un-disque tour (disques-sur-tour tour) taille))
+
+(de efface-disque (tour taille)
+    (xSetForeground interface-hanoi "white") 
+    (dessine-un-disque tour (disques-sur-tour tour) taille)
+    (xSetForeground interface-hanoi "black")
+    (xFillRectangles interface-hanoi (* tour (/ LARGEUR 4))
+		     (- HAUTEUR (+ 20 (* 10 (disques-sur-tour tour)))) 
+		     10 10))
+   
+
+(de dessine-un-disque (tour pos taille)
+    (xFillRectangles interface-hanoi 
+		     (- (* tour (/ LARGEUR 4)) (* n 5))
+		     (- HAUTEUR (+ 20 (* 10 pos)))
+		     (+ 10 (* 10 taille)) 10))
+    
+    

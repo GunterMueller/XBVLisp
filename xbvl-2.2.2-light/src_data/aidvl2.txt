@@ -1,0 +1,1520 @@
+^Librairies et interfaces annexes
+^^Interface Audio
+^
+play
+(play fichier en-arriere-plan type)
+	Permet d'envoyer la lecture du fichier son donné en argument.
+	Si en-arriere-plan est à t, l'exécution de la commande de lecture
+	du fichier son sera effectuée en arrière plan par le système.
+	Si le type n'est pas fixe play essaye de le détecter suivant
+	l'extension du nom du ficher. Les types de fichiers sont connus
+	pour l'instant sont :
+		"au" = fichier audio standard
+		"aiff" = format aiff
+		"aifc" = format aiff compresse	
+	Attention, la définition de cette routine est dépendante de la
+	machine sur laquelle xbvl est installée, cette routine est
+	définie en Lisp dans le fichier système : bvlisp.sys. 
+^^Interface avec X Windows
+^
+iswidget
+(iswidget widget {classe}) subr 2
+	  teste si un atome est un widget ou teste la classe
+	  d'appartenance d'un widget. 
+	  ramène t si l'argument est un widget, nil si non. Si <classe>
+	  est passée en argument le widget doit appartenir à cette classe.
+^
+isresource
+(isresource ressource)   subr 1
+	    teste si l'atome passe en paramètre à une ressource, ramène t
+	    si oui, nil si non.
+^
+xBeep
+(xBeep [n]) subr1
+Fait beep dont l'intensité peut être régulée par un paramètre
+	optionnel. Les valeurs valides de n vont de -100 à 100. -100
+	correspondant au volume du son le plus bas.
+^
+xMoveWidget
+(xMoveWidget widget  y x ) EXPR
+	 Déplace le widget passe en paramètre au point de coordonnées y, x
+	 (coin supérieur gauche). 
+	 Cette fonction tient compte du contexte du widget et modifie les
+	 ressources en conséquence.
+
+	 Cette fonction est définie dans bvlisp.sys comme suit :
+    
+^%L
+	(de xMoveWidget ( -widget- yy xx )
+		(cond (((not (iswidget -widget- )) nil)
+			((iswidget -widget- "ApplicationShell") (xSetValues -widget-  "x" xx "y" yy ))
+			((iswidget (xWidgetParent -widget- ) "awForm" )
+				(xUnmanage -widget-)
+				(xSetValues -widget- "horizDistance" xx "vertDistance" yy)
+				(xManage -widget- ))
+			(t 
+				(xUnmanage -widget-)
+				(xSetValues -widget-  "x" xx "y" yy ))
+				(xManage -widget- ))
+			))
+
+	 Voir xResizeWidget
+^
+xResizeWidget
+(xResizeWidget widget height width) EXPR
+	 Change la taille de la fenêtre  passée en argument aux dimensions
+	 <height> x <width> en pixels. 
+
+	 Si le widget est l'enfant d'un Composite le widget est enlevé de
+	 l'autorité parentale pour que la modification de taille soit prise en
+	 compte. On peut évidement faire mieux en s'assurant que les ressources
+	 des widgets supérieures soient positionnées pour que les modifications 
+	 de taille soient prises en compte sans enlever le widget de l'autorité
+	 parentale, en ce cas on évite de réafficher tout le widget.
+    
+	 Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	;
+	; la seule précaution qu'on prend est enlever de l'autorité parentale
+	; le widget s'il est à l'intérieur d'un Widget composite.
+	;
+	(de xResizeWidget ( -widget- height width )
+		(cond (((not (iswidget -widget- )) nil)
+			((iswidget (xWidgetParent -widget- ) "awComposite" )
+				(xUnmanage -widget-)
+				(xSetValues -widget-  "width" width "height" height ))
+				(xManage -widget- ))
+			(t 
+				(xSetValues -widget-  "width" width "height" height ))
+			))	
+
+        Voir xchgRessource, xSetValuesw, xresizew
+^
+xGetHierarchie
+(xGetHierarchie -widget- ) fsubr
+	 Ramène la hiérarchie complète du widgets passe en argument.
+	 Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	(de xGetHierarchie ( -widget- )
+		(if (iswidget -widget- )
+		(xGetSousArbre (xGetSupWidget -widget- "Shell") () )
+		nil))
+
+	 Voir xGetSousArbre et xGetSupWidget
+^
+xGetSousArbre  
+(xGetSousArbre  -widget- ) fsubr
+
+	Recursivement construit une liste de tous les descendants du widget
+	passe en paramètre. Le widget lui-même est le premier élément de la
+	liste. 
+
+	Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	(de xGetSousArbre ( -widget- )
+		(let ( -children- (xGetValues -widget- "children"))
+			(if (null -children-) -widget-
+				(cons -widget-  (mapcar -children- 'xGetSousArbre)))))
+	    
+	Les widgets qui ne sont pas crées explicitement par bVLISP mais qui
+	sont parties des widgets complexes sont ramenés dans des atomes dont
+	le nom est compose du nom du widget père comme préfix du nom du widget
+	lui-même. Le système garanti l'unicité des atomes. 
+	On peut toujours manipuler ces atomes individuellement mais le faire
+	avec beaucoup de précautions puisque le widget est entièrement manipule
+	par les méthodes de la classe du widget créateur.
+^
+xGetRootWidget
+(xGetRootWidget -widget-)  expr
+	 Ramène l'atome contenant la racine de la hiérarchie du widget passé en
+	 argument. 
+
+	 Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	 (de xGetRootWidget(-widget-)
+	     (if (iswidget -widget-)
+		(let (-parent- (xGetValues -widget- "parent" ))
+		     (while -parent-
+			(setq -widget- -parent-)
+			(setq -parent- (xGetValues -widget- "parent" )))
+		-widget-)
+	     nil))
+
+	 L'algorithme est très simple: on remonte la hiérarchie récupérant la
+	 ressource "parent". Quand la remontée s'arrête, on est arrive à la
+	 racine et on ramène le widget. 
+^
+xGetSupWidget
+(xGetSupWidget widget classe) expr
+
+	Comme xGetRootWidget ramène l'atome contenant le widget supérieur
+	du widget passe en argument et qui appartient à la classe <classe>
+	Pour trouver le widget racine de la hiérarchie principale il suffit
+	de faire l'appel:
+	(xGetSupWidget (xwinp) "ApplicationShell")
+
+	Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	(de xGetSupWidget(-widget-)
+		(if (iswidget -widget- "ShellClass" ) -widget-
+			(if (iswidget -widget-) (xGetSupWidget (xGetValues -widget- "parent" ))
+				nil)))
+^
+xCreateXbvlisp
+(xCreateXbvlisp w-name nlignes colonnes y x pages) fsubr
+	Crée une hiérarchie de widgets minimale pour une session interactive
+	avec bVLISP. Cette hiérarchie a les fonctionnalités d'un terminal
+	virtuel indépendant avec des fonctions d'édition diverses. Elle est
+	composée simplement d'une racine et d'un widget appartenant à la
+	classe "Xbvlisp".
+
+	Cette fonction est définie dans bvlisp.sys comme suit:
+
+^%L
+	(de xCreateXbvlisp (w-name nlignes colonnes y x pages)
+		(if (iswidget w-name "Xbvlisp") 
+			w-name
+			(if (not(and (numbp nlignes)(numbp colonnes)(numbp y)(numbp x)(numbp pages)))
+					(progn (print "Mauvais arguments") nil)
+				(let (new-xBVL (xInitXbvlisp w-name nlignes colonnes y x pages))
+					(xRealize (car new-xBVL))
+					(cadr new-xBVL)))))
+	  
+	xInitXbvlisp fait le travail de création proprement dit en
+	positionnant les ressources correctement et en créant les fenêtres X
+	correspondants aux widgets.
+	 
+^%L
+	(de xInitXbvlisp (w-name nlignes colonnes y x pages)
+		(let (root-w (xCreateWidget (strcat w-name "-root") "ApplicationShell" ))
+			(let (bvlisp-win (xCreateWidget w-name "Xbvlisp" root-w
+						"lignes" "Int" nlignes
+						"colonnes" "Int" colonnes
+						"pages" "Int" pages ))
+				(xSetValues root-w  "geometry" "String" (print (strcat "+" x "+" y )))
+				[ root-w bvlisp-win ])))
+
+^
+x-interface
+	Une nouvelle  interface  utilisateur pour bVLISP  et une  extension du
+	langage bVLISP pour  la  création et manipulation  d'objets graphiques
+	construite sur le modèle de  toolkits de X-Window Système. (développée
+	par Ernesto Sendoya)
+	La nouvelle interface utilisateur est construite entièrement sur cette
+	extension du langage. Cette couche   du langage permet de  représenter
+	des objets X-SYSTEME comme  des atomes lisp. Cette  nouvelle propriété
+	des atomes, plus une  couche minimale  des fonctions pour  l'utiliser,
+	offre  une  grande possibilité  de programmation d'objets d'interface.
+	Elle ne rentre pas en conflit avec les propriétés normales des atomes.
+	Un  objet d'interface bVLISP est  une  hiérarchie de Widgets.   Chaque
+	Widget est  un objet  qui appartient  à une   classe d'objet avec  des
+	caractéristiques bien définies. D'un  coté la présentation de  l'objet
+	et  de l'autre  la sémantique de  l'objet  (comment il se comporte par
+	rapport aux actions de l'utilisateur).  Toutes les classes des widgets
+	peuvent communiquer avec l'interprète mais il y a deux classes dédiées
+	à cette communication.
+	Les  widgets appartenant à la classe   "Xbvlisp" sont ceux qui peuvent
+	être utilises  pour une session interactive et  qui accèdent  à toutes
+	les fonctionnalités du système bVLISP. Ils sont des terminaux virtuels
+	qui supportent des commandes  d'édition emacs.   On peut les  utiliser
+	comme  un terminal pour avoir une  session interactive  avec lisp mais
+	ils peuvent, comme tout les widgets, être utilises en tant que briques
+	de base pour une interface plus complexe.
+	D'autres widgets  spécifiques  à bVLISP   sont  ceux appartenant à  la
+	classe "Drawxbvl". Ce sont des widgets pour  dessiner et faire évoluer
+	des  tortues. Il faut remarquer que   tous les widgets peuvent établir
+	une  communication interactive  avec l'interprète. Cette communication
+	est  programmable et se  fait à des niveaux  différents .  bVLISP a un
+	contrôle total sur chaque  widget : on  peut les créer,  les détruire,
+	changer  leur position,  changer leur  taille,  et leur  comportement,
+	enfin, utiliser une ou plusieurs  hiérarchies des widgets pendant  une
+	session interactive.
+	On   crée   un    widget  avec    :(xCreateWidget  nom  classe    père
+	{ressources}...)
+	Cette fonction détermine la position du widget  dans la hiérarchie, le
+	savoir-faire  (dépendant  de   la  classe),  et   la  présentation  et
+	comportement déterminés par le positionnement  des ressources.  bVLISP
+	offre  un mécanisme homogène  pour retrouver les valeurs des variables
+	associées aux widgets  et pour positionner ces  différentes variables:
+	le  Mécanisme de Ressources.  Tout se   passe à l'image des mécanismes
+	Xt, mais avec la souplesse et l'expressivité accrue du système bVLISP.
+	Voir x-ressource et x-widgets.
+^
+XBVLINTERFACE
+XBVLINTERFACE (variable d'environnement)
+
+	Cette variable d'environnement permet de spécifier l'interface utilisée
+	par Xbvl. Par défaut cette interface est l'interface écrite en Lisp
+	(définie à la fin du fichier bvlisp.sys).
+	Voici les différentes valeurs que peut prendre la variable d'environnement
+	XBVLINTERFACE :
+^%T2
+		Valeur	Signification
+		aucune	utilise l'interface écrite en Lisp de bvlisp.sys.
+		"c"	utilise l'interface originale C.
+		fichier	utilise l'interface définie dans le fichier.
+
+^
+x-widgets
+	Un  Widget  (acronyme  de  Window  Gadget)  est   un objet   graphique
+	appartenant   à une classe de    widgets,  classe dont il hérite   des
+	propriétés. Il   y  a  deux types   de  propriétés des    widgets: des
+	propriétés  qui  déterminent   sa  présentation  (dimension, couleurs,
+	police de  caractère, motifs);  et  des propriétés qui  déterminent un
+	comportement (la sémantique   ou   le savoir-faire de  l'objet).   Par
+	exemple,  un  widget appartenant  à   la classe awLabel  sait afficher
+	correctement une chaîne de  caractères en gérant correctement tous les
+	événements affectant  cet affichage.  Chaque  propriété ou "ressource"
+	correspond à une variable interne du widget.
+	
+	Un  widget est crée et manipule  par un  ensemble réduit de primitives
+	bVLISP. Cet  ensemble  des primitives  donne accès  en  lecture et  en
+	écriture à toutes     les ressources des widgets  donc    à toutes ses
+	propriétés.  Un widget   est contenu  dan  le champ  'obj'  des atomes
+	bVLISP et est accessible à travers cet atome.
+	
+	bVLISP supporte les classes des widgets suivantes :
+	
+	classes de base Xt : "Core", "Composite", "Constraint", "ShellClass".
+	
+	Shells,  des widgets principaux pour  établir la communication avec le
+	window manages:
+	
+	"ApplicationShell", "TransientShell", "OverrideShell", "TopLevelShell".
+
+	Composites, ces classes peuvent contenir d'autres widgets:
+
+%T3
+		"awForm"	"awBox"		"awViewport"
+		"awPaned"	"awDialog"	"awScroll"
+		"awPanner" *	"awPorthole" *	"awTree" *
+
+	Simples, ces classes sont feuilles d'une hiérarchie de widgets:
+	"Simple" -> la métaclasse
+%T3
+		"Xbvlisp"	"Drawxbvl"	"TortueObjet"
+		"awAsciiDisc"	"awAsciiText"	"awLabel"
+		"awCommand"	"awRepeater" *
+
+	* fournis seulement avec la version 5 de X11.
+
+	Elargir le support par bVLISP à d'autres classes  des widgets est très
+	simple.  Pour  en ajouter une nouvelle   classe il  suffit de compiler
+	bVLISP avec le code  C implémentant le  widget et de définir la chaîne
+	de  caractère qui sera la représentation  de la classe  de widget pour
+	bVLISP. Cette chaîne devient la référence  pour créer des instances de
+	cette nouvelle  classe.   Immédiatement   tous  les  mécanismes     Xt
+	implémantés en bVLISP,  (ressources, callbacks, fonctions générales de
+	manipulation)  sont applicables  aux  représentants de  cette  classe.
+	Voir x-ressources, x-callbacks, x-tortue, x-selections.
+
+^
+xCreateWidget
+(xCreateWidget nom Classe {Père} {ressources...})  nsubr
+	Crée un widget instance de la classe <Classe> accrochée au widget
+	<Père>. Le widget <Père> doit être un widget spécialisé dans la gestion
+	spatial des enfants, c'est à dire appartenir à une classe de widgets
+	composite. L'argument <Père> est superflu si le widget à créer
+	appartient à la classe "ApplicationShell" qui est la racine d'une
+	hiérarchie.
+	Le positionnement des ressources efface les valeurs par défaut.
+	
+	 	? (xcreateWidget 'root "ApplicationShell") ;1-.
+	 	= root.
+	 	? (xcreateWidget 'xbvl-term "Xbvlisp" "lignes" 10 "colonnes" 60 "pages" 2)
+	 	= xbvl-term.
+	 	? (xRealize root)			   ; 3-.
+	 	= t.
+
+	1) Crée la racine de la hiérarchie.
+	2) Crée un widget d'interaction avec bVLISP de 10 lignes
+		pour 60 colonnes et 2 pages de mémoire tampon.
+	3) Les fenêtres X associées à la hiérarchie sont réellement
+		créées et affichées.
+
+	L'atome associe au widget est retourne, 'nil' si la création est
+	impossible (par exemple si <Père> n'est pas un widget Shell).
+
+	Voir : x-ressources, xCreateResource.
+^
+x-ressources
+	Une ressource   dans le sens  Xt  est une  variable interne au widget,
+	variable d'état qui détermine  une propriété de l'objet. Le  Mécanisme
+	de, Ressources Xt est implantes et étendu dans bVLISP. Le mécanisme de
+	ressources permet à l'utilisateur d'accéder d'une manière homogène, en
+	lecture  et  en   écriture, aux  ressources.  Ce  mécanisme  permet le
+	contrôle complet  de  la présentation et   le  comportement de  chaque
+	widget ainsi   que l'interface  entre des  objets   LISP et des objets
+	Xt. On  peut configurer  dynamiquement  les propriétés   standards des
+	widgets, comme la couleur des  différents  éléments des widgets,  leur
+	taille etc., ainsi que  d'autres propriétés plus spécifiques comme que
+	les fonctions d'édition du   widget d'interaction avec  bVLISP.  Cette
+	configuration de de propriétés de widgets est faite très simplement et
+	d'une façon homogène en modifiant les valeurs  de ressources qui leurs
+	sont associes.
+	On accède aux ressources en lecture  avec la fonction xGetValues et en
+	écriture  avec la  fonction  xSetValues qui  prend chacune  en premier
+	argument    le  widget à  modifie  ou    à consulter  et  ensuite  des
+	spécifications de ressources.   Une ressource est complètement décrite
+	par le nom de la ressource:
+	  
+	<nom de la ressource> <représentation du type> <valeur>
+
+	Chaque ressource a un nom l'identifiant  et un type de représentation.
+	Le type de représentation est une chaîne de  caractères qui indique au
+	système la conversion  à faire entre  la représentation  externe de la
+	ressource (un  type  LISP: chaîne,  nombre,   atome et  liste)  et une
+	représentation  interne  manipule  par  l'objet et  le  système.   Par
+	exemple un type de  représentation "StringList" indique au  système la
+	conversion à  faire du type  de  donnée en entrée   vers un tableau de
+	caractères. bVLISP  calcule le type  de représentations des ressources
+	tant en entrée qu'en  sortie dans les  opérations normales  de lecture
+	est  écriture de ressources,  mais  il y a   des opérations ou il faut
+	connaître le type de représentation des ressources, c'est le cas de la
+	création explicite d'une ressource (voir xCreateResource).
+	Pour   optimiser la  manipulation  des ressources,  bVLISP supporte la
+	représentation d'une ressource dans le champ 'obj' d'un atome.  Chaque
+	fois   qu'on positionne une   Ressource le   système  le  créer. Cette
+	création peut coûter chère en  ressources système donc c'est important
+	d'avoir   un mécanisme qui   permet   le partage des ressources  entre
+	différents widgets.
+^
+x-ressources2
+	En bVLISP une ressource, comme un widget, est associe à un atome LISP.
+	On peut   réutiliser ainsi une ressource   pour configurer des widgets
+	différents.
+	Cette représentation interne des ressources  permet de les positionner
+	d'une manière  encore plus simple,   puisque l'atome qui  l'interne  à
+	toutes les  informations qui décrivent   complètement la ressource (le
+	triplet: nom,   représentation,   valeur).  Cette    possibilité donne
+	beaucoup de souplesse à la syntaxe  de la fonction xSetValues. On peut
+	au  lieu du  triplet passer  comme  argument  l'atome qui contient  la
+	ressource, ou bien <un nom de ressource> suivi de l'atome internant la
+	ressource. En ce cas la ressource nommée est positionnée par la valeur
+	internée dans l'atome. Le type de représentation doit être le même que
+	celui de  la  ressource internée.   Des   structures des données  très
+	complexes qui contiennent des informations sur des objets distincts et
+	complexes,  par exemple des  polices de  caractères,  des images,  des
+	couleurs, des pixmaps... sont caches par ces trois identificateurs.
+	On  positionne une ressource  d'un widget au  moment de sa création (a
+	l'appel de xCreateWidget) ou bien à tout instant de son existence avec
+	l'appel de xSetValues.
+	La syntaxe pour indiquer une ressource et sa valeur est très simple et
+	souple. En général l'appel
+	 
+	 (xSetValues Widget <nom ressource 1> valeur1 <nom ressource 2> valeur2 ...)
+	 
+	 Positionne   les ressources   des    différents  noms   et  types   de
+	 représentation  aux  valeurs   passées  en arguments.   Cet appel  est
+	 similaire à un envoi de  messages ou le widget  est l'objet, le nom de
+	 la ressource est le sélecteur et la valeur l'argument du message.
+	 <nom ressource> est une chaîne avec le nom de la ressource. Si dans la
+	 spécification du widget le nom est XtNwidth, le nom réellement utilise
+	 est "width".
+	 <valeur> est la  valeur de la  ressource. bVLISP fait  les conversions
+	 nécessaires pour que la ressource soit du type approprie à l'objet.
+	 	  
+	  Ainsi on peut positionner des  ressources très souplement en utilisant
+	  le  type   de donnée    LISP  correspondant   approprié au   type   de
+	  représentation  de  la ressource. On  utilise  tous les  types de base
+	  VLISP (atomes, listes, nombres et chaînes) pour positionner l'ensemble
+	  des ressources possibles des widgets.  En autre des ressources ont été
+	  définis qui permettent l'interface  entre des objets graphiques et des
+	  objets LISP.
+^
+x-ressources3
+	Si app-shell est une racine de hiérarchie l'appel:
+	(xSetValues app-shel "x" 10 "y" 30 "width" 340 "height" 400 )
+	 Change la position et la taille de cette hiérarchie.
+	 Pour retrouver la valeur des ressources:  
+	  (xGetValues Widget <nom ressource 1> <type en sortie 1> <nom ressource 2> <type en sortie 2> ...)
+	  <type en sortie> est le type LISP qu'on veut en sortie. 
+		  
+  	Les types valides pour bVLISP sont:		 
+		* "AtomList" pour une liste,
+		* "Atom" pour un atome, 
+		* "String" pour une chaîne de caractères,
+		* "Int" pour un entier,
+		* "Float" pour un flottant en sortie.
+
+	Si w-label est l'atome retourne  à la création d'un widget appartenant
+	à la classe awLabel (widget qui sait afficher une chaîne de caractères
+	ou  un bitmap) on   aura des  résultats  différents selon  le  type de
+	représentation en sortie de la manière suivante :
+	(xGetValues w-label "string" "String") ramène  la  copie de la  chaîne
+	affiche par le widget dans la forme d'une chaîne lisp.
+	(xGetValues w-label "string" "Int") ramène la valeur du pointeur de la
+	chaîne affiche par le widget.
+	Dans un cas on  aura une copie  internée,  dans l'autre on  peut avoir
+	accès à l'objet affiché  lui-même. En général  un type "Int" en sortie
+	nous donne accès à la  valeur de l'objet  lui-même et le type "String"
+	nous donne accès à des copies internées de chaînes de caractères.  Des
+	nouvelles ressources  ont  été définies   pour toutes les   classes de
+	widgets pour permettre l'interface entre  des objets graphiques et des
+	objets LISP:
+^%T3
+		nom		repType		défaut
+		"children"	"AtomList"	nil
+		"parent"	"Atom"		nil
+			
+	Pour les ressources standards il faut consulter les manuels des
+	widgets utilisés. The athena widget set.
+	Voir  xSetValues, xGetValues, xCreateResource
+^
+xCreateResource
+(xCreateResource	<nom ressource> <repType>  <valeur> ) subr3
+	Ramène l'atome internant la ressource ou  nil si la spécification
+	de la ressource n'est pas reconnue.
+^
+xSetValues
+(xSetValues widget ressource... )	 nsubr
+	Positionne les ressources spécifiées. La spécification des
+	ressources est assez souple. Une ressource est spécifiée
+	complètement par trois identificateurs: le nom de la ressource, sa
+	représentation, son type et sa valeur. Dans bVLISP elle peut être
+	spécifiée de trois manières différentes : 
+
+	1) <nom-ressource>  <valeur> , spécification complète
+	2) <ressource internée>, l'atome qui interne la ressource
+	3) <nom> <ressource internée>, le nom de la ressource internée est changée.
+
+	La valeur d'une ressource peut être un widget. Pour aider la lisibilité de la 
+	liste de spécifications, qui peut être assez longue, on peut mettre chaque 
+	spécification de ressources dans une liste. Cette fonction ramène le nombre
+	de ressources réellement reconnues comme telles. Si l'objet passe en premier
+	paramètre n'est pas un widget valide, xSetValues ramène nil.
+
+	Voir xGetValues, x-ressources.
+^
+xGetValues
+(xGetValues widget <nom ressource>	{<type en sortie>} ) nsubr
+	Ramène une liste des valeurs correspondantes aux ressources
+	spécifiées. <type en sortie> est le type LISP qu'on veut en sortie. Les types
+	valides pour bVLISP sont:		 
+
+		* "AtomList" pour une liste,
+		* "Atom" pour un atome, 
+		* "String" pour une chaîne de caractères,
+		* "Int" pour un entier,
+		* "Float" pour un flottant en sortie.
+
+	Le type en sortie "String" nous donne accès à des copies internées
+	de chaînes de caractères. Un type "Int" en sortie nous donne accès
+	a la valeur de l'objet lui même. Si c'est un pointeur vers une
+	structure complexe, on le récupère comme un entier. On pourra
+	récupérer ainsi des ressources des widgets déjà crées pour les
+	partager avec d'autres widgets. Par défaut le type en sortie est le
+	type entier. On peut donc récupérer une ressource dans les différents
+	types de base du système bVLISP: chaînes de caractère, listes et
+	nombres.
+^
+xGetWindow
+(xGetWindow widget)
+	
+	Retourne le window_id du widget donnée en argument.
+^
+x-callbacks
+	les callbacks composent un mécanisme privilégié de communication 
+	de l'utilisateur avec l'interprète à travers les objets graphiques. 
+	dans un callback on dépose une expression ou une suite
+	d'expressions lisp qui sont évalués à la suite de certains
+	événements actives par des actions de l'utilisateur.
+	Par exemple, au positionnement du pointeur de la souris sur un
+	widget appartenant à la classe "awCommand", le cadre du widget se
+	met en surbrillance. Si on click dessus on active automatiquement
+	la fonction LISP déposée dans ce callback du widget.
+	A l'intérieur de cette expression le programmeur peut introduire
+	des macros qui seront remplacées avec des informations sur l'objet
+	pointe au moment de l'appel. 
+	Voir xaddCallback, xAugment, xOverride.
+^
+x-evenements
+	La gestion des événements issus du système X peut être gérée par deux
+	sortes de routines. Soit par les callbacks et les translations
+	(voir x-callbacks) qui permettent l'exécution de code suivant
+	un événement survenu dans une widget donnée, soit par la vérification
+	des événements survenus dans une widget (voir xCheckEvent).
+^
+xCheckEvent
+(xCheckEvent widget "eventName") subr 2
+
+	Vérifie un événement du type de celui donne en argument est survenu dans 
+	la widget retourne t si c'est vrai. Les types événements sont :
+
+	KeyPress, KeyRelease, ButtonPress, ButtonRelease,
+	MotionNotify, EnterNotify, LeaveNotify, FocusIn, 
+	FocusOut, KeymapNotify, Expose, GraphicsExpose, 
+	NoExpose, VisibilityNotify, CreateNotify, DestroyNotify, 
+	UnmapNotify, MapNotify, MapRequest, ReparentNotify, 
+	ConfigureNotify, ConfigureRequest, GravityNotify, ResizeRequest, 
+	CirculateNotify, CirculateRequest, PropertyNotify, SelectionClear, 
+	SelectionRequest, SelectionNotify, ColormapNotify, ClientMessage, 
+	MappingNotify.
+^
+xAddCallback
+(xAddCallback widget "callbackName" <expression LISP>) subr 3
+
+	Enregistre dans le widget passe en paramètre, dans le callback
+	de nom 'callbackName', l'expression ou les expressions LISP qui
+	vont être évaluées au moment de l'activation du callback.
+	En général chaque callback a son propre protocole de communication
+	avec l'interprète. Ce protocole peut être modifie dynamiquement,
+	toujours utilisant le mécanisme de ressources.
+	Si on dépose une deuxième suite d'expression dans un callback, la
+	l'expression précédante est remplace.
+	Pour enlever un callback il suffit de l'enregistrer avec une chaîne
+	composée de blancs.
+
+	Si Bouton est un atome avec un widget "awCommand" associe :
+	
+	(xAddCallback 'Bouton "callback" " (oblist) ").
+
+	A l'activation du bouton l'oblist sera affichée.
+
+	(xAddCallback 'Bouton "callback" " ").
+
+	Enlève toute expression du callback.
+
+	Les Callbacks disposent d'un ensemble de macros qui sont
+	remplacées par des informations sur l'objet qui active le
+	Callback:
+
+	1) $O est remplace par le nom de l'objet qui active le
+		Callback,
+	2) $W est remplace par le nom du widget associe à l'objet
+		qui active le Callback,
+	3) $# est remplace par l'indice de l'objet qui active le
+		Callback, cet objet doit être ordonne dans un
+		ensemble d'objets,		
+	4) $X est remplace par la position en 'x' du widget
+		propriétaire du Callback,
+	5) $Y est remplace par la position en 'y' du widget
+		propriétaire du Callback,
+	6) $L est remplace par la largeur de l'objet,
+	6) $H est remplace par la hauteur de l'objet.
+^
+xAugment
+(xAugment widget "translation" <expression LISP>) subr 3
+	Enregistre dans le widget passe en paramètre, pour l'action X
+	donnée dans la syntaxe des Tables de Translation, l'expression
+	ou les expressions LISP qui vont être évaluées au moment ou 
+	événement décrit aura lieu dans la widget.
+	xAugment ajoute simplement événement à la widget. Si une
+	action existe déjà pour celui-ci, il ne serra pas remplace
+	par celle donnée en argument.
+
+	Exemple :
+	
+	(xAugment 'bouton "<Btn2Down>" " (oblist) ")
+	
+	action activée dans la widget bouton lors de l'appui sur
+	le bouton 2 de la sourie dans cette widget.
+	Voir xOverride
+^
+xOverride
+(xOverride widget "translation" <expression LISP>) subr 3
+	Enregistre dans le widget passe en paramètre, pour l'action X
+	donnée dans la syntaxe des Tables de Translation, l'expression
+	ou les expressions LISP qui vont être évaluées au moment ou 
+	événement décrit aura lieu dans la widget.
+	Si une action existe déjà pour la translation donnée elle sera
+	remplacée par celle donnée en argument.
+
+	Exemple :
+	
+	(xOverride 'bouton "<Btn2Down>" " (oblist) ")
+	
+	action activée dans la widget bouton lors de l'appui sur
+	le bouton 2 de la sourie dans cette widget.
+		Voir xOverride
+^
+Xbvlisp
+	Classe des widgets d'interaction avec l'interprète bVLISP.
+	 Les widgets appartenant à la classe "Xbvlisp" sont des widgets qui
+	 peuvent être utilises pour avoir une session interactive et accéder à
+	 toutes les fonctionnalités du système bVLISP. Ils sont des terminaux
+	 virtuels qui supportent des commandes d'édition emacs offrant des
+	 facilités d'interaction très variées.
+	 Un widget appartenant à la classe "Xbvlisp" supporte la configuration
+	 des ressources d'un widget AsciiTexte du package Athena, plus quelques
+	 ressources spécifiques :  
+
+	- "lignes" est le nom de la ressource qui détermine le nombre des
+	lignes de texte du widget d'interaction.
+	- "colonnes" est le nom de la ressource qui détermine le nombre
+	des  colonnes du texte du widget d'interaction.
+	- "pages" est le nom de la ressource qui détermine le  nombre des
+	page du tampon d'édition.
+
+	Ces trois ressources on le même type de représentation, "Int".
+
+	Un peut utiliser chaque widget d'interaction de la même manière
+	qu'un terminal pour avoir une session interactive avec un lisp
+	normal mais il peut, comme tous les widgets, être utilise comme un
+	brique de base d'une interface  plus  complexe.
+	 Voir xCreateWidget, Drawxbvl.
+^
+Drawxbvl
+C'est une classe de widgets que comme la classe Xbvlisp est spécialisée
+	 dans l'interaction avec bVLISP. Des widgets appartenant à cette classe
+	 sont utilises comme feuilles graphiques par le système. On peut
+	 dessiner sur ces widgets avec des primitives graphiques très variées
+	 ainsi qu'on peut afficher de texte avec différentes polices de
+	 caractères.
+	 Une caractéristique importante de ces widgets est la possibilité de
+	 leurs associer des entités dynamiques. Ces entités son des espèces de
+	 tortues LOGO qui à l'intérieur d'un widget peuvent se déplacer, se
+	 positionne, s'absenter, et, enfin, sont un instrument pour faire des
+	 dessins de manière très agréable, utilisant la trace du déplacement.
+	 On peut à chacune de ces entités attacher des fonctions vlisp qui
+	 sont exécutée automatiquement sur certaines conditions. Le changement
+	 de position par exemple. Cela permettra de créer des environnements a
+	 l'intérieur desquels ces entités vont évoluer à la manière des
+	 automates selon des lois définies pour chaque entité.
+	 Ces widgets sont des espaces privilégiés pour explorer des propriétés des
+	 programmes. On pourra explorer la génération de graphismes pendant
+	 l'exécution des programmes. Ici une de qualités de bVLISP, de pouvoir
+	 associer des commentaires à tout point d'un programme, peut être
+	 utilisée pour associer à l'exécution d'un programme l'exécution de
+	 primitives graphiques ou l'activation des entités LOGO.
+^
+Tortue1
+	Classe des entités de dessin dynamique.
+	 Les objets appartenant à la classe Tortue sont des widgets des
+	 widgets. Ils sont crées avec xCreatWidget, et acceptent le
+	 positionnement des ressources. Un objet appartenant à cette classe
+	 a un Callback ou on peut déposer une fonction ou une liste de
+	 fonctions vlisp qui seront exécutées à la modification d'une
+	 de la position du widget. Un objet appartenant à cette classe est
+	 associée à un widget Composite quelconque.
+	 Une entité de dessin est un objet pour dessiner sur la fenêtre d'un
+	 autre widget. Seulement un widget de la classe Drawxbvl sauvegarde
+	 l'image dessinée.
+	 
+	 Les ressources d'une entité tortue LOGO sont les suivants :
+
+^%T3
+<nom>		<type>		<valeur par défaut>
+	 -----		-----		---------------------
+	 "name"		"String"	argument à la création
+	 "x"		"Position"	0
+	 "y"		"Position"	0
+	 "width"	"Dimension"	10
+	 "height"	"Dimension"	15
+	 "orientation"	"Int"		0
+	 "widget"	"Widget"	NULL
+	 "freres"	"AtomList"	nil  (en lecture)
+	 "callabck"	"String"	nil
+	 "traceWidth"	"Int"		1
+	 "background"	"Pixel"		defaultBackground
+	 "foreground"	"Pixel" 	defaultForeground
+	 "foncLoginque"	"Int"		nil 	  
+
+	La ressource "freres" permet de retrouver tous les autres objets
+	tortues dépendantes du widget Xbvldraw qui contient l'objet. Tous les
+	Tortue liée à un widget sont retrouves en récupérant ressource
+	"children" du widget Xbvldraw. Ces deux ressources avec l'introduction
+	des callbacks sur les Tortues permettent de créer des environnements ou
+	les objets évoluent dynamiquement par rapport aux autres objets.
+
+^
+Tortue2
+	(suite de l'aide Tortue1)
+	La fonction logique utilisée pour calculer le résultat d'une opération
+	graphique peut aussi être modifiée. Les valeurs qui seront prises en
+	compte par la ressource "foncLoginque" doivent être comprise entre 0
+	et 15.
+	Cette fonction booléenne travaille sur les bits composant les pixels,
+	et prend deux paramètres: la valeur actuelle du bit, et la valeur
+	actuelle du bit correspondant dans la valeur du pixel de dessin. Elle
+	calcule la nouvelle valeur du pixel. 
+	Il existe 16 opérations logiques
+
+^%T2
+	valeurs			fonction
+	------			 -------
+	0 			 clear
+	1 			 and
+	2 			 andReverse
+	3 			 copy
+	4 			 andInverted
+	5 			 no-operation
+	6 			 xor	  
+	7 			 or
+	8 			 nor
+	9 			 (non pixel) ou-exclusif ancien
+	10 			 invert
+	11 			 orReverse
+	12 			 copyInverted
+	13 			 orInverted
+	14 			 nand
+	15 			 set
+
+^
+AVANCE
+(AVANCE tortue distance angle) subr3
+
+	Permet le repositionnement d'une tortue (avec dessin si le pencil
+	est posé). Les arguments spécifient la tortue à déplacer, la distance
+	à parcourir et l'angle (par rapport à l'orientation actuelle de la 
+	tortue) du nouveau déplacement. Attention, l'orientation est modifiée.
+^
+xwinp
+(xwinp) 	subr0
+	ramène l'atome image de l'interface d'interaction courante.
+^
+x-popups
+	 L'utilisation de deux classes de widgets Shell, des widgets
+	 principaux qui s'occupent de la communication avec le window manager,
+	 permettent au système de spécifier un mode différent du mode normal
+	 d'interaction. Ces Shells peuvent exclure toute autre interaction avec
+	 les autres fenêtres.
+	 Ces classes de widgets sont:
+		"OverrideShell"
+		"TransientShell"
+	Un Poupup est crée comme un widget normal. Le widget retourne par
+	xCreateWidget est pourtant un widget principal dont l'affichage
+	est contrôle par xPopup et xPopdown.
+^
+xPopup
+(xPopup -popup- [mode])  subr2
+	Fait l'affichage du popup passe en argument. Le mode d'interaction
+	peut être modifie par un deuxième argument optionnel. 
+	Par défaut le popup fait un gel événements de type non-exclusif,
+	c'est à dire que les événements sont envoyés à tous les widgets
+	composants une cascade de popups. 
+
+	Les modes d'interaction son:
+	1) Pas de confiscation d'événements par le popup qui est
+		affiche. Les événements sont normalement envoyés aux
+		widgets destinataire.
+	2) Les événements sont achemines uniquement aux widgets de la
+		cascade modale (cascade de popups).
+	3) Acheminement exclusif événements destines au widget qui
+		est au sommet de la cascade de popups.
+
+	Le Callback "popupCallback" est invoque lorsque xPopup est appelé.
+	ramène si opération est impossible, t sinon.
+	Voir xPopdown x-popus.
+^
+xPopdown
+(xPopdown -popup-) sbr1
+	 Fait disparaître le popup passe en argument. Le popup n'est pas
+	 détruit, il peut être affiche avec xPopup.
+	 Un appel à xPopdown provoque l'appel du Callback désigne par
+	 "popdownCallback" .
+	 Voir xPopup et x-popups.
+^
+xWidgetParent
+(xWidgetParent at-w)
+	ramène le l'atome image du père du widget passée en paramètre,
+	si at-w ne pointe pas vers un widget.
+
+	On peut trouver facilement le chemin d'un widget vers la racine
+	utilisant cette fonction.
+	 
+^%L
+(de xhierarchie (at-w)
+	  (if (iswidget at-w) (cons at-w (x-chemin at-w () )) nil))
+
+^%L
+	(de x-chemin (at-w res)		
+	  (let (père (xWidgetParent at-w))
+	     (if (not (iswidget père)) nil (cons père (x-chemin père res)))))
+
+	ramène la liste de widgets conduisant à la racine de la hiérarchie du
+	widget passe en paramètre.
+	Cette fonction est un raccourci pour retrouver la ressource de nom
+	"parent" de type de représentation "Widget" de toutes les widgets.
+	 
+^
+x-bibliotheques
+	Plusieurs bibliothèques des fonctions et de tests sont
+	disponibles:
+
+	xGetValuess.vlisp contient des fonctions pour retrouver aisément la
+	valeur de ressources dans un widget:
+ 	* allowShellResize? xGetWidgetDims xGetWidgetWidth
+	xGetWidgetHeight xGetWidgetBorder xGetWidgetDims
+	xGetWidgetPos xGetWidget-x xGetWidget-y 
+	
+	xSetValuess.vlisp contient des fonctions pour positionner aisément
+	des ressources dans un widgets:
+ 	* allowShellResize xSetWidgetWidth xSetWidgetHeight
+	xSetWidgetDims xSetWidgetDim 
+	
+	xcrWdgts.vlisp contient des fonctions pour faciliter la création
+	des différentes classes des widgets:
+	* xcAppWidget xcFormWidget xcLabelWidget xcCommandWidget
+
+	x-msLib.vlisp miscelaneus facilities.
+
+	xDemo.vlisp un aperçu de ce qu'on peut faire avec les widgets.
+
+	Charger ces fichiers et regardez les définitions avec
+	pretty, c'est très simple et amusant.
+^
+x-dessins
+
+	On peut  dessiner et écrire  sur les widgets  utilisant les primitives
+	graphiques implémentées:  xDrawPoints,      xDrawLines,     xDrawRays,
+	xDrawArcs, xFillArcs, xDrawreCtangles,   xFillRectangles, xDrawString,
+	xDisplayBitmap.  La syntaxe de   ces fonctions  est  très simple:   en
+	premier argument  toujours le  widget  sur lequel   on va dessiner,  et
+	ensuite les paramètres  des dessins.  Toutes ces primitives, exception
+	de la dernière, permettent de réaliser plusieurs dessins avec un seule
+	appel,  cela optimise  le temps d'exécution  et  diminue la  charge du
+	réseaux.    Les  widget appartenant à   la  classe "Drawxbvl" sont des
+	objets spécialisés pour dessiner.  Ils sauvegardent automatiquement les
+	dessins  et  on  peut contrôler  facilement  tous les   attributs avec
+	lesquels les dessins sont réalisés.  Les objets appartenant à la classe
+	"Tortue" sont    aussi  des  outils   d'une  très  simple  et   souple
+	utilisation.  Voir x-tortues 
+	
+^
+xDrawArcs
+(xDrawArcs widget x y width height angle1 angle2 ...) nsubr
+	Dessine les contours des arcs d'ellipses sur le widget passe en
+	paramètre .
+	x, y sont les coordonnées du coin haut à gauche du rectangle qui
+	encadre l'ellipse; width, height sont la largeur et la hauteur du
+	rectangle. angle1, angle2 sont les angles de départ et de fin de
+	l'arc. Le second angle est relatif au premier.	Les dimensions
+	sont mesurées en pixels et les angles en 1/64 degrés. 
+	On peut dessiner plusieurs arcs sur le widget avec le même appel
+	de fonction. 
+
+	Exemple: 
+^%L
+	(xDrawArcs -draw- 0 0
+	  (xGetValues -draw- "width" "Dimension")
+	  (xGetValues -draw- "height" "Dimension")
+	  0 (* 360 64))
+	
+	 dessiner une ellipse encadrée par la fenêtre X associée au widget
+	 passe en paramètre.
+	 Ramène le nombre d'arcs dessines ou nil si opération est impossible.
+
+^
+xFillArcs
+(xFillArc widget x y width height angle1 angle2 ...) nsubr
+	Dessine des arcs en plein sur le widget passée en paramètre.
+	Voir xDrawArcs.	
+^
+xDrawLines
+(xDrawLines widget x1 y1 x2 y2 ... [mode]) nsubr
+
+	Dessine des lignes sur le widget passée en paramètre.
+	<x1>, <y1> est la position du point de départ,	  
+	<x2>, <y2> est la position du point d'arrivée.
+	Si le paramètre <mode> et présent et vaut 1 les points sont
+	interprétés par rapport au dernier point si non, si mode est égale
+	a 0 ou est absent, les points sont interprétés par rapport à
+	l'origine. 
+
+	Essayer par exemple:
+	
+	(xDrawLines widget 10 10 50 50 50 0) et (xDrawLines widget 10 10 50 50 50 0 1)
+
+	Ramène le nombre de lignes dessinées ou bien nil si opération
+	est impossible.
+	
+^
+xDrawRays
+(xDrawRays widget x y length angle ...) nsubr
+
+	Dessine des lignes de centre x y de longueur length avec un angle donne
+
+^
+xDrawPoints
+(xDrawPoints widget x y ... [mode] ) nsubr
+	Dessine des points sur le widget passe en paramètre au coordonnées
+	x,y par rapport à l'origine ou au dernier point selon la valeur du
+	mode.
+	Si <mode> est présent est vaut 1 les coordonnées des points sont
+	interprétée par rapport au dernier point. Si <mode> vaut 0 ou est
+	absent les coordonnées sont interprétées par rapport à l'origine.
+	Ramène le nombre de points dessines ou nil si opération est
+	impossible. 
+^
+xDrawRectangles
+(xDrawRectangles widget x y width height ... ) nsubr
+	Dessine le contour des rectangles dans la widget passe en
+	paramètre. 
+	<x>, <y> sont les coordonnées du coin haut à gauche du rectangle.
+	<width>, <height> sont la largeur et la hauteur du rectangle.
+	Retourne le nombre de rectangles réellement dessines ou nil si
+	opération est impossible par une raison quelconque.
+	Voir xFillRectangles
+^
+xFillRectangles
+(xFillRectangles widget x y width height ... ) nsubr
+	Dessine des rectangles pleins.
+	Retourne le nombre de rectangles réellement dessines ou nil si
+	opération est impossible.
+	Voir xDraWrectangles	
+^
+xDrawString
+(xDrawString widget x y string ) nsubr
+	Affiche une chaîne de caractères sur le widget passée en
+	paramètre.
+	Cette chaîne n'est pas accessible à l'interprète pour une
+	évaluation.
+	<x>, <y> sont les coordonnées du premier caractère de la chaîne a
+	dessiner. 
+	Ramène t si opération a eu lieu correctement, nil si non.
+^
+xGetStringDimension
+(xGetStringDimension widget string) subr2
+	retourne dans une paire pointée la taille en x y de la chaîne
+	donnée en argument pour la widget spécifie
+^
+xClearArea
+(xClearArea widget x y width heigth ) nsubr
+	Efface une zone rectangulaire dans un widget passe en paramètre.
+
+	<x>,  <y>  sont les coordonnées d'origine du rectangle	a effacer.
+	<width>, <height> sont la largeur et la hauteur du rectangle a
+	effacer.
+	note: les dessins sont sauvegardes seulement sur les widgets
+	appartenant à la classe "Drawxbvl". Ces sont des fenêtres
+	spécialisées pour dessiner. Sur les widgets "Xbvlisp" n'est
+	sauvegardée que les caractères tapés par l'utilisateur et les
+	affichages faits par l'interprète.
+	Ramène t ou nil selon que l'opération ait bien réussi ou pas.
+^
+xDisplayBitmap
+(xDisplayBitmap widget bitmap mode x y)
+
+	Affiche la bitmap contenue dans le fichier donne dans l'argument
+	bitmap à la position donnée dans la widget donnée.
+	Le mode permet de spécifier le mode d'affichage du bitmap
+	pour plus de détail voir x-GC et xGetBitmapSize.
+^
+x-GC
+	Fonctionnalités donnant accès au contexte graphique d'une widget.
+
+	Fonction accès depuis XbVLISP: 
+
+	(xModifyGC widget attribut valeur)
+	(xGetGCValue widget attribut)
+
+	Les attributs du contexte graphique modifiables sont :
+
+	Attribut:	 mode
+	Description: contrôle du mode d'affichage (équivalant à Logical Function)
+
+^%T3
+	Val 	Signification		Nom X
+	 1  	src AND dst		and
+	 2  	src AND (not dst)	andReverse
+	 3  	src			copy
+	 4  	(NOT src) AND dst	andInverted
+	 5  	dst			noop
+	 6  	src XOR dst		xor
+	 7  	src OR dst		or
+	 8  	(NOT src) AND (NOT dst)	nor
+	 9  	(NOT src) XOR dst	equiv
+	10  	(NOT dst)		invert
+	11  	src OR (NOT dst)	orReverse
+	12  	(NOT src)		copyInverted
+	13  	(NOT src) OR dst	orInverted
+	14  	(NOT src) OR (NOT dst)	nand
+	15  	1			set
+
+	Attribut:	 line_width.
+	Description: épaisseur de la ligne.
+	Valeurs:	  >= 0.
+
+^
+x-GC2
+	(suite de x-GC)
+
+	Attribut:	 line_style.
+	Description: style de trace de lignes.
+
+^%T3
+	Val	Signification		Nom X
+	 0	ligne continue		LineSolid
+	 1	pointillée		LineOnOffDash
+	 2	pointillée		LineDoubleDash
+
+	Attribut:	 fill_style.
+	Description: style de remplissage.
+	
+^%T2
+	 Val 	 Signification
+	  0  	 remplissage de la couleur foreground
+	  1  	 remplissage avec le pixmap tile
+	  2  	 remplissage avec le pixmap tile dans la couleur foreground
+	  3  	 remplissage avec le pixmap tile dans les couleurs de la widget
+^
+xModifyGC
+(xModifyGC widget attribut valeur)
+
+	Modification du GC de la widget spécifie
+	Voir x-GC
+^
+xGetGCValue
+(xGetGCValue widget attribut)
+	
+	Récupération de la valeur de l'attribut pour le
+	GC de la widget spécifie
+	
+	Void x-GC
+^
+xGetPosPointer
+(xGetPosPointer widget) 	subr1
+	ramène la position du pointeur de la souris dans une liste de la
+	forme (x_root, y_root, x_win, y_win): 
+	x_root, y_root sont les coordonnées par rapport au coin haut a
+	gauche de l'écran.
+	x_win, y_win sont les coordonnes par rapport au coin haut à gauche
+	du widget donné en argument ou, par défaut, du coin haut à
+	gauche de la widget d'interaction principale de Xbvl.
+^
+xIsRealized
+(xIsRealize widget) subr1
+	Retourne t si le widget donné en argument est réalisé (xRealize)
+^
+xRealize
+(xRealize root-widget)  nsubr
+	Crée et affiche les fenêtres de la hiérarchie dont root-widget est
+	la racine. root-widget doit être un widget appartenant à une classe 
+	spécialisée dans la communication avec le window manager.
+	root-widget doit avoir au moins un fils dont les dimensions ne
+	sont pas nulles, autrement X génère une erreur fatale.
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir xUnrealize, xManage, xUnmanage.
+^
+xUnrealize
+(xUnrealize root-widget) nsubr
+	Détruit les fenêtres associées à <root-widget> ainsi qu'à ses
+	descendants. 
+	Les widgets eux-mêmes ne sont pas détruits comme c'est le cas
+	avec (xRemoveWidget widget). Les fenêtres peuvent être recrée avec
+	xRealize. C'est utile pour changer certaines ressources qui
+	déterminent la communication avec le window manager. Ou pour
+	libérer momentanément de la place mémoire.
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir xRealize, xUnmanage.	
+^
+xUnmanage
+(xUnmanage widget ) nsubr
+	Emancipe le widget de l'autorité de son conteneur. La fenêtre
+	associée au widget n'est plus affichée. Pour le changement de
+	plusieurs ressources du widget il faut au préalable l'émanciper
+	pour la subordonner par la suite avec des nouvelles valeurs.
+	Cette fonction permet de gérer un widget parmi plusieurs
+	attaches à une racine de hiérarchie. Une racine de hiérarchie ne 
+	peut contrôler correctement qu'un seul descendant mais peut en
+	avoir plusieurs en même temps. Une gestion de ce type sauve de la
+	place mémoire puisque évite la création de nombreuses hiérarchies
+	indépendants.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+xManage
+(xManage widget ) nsubr
+Subordonne le widget l'autorité parentale.
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir xUnmanage et xSetValues.
+
+^
+WIDTH
+	Variable qui indique la largeur de l'écran en pixels. 
+	Il ne faut pas modifier cette variable.
+^
+HEIGHT
+	Variable qui indique la hauteur de l'écran pixels. 
+	Il ne faut pas modifier cette variable.
+	
+^
+LINES
+	Variable qui indique le nombre de lignes de l'écran, la police de
+	caractères choisie est celle par défaut. HEIGHT/LINES calcule la
+	hauteur d'un caractère. 
+	Il ne faut pas modifier cette variable.
+^
+COLS
+	Variable qui indique le nombre de colonnes de l'écran, la police
+	de caractères choisie est celle par défaut. WIDTH/COLS calcule la
+	largeur d'un caractère. 
+	Il ne faut pas modifier cette variable.
+^
+xcreeDisplay
+(xcreeDisplay ref display)
+	 Crée une hiérarchie avec un widget d'interaction (Xbvlisp) de 15
+	 lignes par 80 colonnes à la position du curseur de l'interface <ref> passée
+	 en paramètre. La fonction calcule la position de la hiérarchie
+	 évitant quelle soit situe hors l'écran.
+	 L'interface pour la récupération automatique des erreurs est crée avec
+	 l'appel à cette fonction.
+^
+xUnmap
+(xUnmap widget) nsubr
+	Fait disparaître la fenêtre passée en argument. La fenêtre n'est
+	pas détruite et elle redevient visible à l'appel de (xMap widget).
+	Si le widget passé en argument est le widget principale
+	(appartenant à la classe "ApplicationShell") tous les widgets qui
+	lui sont attachées disparaissent de l'écran.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+xGetResourceType
+(xGetResourceType widget nom-ressource) subr2 
+	ramène la représentation de type de la ressource ou nil si la
+	ressource n'est pas une ressource du widget en paramètre.
+^
+xGetResourceList
+(GetRessourceList widget_class/widget) subr1 
+	ramène une liste des ressources et représentations de type du
+	widget ou de la classe de widget passée en argument. Ces
+	informations sons ramène dans une liste composée de couples
+	<nom-ressource représentation>. 
+^
+xwdim
+(xwdim widget) nsubr
+	Ramène la liste des dimensions du widget sous la forme :
+	(<nombre-de-lignes> <nombre-de-colonnes> <coord-y> <coord-x> ). Les
+	deux derniers nombres sont les coordonnes du coin supérieur gauche
+	du widget.
+
+	Cette fonction peut être définie en bVLISP de la manière suivante:
+
+^%L
+	(de xwdim (widget)
+	  (if (not (iswidget widget "Xbvlisp")) nil
+	    [ (xGetValues widget "lignes" "Int" "Int")
+	      (xGetValues widget "colonnes" "Int" "Int")
+	      (xGetValues widget "y" "Position" "Int")
+	      (xGetValues widget "x" "Position" "Int") ]))
+^
+xwsave
+(xwsave widget fichier)
+	Sauvegarde le contenu de l'interface passée en paramètre dans
+	'fichier'. Utilise avec la commande d'édition ^m on peut
+	facilement sauvée et restaurer des sessions bvlisp. 
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir line-editor
+^
+xflush
+(xflush)
+	Vide la queue événements du serveur. 	Très utile pour
+	synchroniser les opérations sur les widgets.
+	Utilise dans de cas extrêmes ou il y a de problèmes de
+	synchronisation événements.
+^
+xChangeWin
+(xChangeWin widget [flag])
+	Change le widget d'interaction courant au widget passe en
+	paramètre. Par défaut le pointeur de la souris se situe au
+	milieu de ce widget. Si on ne veut pas changer le pointeur de
+	position il faut positionner l'argument flag à 1.
+	Cette fonction est utile sur tout pour faire des affichages sur
+	plusieurs widgets dans un programme bVLISP et pour changer
+	interactivement le widget courant.
+	Les bouts de programmes suivants réalisent les opérations
+	précédantes: 
+	
+^%L
+	(let (-win- (xwinp))
+	  (xChangeWin -autre-interface- 1) 
+	  (faire-affichages);;
+	  (xChangeWin -win-)
+	  )
+
+^%L
+	(let (-win- (xwinp))
+	  (xChangeWin -autre-interface- ) 
+	  ;le curseur est dans l'autre interface;
+	  (realiser-interactions)
+	  (xChangeWin -win-) ;retour à l'ancienne interface; 
+	  )
+
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir xPosPointer.
+^
+xGrab
+(xGrab widget) 	nsubr
+	Le pointeur de la souris est circonscrit dans la zone d'affichage
+	du widget passée en argument. Un xGrab interdit le pointeur de la
+	souris de sortir de cette fenêtre, et le changement de fenêtre
+	active ne peut être réalise que sur des fenêtres qui la
+	recouvrent. 
+	C'est une fonction à utiliser avec beaucoup d'attention. Si le
+	xGrab est fait sur un widget ou un xUngrab ne peut pas être réalisé
+	vous risquer de perdre le contrôle de toute l'interface du système
+	X. Vous rester avec votre pointeur de la souris prisonnier sans
+	possibilité accéder aux applications ni de communiquer avec
+	l'interprète. 
+	Ramène t si opération est effectuée correctement, nil si non.
+	Voir xUngrab.
+^
+xUngrab
+(xUngrab)	nsubr
+	Dégèle la fenêtre active, le curseur récupère sa 
+	liberté de mouvement et la fenêtre active peut être
+	changée positionnant le curseur sur la fenêtre choisie.
+	voir xGrab
+^
+xRemoveWidget
+(xRemoveWidget objet-grephique ) nsubr
+	Enlève physiquement l'objet du système, soit une ressource soit un
+	widget. Si c'est un widget qui est détruit il l'est avec tous ses
+	descendants. Le système s'occupe de libérer les ressources alloue
+	a l'objet.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+xwst
+(xwst widget message)	nsubr
+	Affiche le message dans la l'interface passée en argument. Le
+	message est affiche à la position courante du curseur.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+xPosPointer
+(xPosPointer widget position-x position-y)  nsubr
+	Fait le repositionnement du pointeur de la souris sur le widget
+	d'interaction passe en argument. Cette fonction ne gèle pas le
+	le pointeur. Elle génère les événements qui changent le widget
+	active. 
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+xscroll
+(xscroll [widget] y n )	 nsubr
+	Fait le scroll de "n" lignes le texte à partir de la ligne "y" du
+	widget d'interaction. Si le widget est omis opération est
+	réalisé sur la widget d'interaction courante.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+cleos
+(cleos widget)	nsubr
+	Efface le texte du widget d'interaction passée en argument a
+	partir de la position actuelle du curseur.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+cleol
+(cleol widget)	nsubr
+	Efface la ligne à partir de la position actuelle du curseur du
+	widget d'interaction passée en paramètre.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+poscur
+(poscur widget ligne cols nomtop nomwin)  nsubr
+	positionne le curseur aux coordonnées (ligne, colonne) de du
+	widget d'interaction passe en paramètre, le widget courant par
+	défaut.
+	Ramène t si opération est effectuée correctement, nil si non.
+^
+right
+(right widget n )  nsubr 
+	Repositionne le curseur du widget d'interface passée en paramètre
+	"n" caractères à droite de la position courante. Ramène le nombre
+	de caractères avances réellement par le curseur. La limite du
+	déplacement étant la fin de la ligne le déplacement peut être
+	inférieur au déplacement demande dans l'appel. 
+	Ramène nil dans le cas d'échec complet de l'opération; si le
+	widget passe en paramètre n'est pas un widget d'interaction par
+	exemple. 
+	Voir left, down, up, home
+^
+left 
+(left widget n )  nsubr
+	Repositionne le curseur de la fenêtre passée en paramètre "n"
+	caractères à gauche de la position courante. Ramène le nombre de
+	caractères reculés par le curseur. La limite du déplacement est le
+	début de la ligne.
+	Ramène nil dans le cas d'échec complet de l'opération; si le
+	widget passe en paramètre n'est pas un widget d'interaction par
+	exemple. 
+	Voir right, down, up, home
+^
+down 
+(down widget) nsubr
+	Repositionne le curseur du widget d'interaction passée en
+	paramètre, sur la ligne inférieure à la ligne courante. 
+	Voir right, left, up, home
+^
+up
+(up widget)  nsubr
+	Repositionne le curseur du widget passée en paramètre, sur la ligne
+	supérieur à la ligne courante.
+	Voir right, left, down, home
+^
+home
+(home widget) nsubr
+	Positionne le curseur du widget d'interaction sur le premier
+	caractère de la fenêtre passée en paramètre. Sans arguments c'est
+	la fenêtre courante qui est considérée.
+	Voir right, left, down, up
+
+^
+shift_left
+(shift_left widget n )  nsubr 
+	Décale le texte à droite du curseur du widget d'interface passée
+	en paramètre de "n" caractères vers la gauche. Ramène le nombre de
+	caractères réellement décalés; la limite de ce décalage est le
+	début de la ligne courante.
+	Voir shift_right
+^
+shift_right
+(shift_right widget n )  nsubr 
+	Décale le texte à droite du curseur du widget d'interaction passe
+	en paramètre de "n" caractères vers la droite. Ramène le nombre de
+	caractères réellement décalés; la limite du décalage est la fin de
+	la ligne courante.
+	Voir shift_left
+
+^
+back
+(back widget )	nsubr 
+	Efface le caractère à gauche du curseur du widget d'interaction
+	passe en paramètre.
+^
+cursorpos
+(cursorpos widget) nsubr
+	Ramène une liste dont le car est  le numéro de la ligne sur
+	laquelle se trouve actuellement le curseur et le cadr est le numéro
+	de colonne. La position retournée est par rapport à l'origine de
+	l'interface courante passe en paramètre en numéro de lignes par
+	colonnes à la différence de `xGetCursorpos` qui ramène la position du
+	curseur en pixels.
+	Voir xGetCursorpos
+^
+xGetCursorpos
+(xGetCursorpos widget) nsubr
+	Ramène une liste dont les deux premiers éléments sont les
+	coordonnées x, y du curseur par rapport à la widget passée en
+	paramètre, la widget courante par défaut. 
+	Les deux derniers éléments sont les coordonnées x, y du curseur
+	par rapport à l'écran. 
+	La liste ramenée a donc la forme (x_win, y_win, x_root, y_root)
+	Voir cursorpos
+^
+xwsave
+(xwsave widget fic) 	nsubr
+	Sauvegarde le contenu du buffer d'édition de l'interface passée en
+	paramètre dans le fichier 'fic'.
+
+^
+menu
+(menu chaine_de_caracteres/atome/rien {widget})	 nsubr 
+	Si vous appelez cette fonction sans arguments, menu affiche alors
+	le menu cache du menu courant. Le menu courant est celui défini
+	par votre dernier appel de la fonction 'make-menu' (cf. make-menu).
+	Si vous appelez 'menu' avec une chaîne de caractères, cette chaîne
+	de caractères sera alors affichée comme menu. Si vous l'appelez
+	avec un argument de type atome, la valeur de l'atome sera alors
+	affichée comme menu. Cette dernière possibilité est très utile
+	si vous voulez avoir un menu arborescent. 
+	On peut fournir un widget d'affichage au menu. Ce widget peut être
+	un widget awLabel, awText, awList ou une classe dérivée d'une de
+	ces trois classes. Si on affiche un menu dans un widget awList on
+	peut attacher des expressions à chaque élément du menu utilisant le
+	Callback du widget, si on utilise un menu awCommand ou awRepeater
+	on peut attacher une expression à l'ensemble du menu utilisant le
+	même mécanisme.
+^
+make-menu
+(make-menu suite_de_chaines_de_caracteres) Fsubr 
+	la fonction make-menu permet de construire des menus que vous pouvez
+	ensuite afficher avec la fonction 'menu'. Les arguments doivent
+	être des chaînes de caractères, à raison d'une chaîne pour une ligne
+	du menu. Si vous voulez des menus arborescents, il suffit d'afficher
+	dans le(s) menu(s) des atomes auxquels vous avez affecte des chaînes
+	de caractères correspondant au menu affiche par cet atome.
+^
+stdmenu
+(stdmenu {widget}) subr 1
+	permet, par programme, d'afficher le menu standard. Si <widget>
+	est présent le menu standard sera affichée sur ce widget s'il
+	appartient à une de classes awLabel, awText, awList ou dérivées.
+^
+sleep
+(sleep n)
+	fait endormir bVLISP pour n secondes
+^^Prolog
+^
+Prolog
+Prolog dans xbvl
+
+	xbvl possède un moteur prolog intégré.
+
+		"assert" permet de définir de nouvelles clauses et
+		"prolog" permet de lancer le moteur prolog.
+
+	par exemple :
+
+	(assert ((conc nil $x $x))
+	  ((conc ($x1 . $x2) $y ($x1 . $z))
+	   (conc $x2 $y $z)))
+
+	défini la concaténation en prolog et
+
+	? (prolog (conc (a b c) (d e) $t) (print $t))
+	(a b c d e)
+	= t
+^
+assert
+(assert clauses) nsubr
+
+	assert permet la définition de clauses prolog, la syntaxe de 
+	définition est :
+
+	(assert clause1 clause2 ... clausen)
+
+	ou une clause a la forme :
+
+^%T2
+	clause		(tete-de-clause condition1 condition2 ... conditionn)
+
+	tete-de-clause	(nom-de-clause arg1 ... argn)
+	condition	(nom-de-clause arg1 ... argn)
+	 		ou (lisp? test-lisp)
+	 		ou (:= variable valeur-lisp)
+	 		ou (print arg1 ... argn) ; imprime la valeur des arguments
+	 		ou (cut)
+	 		ou (fail)
+
+	dans les clauses prolog, les variables sont désignées par le
+	préfix $ (par exemple $a, $une-variable-prolog, ...)
+^
+cut
+(cut)
+	permet l'adjonction d'une coupure dans une clause xbvl-prolog.
+^
+:=
+(:= variable-prolog valeur-lisp)
+	
+	permet de fixer la valeur d'une variable prolog à partir d'une
+	expression évaluée dans lisp à l'intérieur d'une clause prolog.
+
+	par exemple dans :
+
+^%L
+	(assert
+	  ((fact 0 1) (cut))
+	  ((fact $n $r)
+	   (fact (& (1- $n)) $r1)
+	   (:= $r (* $r1 $n))
+	  ))
+
+	(:= $r (* $r1 $n)) vas affecter à la variable $r la valeur de
+	la multiplication des valeurs contenues dans $r1 et $n.
+^
+fail
+(fail)
+
+	permet l'adjonction d'un fail (échec) dans une clause prolog.
+
+^
+prolog
+(prolog clause1 ... clausen)
+
+	lance l'évaluation prolog séquentielle des clauses données en 
+	argument. ramène t si l'évaluation prolog a été un succès, 
+	nil si non.
+

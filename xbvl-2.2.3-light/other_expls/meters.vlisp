@@ -1,0 +1,94 @@
+; ;
+; observateur de variables dynamique ;
+; ;
+
+					; enleve dans l'ival ;
+(setq METERS_WIDTH 100
+      NEW_METERS_WIDTH 110
+      HALF_METERS_WIDTH 50
+      METERS_HEIGHT 100
+      DRAW_METERS_HEIGHT 120
+      HALF_METERS_HEIGHT 50
+      2PI (* 360 64))
+
+(de init-meters-widgets (var-name mode)
+    (let (draww (get meters-root 'draw))
+      (ifn (iswidget draww)
+	   (progn
+	     (setq tmp-root (xCreateWidget (gensym) "ApplicationShell" "title" "Meters" "iconName" "Meters"))
+	     (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+	     (put meters-root 'draw (xCreateWidget (gensym) "Drawxbvl" tmp-form
+						   "width" METERS_WIDTH "height" DRAW_METERS_HEIGHT
+						   "font" "9x15"
+						   "top" 0 "bottom" 0 "left" "ChainLeft"))
+	     (put meters-root 'next-x 5)
+	     (xRealize tmp-root))
+	   (let ((tmp-root (xGetSupWidget draww "ApplicationShell"))
+		 (old-w (xGetValues draww "width")))
+	     (xUnrealize tmp-root)
+	     (xSetValues tmp-root "width" (+ old-w NEW_METERS_WIDTH))
+	     (xSetValues draww "width" (+ old-w METERS_WIDTH))
+	     (xRealizeWaiting tmp-root)
+	     (put meters-root 'next-x (+ (get meters-root 'next-x) METERS_WIDTH)))))
+    (let (cur-x (get meters-root 'next-x))
+      (print (xGetValues (get meters-root 'draw) "width") cur-x)
+      (xDrawString (get meters-root 'draw) cur-x (+ METERS_HEIGHT 10) (strcat var-name))
+      (if (equal mode "BAR")
+	  (xDrawRectangles (get meters-root 'draw) 
+			   cur-x 5 
+			   (- HALF_METERS_WIDTH 10) (- METERS_HEIGHT 10))
+	(xDrawArcs (get meters-root 'draw) cur-x 20 (- METERS_WIDTH 40) (- METERS_HEIGHT 40) 0 2PI)
+	(xDrawArcs (get meters-root 'draw) (- cur-x 5) 15 (- METERS_WIDTH 30) (- METERS_HEIGHT 30)
+		   0 (* 90 64))
+	(xDrawArcs (get meters-root 'draw) 
+		   (+ cur-x (- METERS_WIDTH 40)) (- HALF_METERS_HEIGHT 5) 10 10 0 (* -180 64))
+	(xDrawString (get meters-root 'draw)
+		     (+ cur-x (- METERS_WIDTH 40)) (/ HALF_METERS_HEIGHT 2) "+"))))
+		    
+
+
+(de meter-var (var mode)
+    (ifn (boundp 'meters-root) (setq meters-root (gensym)))
+    (let (new-var (gensym))
+      (put meters-root var new-var)
+      (ifn mode (put new-var 'mode "BAR")
+	   (put new-var 'mode mode))
+      (init-meters-widgets var (get new-var 'mode))
+      (put new-var 'x (ifn (get meters-root 'next-x) 5 (get meters-root 'next-x)))
+      (add-ival var `(entree (progn (update-meters ',var ',new-var ',meters-root)
+				    ,@(%find (ival var) 'entree))))))
+
+(de update-meters (var root-var root)
+    (let (value (eval var))
+      (let (new-value (cond 
+		       ((numbp value) value)
+		       ((listp value) (length (flat value)))
+		       (t 0)))
+	(ifn (get root-var 'value) (put root-var 'max-value new-value)
+	     (draw-meters (get root-var 'value) t) 
+	     (if (> new-value (get root-var 'max-value)) (put root-var 'max-value new-value)))
+	(draw-meters new-value)
+	(put root-var 'value new-value))))
+
+(de draw-meters (value is_clear)
+    (if (= (get root-var 'max-value) 0) ()
+      (let ((draww (get root 'draw))
+	    (max   (get root-var 'max-value))
+	    (cur-x (get root-var 'x)))
+	(xModifyGC draww "mode" 6) ; passage en Xor ;
+	(if (equal (get root-var 'mode) "BAR")
+	    (let (rect_len (/ (* value (- METERS_HEIGHT 10)) max))
+	      (xFillRectangles draww 
+			       (+ cur-x 1) (- (- METERS_HEIGHT 5) rect_len)
+			       (- HALF_METERS_WIDTH 11) rect_len)
+	      (xClearArea draww (+ cur-x HALF_METERS_WIDTH) 5 HALF_METERS_WIDTH 20)
+	      (xDrawString draww (+ cur-x HALF_METERS_WIDTH) 20 (strcat max)))
+	  (let (o-len (xGetGCValue draww "line_width"))
+	    (xModifyGC draww "line_width" 5)
+	    (xDrawRays draww 
+		       (+ cur-x (- HALF_METERS_WIDTH 20)) HALF_METERS_HEIGHT 
+		       (- HALF_METERS_WIDTH 20) (/ (+ (* max (* 270 64)) (* value 2PI)) max))
+	    (xClearArea draww (+ cur-x HALF_METERS_WIDTH) 0 (+ cur-x HALF_METERS_WIDTH) 15)
+	    (xDrawString draww (+ cur-x (- HALF_METERS_WIDTH 20)) 15 (strcat max))
+	    (xModifyGC draww "line_width" o-len))))))
+

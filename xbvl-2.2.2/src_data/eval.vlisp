@@ -1,0 +1,265 @@
+(setq car '(1subr . $car)
+	cdr '(1subr . $cdr)
+	null '(2subr . $null)
+	eq '(2subr . $eq)
+	equal '(2subr . $equal)
+	cons '(2subr . $cons)
+	tag '(fsubr . $tag)
+	exit '(fsubr . $exit)
+	quote '(fsubr . $quote)
+	eval '(1subr . $eval)
+	print '(1subr . $print)
+	if '(fsubr . $if))
+
+(df $de (call)
+    (setq (car call) (cons 'lambda (cdr call))))
+
+(ind $de de)
+
+($de $cons ($e1 $e2 $s)
+     ($return (cons $e1 $e2) $s))
+
+($de $null ($e1 $e2 $s)
+     ($return (null $e1 $e2) $s))
+
+($de $eq ($e1 $e2 $s)
+     ($return (eq $e1 $e2) $s))
+
+($de $equal ($e1 $e2 $s)
+     ($return (equal $e1 $e2) $s))
+
+($de $print ($e $s) ($return (print $e) $s))
+($de $car ($e $s)
+   (if (tconsp $e) ($return (tcar $e) $s)
+       ($return (car $e) $s)))
+
+($de $cdr ($e $s)
+    ($return (cdr $e) $s)))
+ 
+(dm cadddr (call) (rplacb call `(cadr (cddr ,(cadr call)))))
+
+(dm consp (call) (rplacb call `(and ,(cadr call) (listp ,(cadr call)))))
+
+(de constantp (x) (or (null x) (eq x t) (stringp x) (numbp x)))
+ 
+(df cval (%%%x%%%)
+     (let ((var (eval (car %%%x%%%))) (val (eval (cadr %%%x%%%))))
+	  (if (cdr %%%x%%%) (set var val) (eval var))))
+
+(de ftypep (x) 
+   (memq x '(0subr 1subr 2subr fsubr macro lambda)))
+ 
+(de carefulp () careful)
+
+(de tconsp (x) (and (listp x)(listp (car x)) (eq (caar x) 'TAG)))
+
+(de annotation (x) (cddar x))
+(de tcar (x) (cadr (car x)))
+(de newcar (x) (if (tconsp x) (tcar x) (car x)))
+(de realcons (x) (cons (tcar x) (cdr x)))
+
+($de $entre_suite ($junk $p)
+     (let (($s (car $p)) ($sortie (cadr $p)) ($forme (caddr $p)))
+         ($eval (realcons $forme) (list $eval_sortie $s $sortie))))
+
+($de $eval_sortie ($res $p)
+    (let (($s (car $p)) ($sortie (cadr $p)))
+   	($eval $sortie (list $prog2 $s $res))))
+
+($de $eval_careful ($e $s)
+   (if (tconsp $e)
+	(let (($entree (get (annotation $e) 'entree))
+	      ($sortie (get (annotation $e) 'sortie)))
+	  ($eval $entree (list $entre_suite $s $sortie $e)))
+    (if (consp $e)
+        ($eval_consp1 (car $e) $s $e)
+        (if (constantp $e)
+            ($return $e $s)
+	    (let (($entree (get $e 'entree))
+		  ($sortie (get $e 'sortie)))
+	       ($eval $entree (list '$mon1 $s $sortie $e)))))))
+
+($de $mon1 ($junk $p)
+    (let (($s (car $p)) ($sortie (cadr $p)) ($e (caddr $p)))
+	($eval $sortie (list '$prog2 $s (cval $e)))))
+
+($de $prog2 ($junk $p)
+   (let (($s (car $p)) ($e (cadr $p)))
+	($return $e $s)))	
+
+($de $eval ($e $s)
+  (if (carefulp) ($eval_careful $e $s)
+    (if (consp $e)
+        ($eval_consp (newcar $e) $s $e)
+        (if (constantp $e)
+            ($return $e $s)
+            ($return (cval $e) $s)  ) )))
+ 
+($de $return ($e $p)
+    (let (($a (car $p)) ($r (cdr $p)))
+    (if (null $a) $e
+     ($a $e $r) )))
+
+($de $eval_consp ($f $s $e $es)
+    (if (and (consp $f) (ftypep (car $f)))
+        ($eval_ftypep $f $s $e $es)
+        ($eval $f (list $eval_consp_r $s $e))  ) ))
+
+($de $eval_consp1 ($f $s $e)
+    (if (and (consp $f) (ftypep (car $f)))
+        ($eval_ftypep $f $s $e)
+	(let (($entree (get $f 'entree-fonction))
+	      ($sortie (get $f 'sortie-fonction)))
+        ($eval $f (list $eval_consp_r $s $e (list $entree $sortie)))  ) ))
+
+($de $eval_consp_r ($f $p)
+   (let (($s (car $p)) ($e (cadr $p))($es (caddr $p)))
+    ($eval_consp $f $s $e $es) ))
+ 
+($de $eval_ftypep ($f $s $e $es)
+    (selectq (car $f)
+        (0subr ((cdr $f) $s))
+        (1subr ($eval (cadr $e) (list $eval_1subr $s $f)))
+        (2subr ($eval (cadr $e) (list $eval_2subr $s $f (cdr $e))))
+        (fsubr ((cdr $f) (cdr $e) $s))
+        (macro ($eval_macro $e (list $reval $s) $f))
+        (lambda ($evlis (cdr $e) (list $eval_lambda $s $f $es)))
+))
+ 
+($de $eval_1subr ($e $p)
+   (let (($s (car $p)) ($f (cadr $p)))   
+    ((cdr $f) $e $s) ))
+ 
+($de $eval_2subr ($e $p)
+   (let (($s (car $p)) ($f (cadr $p)) ($a (caddr $p)))
+    ($eval (cadr $a) (list $eval_2subr2 $s $f $e)) ))
+ 
+($de $eval_2subr2 ($e2 $p)
+   (let (($s (car $p)) ($f (cadr $p)) ($e1 (caddr $p)))
+    ((cdr $f) $e1 $e2 $s) ))
+ 
+($de $quote ($e $p)
+   (let (($a (car $p)) ($r (cdr $p)))
+    (if (null $a) (car $e)
+    ($a (car $e) $r) )))
+ 
+($de $if ($e $s)
+    ($eval (car $e) (list $if2 $s (cdr $e))) )
+ 
+($de $if2 ($e $p)
+   (let (($s (car $p)) ($a (cadr $p)))
+     (if $e
+         ($eval (car $a) $s)
+         ($eval (cadr $a) $s)  ) ))
+ 
+($de $evlis ($a $s)
+     ($evlis1 $a $s (cons nil nil)) )
+ 
+($de $evlis1 ($a $s $d)
+     ($evlis2 $a $s $d $d) )
+ 
+($de $evlis2 ($a $s $d $c)
+     (if (consp $a)
+         ($eval (car $a) (list $evlis3 $s (cdr $a) $d $c))
+         ($return (cdr $d) $s)))
+ 
+($de $evlis3 ($e $p)
+   (let (($s (car $p)) ($a (cadr $p)) ($d (caddr $p))($c (cadddr $p)))
+     ($evlis2 $a $s $d (cdr (rplacd $c (cons $e nil)))) ))
+ 
+($de $eval_macro ($a $s $f)
+     ($bind (cadr $f) (list $corps $s $f) $a) )
+ 
+($de $reval ($e $s)
+     ($eval $e (car $s)) )
+
+($de $eval_lambda ($a $p)
+    (let (($s (car $p)) ($f (cadr $p)) ($es (caddr $p)))
+     ($bind (cadr $f) (list $corps $s $f $es) $a) ))
+
+($de $bind ($p $s $a)
+     ($bind1 $p $s $a (cons nil nil)) )
+ 
+($de $bind1 ($p $s $a $d)
+     ($bind2 $p $s $a $d $d) )
+ 
+($de $bind2 ($p $s $a $d $c)
+     (if (atom $p)
+         ($bind3 (cdr $d) $s)
+         ($bind2 (cdr $p)
+                 $s
+                 (cdr $a)
+                 $d
+                 (cdr (rplacd $c
+                              (cons (prog1 (cval (car $p))
+                                           (cval (car $p) (car $a)) )
+                                    nil ) ))    )  )  )
+ 
+($de $bind3 ($e $p)
+    (let (($a (car $p)) ($r (cdr $p)))
+     ($a $e $r) ))
+ 
+($de $corps ($e $p)
+    (let (($s (car $p)) ($f (cadr $p)) ($es (caddr $p)))
+    (if (and $es (carefulp)) 
+	($eval (car $es) (list '$corps-entre $s $f (cadr $es) $e))
+     (if (and (eq (car $s) '$unbind) (eq (caddr $s) $f))
+         ($eval (caddr $f) $s)
+         ($eval (caddr $f) (list '$unbind $s $f $e))  ) )))
+
+($de $corps-entre ($junk $p)
+  (let (($s (car $p)) ($f (cadr $p)) ($es (caddr $p)) ($e (cadddr $p)))
+    (if (and (memq (car $s) '($unbind1 $unbind))(eq (caddr $s) $f))
+	($eval (caddr $f) $s)
+	(if $es ($eval (caddr $f) (list '$unbind1 $s $f $e $es))
+                ($eval (caddr $f) (list '$unbind $s $f $e))))))
+ 
+($de $unbind ($e $p)
+    (let (($s (car $p)) ($f (cadr $p)) ($r (caddr $p)))
+     ($unbind2 $e $s (cadr $f) $r) ))
+ 
+($de $unbind1 (sortie $p)
+    (let (($s (car $p)) ($f (cadr $p)) ($r (caddr $p)) ($es (cadddr $p)))
+	 ($eval $es (list $unbind11 $s (cadr $f) $r sortie))))
+
+($de $unbind11 ($junk $p)
+    (let (($s (car $p)) ($f (cadr $p)) ($r (caddr $p)) ($e (cadddr $p)))
+	 ($unbind2 $e $s $f $r)))
+
+($de $unbind2 ($e $s $p $r)
+     (if (atom $p)
+         ($return $e $s)
+         (cval (car $p) (car $r))
+         ($unbind2 $e $s (cdr $p) (cdr $r))   ) )
+ 
+($de $tag ($e $s)
+     ($eval (cadr $e) (list '$untag $s (car $e))) )
+ 
+($de $untag ($e $p)
+    (let (($a (caar $p)) ($r (cdar $p)) ($n (cadr $p)))
+     ($a $e $r) ))
+ 
+($de $exit ($e $s)
+     ($eval (cadr $e) (list '$unexit $s (car $e))) )
+ 
+($de $unexit ($e $p)
+   (let (($s (car $p)) ($n (cadr $p)))
+     ($unexit2 $e $s $n) ))
+ 
+($de $unexit2 ($e $p $n)
+    (let (($a (car $p)) ($s (cadr $p)) ($r (cddr $p)))
+     (selectq $a
+        ($unbind ($exitbind $e $s $r $n))
+        ($untag  ($exittag $e $s $r $n))
+        (t       ($unexit2 $e $s $n))   ) ))
+ 
+($de $exitbind ($e $s $p $n)
+   (let (($f (car $p)) ($r (cadr $p)))
+     ($unbind2 $e (list $unexit $s $n) (cadr $f) $r) ))
+ 
+($de $exittag ($e $s $d $n)
+   (let (($d (car $d)))
+     (if (eq $d $n)
+         ($return $e $s)
+         ($unexit2 $e $s $n)  ) ))
+

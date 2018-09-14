@@ -1,0 +1,142 @@
+;;
+;;
+;creation et test d'un widget List avec positionnement
+;de la ressources < list >
+
+(de ListTst (name lista font color)
+    (if (and (or (listp lista) (stringp lista)) (stringp font))
+	(let (root    (xCreateWidget (strcat "root-" name) "ApplicationShell"))
+	  (print root)
+	  (let (viewport (xCreateWidget "viewport" "awViewport" root
+					"allowVert"  "True"
+					"allowHoriz" "True"
+					;"forceBars" "True"
+					"useRight"   "True"					))
+	    (print viewport)
+	    (let (-draw- (xCreateWidget name "awList" viewport
+					"list"         lista
+					"resizable"    "True"
+					"pasteBuffer"  "True"
+					"font"          font
+					"foreground"    color					))
+	      (print -draw-)
+	      (let ( (-width- (xGetValues -draw- "width" "Dimension"))
+		     (-height- (xGetValues -draw- "height" "Dimension")))
+		; faire viewport pour envelloper la liste ;
+		(print -width- -height-)
+		(xSetValues viewport 
+			    "width" 
+			    (if(> -width- WIDTH) (+(/ WIDTH 2) 20) (+ -width- 20))
+			    "height"
+			    (if(> -height- HEIGHT) (+(/ HEIGHT 2) 20) (+ -height- 20))
+			    ))
+	      (xRealize root)
+	      [root viewport -draw-]
+	      )))
+      (print "Mauvais Arguments" nil)
+      ))
+
+;;
+;
+;;
+(de get-list (-widget-) 
+    (if (iswidget -widget- "awList")
+	(xGetValues -widget- "list" "AtomeListe")
+      "S.V.P. un widget Liste"))
+
+;;
+; la plus belle  (oblist) que j'ai jamais vu !
+;;
+(de make-oblist ()
+    (print "Voila la plus Belle oblist que j'ai jamais VU ")
+    (let (-lista- (caddr   (ListTst 'oblist (oblist) "Fixed" "#A0A")))
+      (if -lista- (xAddCallback -lista- "callback" "(analyse '$O $#)")
+	"Creation de List Impossible")
+      ))
+;; 
+(de analyse (at n) 
+    (if (not (isuser at))
+	(aide at)) 
+    (print at "#" n ": cval->" (car at) " fval->"(fval at) " ftyp->" (ftyp at)) 
+    (if (ival at)
+	(let (-fen- (xwinp))   
+	  (xChangeWin 'aide 1)
+	  (eval (cons '%descr [at]))
+	  (xChangeWin -fen- 1)))
+    )
+
+;************* Pour presenter une aide hierarchisee *****************;
+;;
+; les consepts de bvlisp.
+; Un moyen de hierarchiser l'aide
+;;
+
+(setq -consepts- '(atomes chaines flottants user-doc commenter interrompre bibliotheques x-interface x-widgets x-ressources x-callbacks  video) )
+
+(de aide-consepts ()
+    (let (-lista- (caddr (ListTst 'consepts-bVLISP -consepts- "10x20" "red")))
+      (if -lista- (xAddCallback -lista- "callback" " (sous-aide '$O) ")
+	(print "Creation de consepts d'aide Impossible" ()))
+      ))
+
+;;
+;sous-aides
+;;
+
+(de sous-aide (at)
+    (aide at)
+    (cond 
+     ((eq at 'x-widgets) (make-aide 
+			  '(xCreateWidget xMoveWidget xResizeWidget xGetRootWidget xCreateWidget Xbvlisp Drawxbvl TortueObject )
+			  "yellow"
+			  ))
+     ((eq at 'x-ressources)(make-aide 
+			    '(xGetValues xSetValues xGetHierarchie xGetSousArbre xCreateRessource)
+			    "gold"
+			    ))
+     ((eq at 'video)(make-aide
+		     '(cleol cleos xscroll poscur right left down up home shift_left shift_right back cursorpos xGetCursorpos edit line-editor)
+		     "#A0A"
+		     ))
+     (t (print "Rien pour l'Instant\n\n")))
+    t)
+
+;;
+; 
+;;
+(de make-aide (lis color)
+    (let (-lista- (caddr   (ListTst 'oblist lis "10x20" color)))
+      (if -lista- (xAddCallback -lista- "callback" "(aide '$O)")
+	"Creation de List Impossible") 
+      ))
+    
+
+
+;;
+;pour debugger
+;;
+
+(de test1 () 
+    (ListTst 'test1 '(AHORA VAMOS LLEGANDO A PENJAMO) "10x20" "#F00"))
+
+(de change-list (widget list)
+    (xSetValues widget "list" list)
+    (xSetValues widget 
+		"numberStrings"  0 
+		"longest"        0)
+;;
+; on met a 0 les valeurs de ressources
+; numberStrings et longest pour que le widget
+; les reccalcule correctement dependand de la nouvelle liste.
+;;
+;
+(de debug-list (-widget-)
+    (let (n 0)
+      (while 1
+	(print (incr n) ": frappez un caractere, ESC pour sortir")
+	(let (-in- (tyi))
+	  (aide (strcat "~" (itoa -in-)) -widget- )
+	  (xSetValues -widget- 
+		      "numberStrings"  0 
+		      "longest"        0)
+	     ))))))

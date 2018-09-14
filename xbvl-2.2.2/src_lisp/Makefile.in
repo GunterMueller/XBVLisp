@@ -1,0 +1,100 @@
+# Makefile.in --- Xbvlisp
+# Copyright (C) 1997
+#   Damien Ploix <damien@ai.univ-paris8.fr>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+########################################################################
+
+CFLAGS = @CFLAGS@
+LDFLAGS =
+
+########################################################################
+
+SHELL = /bin/sh
+CC = @CC@
+CPP = @CPP@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+srcincdir = $(top_srcdir)/include
+localdir = @prefix@
+
+destdir = $(localdir)/bin
+
+INSTALL = @INSTALL@
+
+VPATH = @srcdir@
+
+CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/include 
+DEFS = @DEFS@ @OPEN_GL@ @HAVE_DIRNAME@ @HAVE_INDEX@
+SODEFS =  @HAVE_ERRNO@ @HAVE_PROTOENT@
+SYS_CFLAGS = @SYS_CFLAGS@
+SYS_LDFLAGS = @SYS_LDFLAGS@ 
+
+# XAW_LIBS = @XAW_LIB@ 
+
+X_CFLAGS = @X_CFLAGS@ @XAW_DIR@ @X_USE_LATIN1@
+X_EXTRA_LIBS = @X_EXTRA_LIBS@
+X_PRE_LIBS = @X_PRE_LIBS@
+X_LIBS = @GL_LIB@ @XAW_LIB@ -lXmu -lXext -lXt @X_LIBS@ @TIFF_LIB@
+XBVLOPENGL = @XBVLOPENGL@
+
+INIT_CFLAGS = $(DEFS) $(SYS_CFLAGS) $(X_CFLAGS) @MODIFIEDMESA@ -O
+ALL_CFLAGS = $(DEFS) $(SYS_CFLAGS) $(X_CFLAGS) $(CFLAGS)
+ALL_LDFLAGS = $(SYS_LDFLAGS) $(LDFLAGS)
+LDLIBS = $(GL_LIBS) $(X_LIBS) $(XAW_LIBS) $(X_PRE_LIBS) -lX11 \
+		$(X_EXTRA_LIBS) -lm $(LIBS)
+
+ROBJS = 	aide.o car.o contro.o \
+		err.o eval.o fdate.o fil.o flo.o \
+		gc.o hash.o in.o ind.o indinit.o \
+		init.o list.o menu.o misc.o mod.o \
+		num.o out.o prolog.o sofons.o spec.o str.o \
+		strings.o
+
+OBJS = 		$(ROBJS)
+
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -c $<
+
+# Flags de compilation spécifiques :
+main.o: main.c
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(ERRNO) -c $<
+
+# init ne supporte pas d'optimisattion en inline (1/4 h)
+init.o: init.c
+	$(CC) $(CPPFLAGS) $(INIT_CFLAGS) -c $<
+
+# sofons demande une série de checks particuliers
+sofons.o: sofons.c
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(SODEFS) -c $<
+
+all: xbvl 
+
+xbvl-root.a: $(ROBJS)
+	ar $(ARFLAGS) $@ $(ROBJS)
+
+xbvl: main.o init.o sofons.o xbvl-root.a ../src_x/xbvl-x.a $(XBVLOPENGL) 
+	$(CC) $(ALL_LDFLAGS) -o xbvl main.o xbvl-root.a ../src_x/xbvl-x.a $(XBVLOPENGL) $(LDLIBS)
+
+install:
+	$(INSTALL) xbvl $(destdir)
+
+clean:
+	rm -f *.o *.a *~

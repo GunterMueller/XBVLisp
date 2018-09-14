@@ -1,0 +1,58 @@
+;
+; example de creation multiples de fenetres
+;    pour dessiner et pour communiquer avec l'interprete
+
+(de caracol(top  win angle fois)
+    (let (l 0)
+      (tortueOff top win)
+;      (xcretortue top win 10 15)
+      (repeat fois
+	      (deplacetortue top win (incr l ) angle)
+	      )
+      (tortueOn top win)
+      )
+    )
+
+;angle 150 == etoile
+;
+(de cree_multiple(top win1 win2 win3 win4  taille posx posy )
+    (let ((l (/ taille 2)))
+      (progn
+	(xcretop top)
+	(xcredrawin top win1 l l posx posy)
+	(xcredrawin top win2 l l l 0)
+	(xcredrawin top win3 l l 0 l)
+	(xcredrawin top win4 l l l l)
+	(xRealize top)
+	(xcretortue top win1 10 15)
+	(xcretortue top win2 10 15)
+	(xcretortue top win3 10 15)
+	(xcretortue top win4 10 15)
+	(postortue top win1 (/ l 2)(- l (/ l 2)) 0)
+	(postortue top win2 (/ l 2)(- l (/ l 3)) 0)
+	(postortue top win3 (/ l 2)(- l (/ l 3)) 0)
+	(postortue top win4 (/ l 2)(- l (/ l 3)) 0)
+	(print "====>>>> une ligne pour continuer")
+	(read)
+	(let ((k 0))
+	  (tortueOff top win1)
+	  (tortueOff top win2)
+	  (tortueOff top win3)
+	  (repeat 150
+		  (deplacetortue top win1 (incr k) 87)
+		 ; (caracol top win1 82 k)
+		  (deplacetortue top win2 k k)
+		  (deplacetortue top win3 k k)
+		  (if (and (= (rem k 5) 0) (< k 130))
+		      (xdrawrectangle top win4 k k k k))
+		  )
+	  (tortueOn top win1)
+	  (tortueOn top win2)
+	  (tortueOn top win3)
+	
+	  )
+	)
+      )
+)
+
+; pour le (read) n'est pas une tres bonne

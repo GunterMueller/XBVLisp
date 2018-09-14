@@ -1,0 +1,28 @@
+;
+(de isShell (widget)
+    (iswidget widget "ApplicationShell"))
+;
+(de isForm (widget)
+    (iswidget widget "awForm"))
+;
+(de isComposite (widget)
+    (iswidget widget "CompositeClasss"))
+;
+(de isLabel (widget)
+    (iswidget widget "awLabel"))
+;
+(de isCommand (widget)
+    (iswidget widget "awCommand"))
+;
+(de isBox (widget)
+    (iswidget widget "awBox"))
+;
+(de isViewport (widget)
+    (iswidget widget "awViewport"))
+;
+(de isSimple (widget)
+    (iswidget widget "Simple"))
+
+
+
+

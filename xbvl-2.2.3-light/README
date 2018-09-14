@@ -1,0 +1,50 @@
+XBVL 2.2 light
+---------------
+
+Ce package compile XBVL sans Open GL. Les sources d'open gl sont
+toujours présent libre à vous de les inclure.
+
+
+
+
+Téléchargement
+---------------
+
+Cette archive peut être téléchargé à l'adresse suivant:
+http://www.valvassori.org/download/
+
+L'archive original se laquelle je m'appuie se trouve à
+http://www.ai.univ-paris8.fr/Xbvl/xbvl-home-fr.html
+
+
+Installation
+-------------
+
+Consulter le fichier INSTALL
+ou le fichier d'origine INSTALL.0
+
+Pour information, je n'assure pas de support pour l'installation.
+La plupart des courriers que je reçoit sont l'oeuvre de personnes
+n'ayant pas lus les documentations fournies...
+A tous ceux la, je recommande de lire le document suivent:
+http://www.tuxedo.org/~esr/faqs/smart-questions.html
+
+
+
+Mode Xbvl pour GNU Emacs
+-------------------------
+
+Pour avoir la colorisation syntaxique, il suffit de rajouter les deux
+lignes suivantes dans votre '.emacs':
+
+(autoload 'xbvl-mode "/usr/local/share/emacs/site-lisp/xbvl" "Major mode for editing xbvl code." t)
+(setq auto-mode-alist (cons '("\.l$" . xbvl-mode) auto-mode-alist))
+
+Ici, on suppose que le fichier 'xbvl.el' se trouve dans le répertoire
+'/usr/local/share/emacs/site-lisp'.
+
+
+
+
+
+Valvassori Moïse <moise@valvassori.org>

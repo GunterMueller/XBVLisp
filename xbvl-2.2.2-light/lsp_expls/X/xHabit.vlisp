@@ -1,0 +1,32 @@
+;;
+; cree une rangee de boutons a cote du widget passe en parametre:
+; le widget parent doit etre un widget Form et les ressources 
+; doivent etre correctement posionnees.
+; Le programme essai de positionner les ressources correspondants
+; a l'action.
+;;
+
+(de xHabit (-widget- -l-bitmaps-)
+    (if (not (iswidget -widget-) ) nil
+      (let ( -parent- (xGetValues -widget- "parent"))
+	(if (not (iswidget -parent- "awForm")) nil
+	  (let (-box-  (print (xCreateWidget 'habille-box "awBox" -parent-
+					     "fromHoriz"  -widget-
+					     "resizable"  "True"          )))
+	    (creeBitmaps -box- "./Icons/" '("CLOCK1" "CLOCHE1" "CRAYON1" "FLECHE5"  "CLE1" "CLE2" "CLE3" "CLE4" ))
+	    (RegistreCallbacks -box-)
+	    -box-
+	    )	  )	)      )    )
+
+
+;;
+; enregistrer les callbacks dans les boutons pousoirs
+;;
+(de RegistreCallbacks (-box-)
+    (let ( -boutons- (xGetValues -box- "children"))
+      (callback (1 -boutons-)  "(date)")
+      (callback (2 -boutons-)  "(let (n 10 (repeat 20 (xBeep (incr n 20)))))")
+	))
+
+
+

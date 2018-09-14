@@ -1,0 +1,34 @@
+(de meta_eval (meta_e)
+    (if (consp meta_e)
+        (meta_eval_consp (car meta_e) meta_e)
+        (if (constantp meta_e)
+            meta_e
+            (cval meta_e)  )  ) )
+ 
+(de meta_eval_consp (meta_f meta_e)
+    (if (and (consp meta_f) (ftypep (car meta_f)))
+        (meta_eval_ftypep meta_f meta_e)
+        (meta_eval_consp (meta_eval meta_f) meta_e)  ) )
+ 
+(de meta_eval_ftypep (meta_f meta_e)
+    (selectq (car meta_f)
+        (0subr (meta_f))
+        (1subr (meta_f (meta_eval (cadr meta_e))))
+        (2subr (meta_f (meta_eval (cadr meta_e)) (meta_eval (caddr meta_e))))
+        (fsubr (meta_eval_fsubr meta_e))
+        (macro (meta_eval (meta_eval_lambda meta_f meta_e)))
+        (lambda (meta_eval_lambda meta_f (mapcar 'meta_eval (cdr meta_e)))) ) )
+ 
+(de meta_eval_lambda (meta_f meta_e)
+    (apply (list 'lambda
+                 (cadr meta_f)
+                 (list 'meta_eval (kwote (caddr meta_f)))  )
+           meta_e ) )
+ 
+(de meta_eval_fsubr (meta_e)
+    (selectq (car meta_e)
+        (quote (cadr meta_e))
+        (if (if (meta_eval (cadr meta_e))
+                (meta_eval (caddr meta_e))
+                (meta_eval (car (cdddr meta_e)))  ))  ) )
+

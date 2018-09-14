@@ -1,0 +1,89 @@
+;;
+; pour teste le mecanisme de menu de bVLISP
+;;
+(setq
+ fac " preparer les affaires, ovrir la porte, prendre le metro "
+ labo " n'oublier pas les cles ni les unites de sauvegarde  !!   "
+ purger " sur tout ne pas confondre *.o avec *.c "
+ manger " que ca soit bon et fresh "
+ dormir " de preference pas trop "
+ rever  " de belles choses, de belles femmes et montagnes "
+ marcher " beacoup, beaucoup de preference par la jungle "
+ voler  " sur les nuages "
+ nager " dans de l'eau propre de preference ")
+;;
+(make-menu " fac, labo, purger " " manger, dormir, rever " " marcher, voler, nager ")
+;;
+;Menus
+;;
+
+(de Menus () 
+    (let (-label- (InsertLabel (xwinp)))
+      (menu nil -label-)
+      ))
+;;
+; insertions des widget  apropries pour afficher un menu.
+; l'argument doit etre un widget a l'interieur d'un Form. Le widget est
+; cree a la largeur du widget passe en argument et la hauteur necessaire
+; pour afficher une ligne de texte. 
+; Le widget est retourne ou nil si l'opperation est imposible.
+;;
+(setq menuuu '(up down home right left end ))
+(de InsertLabel (-widget-)(InsertMenu -widget- "awLabel" menuuu))
+(de InsertList (-widget-)(InsertMenu -widget- "awList" menuuu))
+(de InsertCommand (-widget-)(InsertMenu -widget- "awCommand" menuuu))
+
+(de InsertMenu (-widget- -classe- menu)
+    (if (not (iswidget -widget-) ) nil
+      (let ( -parent- (xGetValues -widget- "parent"))
+	(if (not (iswidget -parent- "awForm")) nil
+	  (let (-label- 
+		(cond 
+		 ((eq (strcmp -classe- "awList") 0)
+		  (xCreateWidget (strcat "list-" -widget-) -classe- -parent- 
+				 "fromVert"    -widget-
+				 "list"   menu
+				 "defaultColumns" (length menu)
+				 "numberStrings"  (length menu)
+				 "resizable"   "True"
+				 ))
+		 ((eq (strcmp -classe- "awLabel") 0)
+		  (xCreateWidget (strcat "label-" -widget-) "awLabel" -parent- 
+				 "fromVert"    -widget-
+				 "label" (str-allways  menu)))
+		 ((eq  (strcmp -classe- "awCommand") 0)
+		  (xCreateWidget (strcat "command-" -widget-) "awCommand" -parent- 
+				 "fromVert"    -widget-
+				 "label" (str-allways cat  menu)))
+		 (t (print -classe- " : non supportee par  InsertMenu" )nil )))
+	    -label-))))))
+
+;;
+; convertit une liste d'atomes dans la concatenation des representations interne d'elements
+;;
+
+(de str-allways ( el )
+    (if (stringp el ) el
+      (list-to-string el)))
+;;
+; fait le travail de conversion
+;;
+
+(de list-to-string (lista)
+    (if (null lista) " "
+      (strcat (car lista) " " (list-to-string (cdr lista) ))))
+
+
+(de change-menu (widget -menu-)
+    (if (not (or (stringp -menu-) (listp -menu-))) "S.V.P. une chaine ou une liste comme argument"
+      (if (not (iswidget widget "awList")) "S.V.P. Un widget awList"
+	(xSetValues widget "list" -menu-)
+	(let (-list-  (if (listp -menu-) -menu- (xGetValues widget "list" "AtomList")))
+	  (xSetValues widget 
+		      "numberStrings"  0 
+		      "longest"        0
+		      "defaultColumns" (length -list-))))))
+	  
+
+
+

@@ -1,0 +1,81 @@
+;		definitions des records			;
+; 		et de la macro :=			;
+;
+; appel:
+;	(record-type <nom><flag> ( .. <slot> ..))
+;
+; exemples :
+;	(record-type terminal (result))
+;	(record-type node nil (test node-if-t node-if-nil))
+;	(record-type goal-node $gn (char state . plan))
+;
+; exemples d'utilisation :
+;	(is:terminal foo) -> test de type
+;	(result:terminal foo) -> file le slot <result> de foo
+;	(terminal 'machin) -> construit (terminal machin)
+;
+; notes :
+;	si flag absent -> flag est le <nom>
+;	le flag ne sert qu'a permettre (si necessaire) un test de type
+
+
+(princ "je charge record.vlisp")
+(de cadddr (x)(cadr (cddr x)))
+(package record)
+
+(dm |record-type (call)
+  (let ((*type* (cadr call))(flag (caddr call))(slots (|cadddr call)))
+	(if (atom flag) () (setq slots flag flag *type*))
+	(and flag
+	  (eval 
+		['de (implode (append '(|i |s |:)(explode *type*)))
+		  '(|l)
+		  ['eq '(car |l)[quote flag]]]))
+	['de *type* (slots-extract slots '(cdr |*truc*))
+	  (let ((res (struc-cons slots)))
+		(if flag ['cons [quote flag] res] res))]))
+
+(de slots-extract (slots path)(cond
+	((null slots)())
+	((atom slots)(eval 
+		['de (implode (nconc (explode slots)['|: . (explode *type*)]))
+		  '(|*truc*)
+		   path])
+		[slots])
+	(t (nconc (slots-extract (car slots) ['car path])
+	   	  (slots-extract (cdr slots) ['cdr path])))))
+
+(de struc-cons (s)
+	(if (atom s) s ['cons (struc-cons (nextl s))(struc-cons s)]))
+
+; la macro := 
+
+(put 'car 'set-pro 'rplaca)
+(put 'cdr 'set-pro 'rplacd)
+(put 'cadr 'set-pro 'rplacad)
+(put 'caddr 'set-pro 'rplacadd)
+(put 'cddr 'set-pro 'rplacdd)
+(put 'get 'set-pro 'get-set-pro)
+
+(de rplacad (x y)(rplaca (cdr x) y) x)
+
+(de rplacadd (x y)(rplaca (cddr x) y) x)
+
+(de rplacdd (x y)(rplacd (cdr x) y) x)
+
+(dm get-set-pro (call)
+  (rplacb call ['put (cadr call)(caddr call)(|cadddr call)]))
+
+(dm |::= (exp)
+  (let ((lft (cadr exp))(rgt (caddr exp))(x))
+    (let ((rgt (subst lft '|*-* rgt)))
+      (cond
+	((atom lft)['setq lft rgt])
+	((listp (setq aux (fval (car lft))))
+	    ['|::= (subst (cadr lft) '|*truc* (cadr aux)) rgt])
+	((setq x (get (car lft) 'set-pro))
+	   [x . (append (cdr lft) [rgt])])
+	(t (print ":= ??? avec" lft))))))
+
+(package)
+(print "record.vlisp charge)

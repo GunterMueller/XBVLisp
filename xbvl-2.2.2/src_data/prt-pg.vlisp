@@ -1,0 +1,91 @@
+; ------ pretty-print, par [pg]
+;        18-Jan-82 : prettyfie les fonctions tracees.
+
+;(setq --x-- careful)
+;(setq careful ())
+
+(setq --x-- 'careful careful nil)
+
+(df pretty (l)
+  (mapc l (lambda (f) (terpri) (pprint f)))
+  )
+
+(de pprint (f ;; x)
+  (status print 3)      ; bit 0 : '"' , bit 1 : pas d'espace.
+  (setq lmargin 0)
+  (setq x (cdr (assoc (ftyp f) '((7 . de) (8 . df) (9 . macro)))))
+  (and x (p-p [x f . (or (get f 'trace) (fval f))]))
+  (terpri)
+  (status print 0)
+  f)
+
+(de p-p (l ;; x xx)
+ (status print 3); pour les appels exterieurs
+ (cond
+  ((null l) (princh "()"))
+  ((atom l) (prin1 l))
+  ((and (eq (car l) quote) (null (cddr l)))
+   (princh "'") (p-p (cadr l)))
+  (t (if (and (listp (car l)) (eq (caar l) lambda))
+         (setq l ['let (let ((v (cadar l)) (a (cdr l)))
+                         (if (null v) nil
+                             (cons [(nextl v) (nextl a)] (self v a))))
+                        . (cddar l)]))
+      (setq xx (outpos)) (princh "(") (p-p (car l))
+                ; attention a un non-atome en tete
+     (selectq (and (litatom (setq x (nextl l))) (get x 'ptyp))
+        (1 ; format PROGN ; (p-progn))
+        (2 ; format WHILE ; (p-p1) (p-progn t))
+        (3 ; format DEF   ; (p-p1) (p-p1) (p-progn t))
+        (4 ; format COND  ; (p-cond))
+        (5 ; format SELECTQ ; (p-p1) (p-cond))
+        (t ; format standard ;
+          (t+3) (while (listp l) (p-p1)) (t-3)))
+      (and l (princh " . ") (princh l))
+      (princh ")"))))
+
+(de p-p1 () (princh " ") (p-p (nextl l)))
+
+(de t+3 () (setq lmargin (+ lmargin 3)))
+(de t-3 () (setq lmargin (- lmargin 3)))
+
+(de p-progn (?)
+  (if (and (null (cdr l)) (null ?))
+      (p-p1)    ; un seul argument
+      (t+3)     ; plusieurs
+      (while (listp l)
+             (if (> lmargin (outpos)) (outpos lmargin)
+                 (terpri))
+             (p-p (nextl l)))
+      (t-3)))
+
+(de p-cond ()
+  (t+3)
+  (while (listp l)
+    (terpri)
+    (princh "(")
+    (let (l (nextl l))
+      (p-p (nextl l)) (if l (p-progn)))
+    (princh ")"))
+  (t-3))
+
+(mapc '(progn           ; type progn
+  prog1 and exit or) (lambda (x) (put x 'ptyp 1)))
+
+(mapc '(lambda          ; type lambda
+  escape if ifn let mapc mapcar while until) (lambda (x) (put x 'ptyp 2)))
+
+(mapc '(de              ; type def
+  df dm dmc) (lambda (x) (put x 'ptyp 3)))
+
+(mapc '(cond            ; type cond
+  ) (lambda (x) (put x 'ptyp 4)))
+
+(mapc '(selectq         ; type selectq
+  ) (lambda (x) (put x 'ptyp 5)))
+
+(mapc '(setq            ; type setq multiple
+  ) (lambda (x) (put x 'ptyp 6)))
+
+;(de e () (sh "ed pretty.vlisp") (lib pretty))
+

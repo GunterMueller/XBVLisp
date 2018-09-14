@@ -1,0 +1,18 @@
+;
+;example quelque peut bugge d'un monitorage de variable avec
+;trace. La trace a des problemes, il faut afficher plus proprement
+;la trace et la variable monitoree.                
+;
+(setq a 0)
+
+(monitor 'a 0 0 nil nil)
+                                                           
+(de foo (n)                                                                     
+   (if (> n 100)                                                                
+      a                                                                         
+      (setq a (+ a 1))                                                          
+      (foo (1+ n)))) 
+
+;
+(trace foo)
+;

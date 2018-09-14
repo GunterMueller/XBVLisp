@@ -1,0 +1,211 @@
+^
+edit
+(edit ftn [typ])
+	LE PORTAGE DE L'EDITEUR DE PROGRAMMES A LA NOUVELLE INTERFACE
+	X EST ENCORE A FAIRE, UN JOLI SUJET DE MAITRISE !
+	Cette fonction vous fait entrer dans l'edition de la fonction
+	ftn. Si ftn est deja definie, le deuxieme argument est superflu,
+	sinon, ce deuxieme argument doit etre l'un des mots clefs
+	suivant : de, df, dm, dmc ou dml.
+	L'editeur garde tous les etats d'une fonction.
+	Des aides supplementaires sur l'editeur LISP se trouvent sous les
+	mots clefs :
+		anoted edhelp add-anote ed-entree ed-sortie ed-time
+		add-entree add-sortie get-entree get-sortie get-time
+		clear-entree clear-sortie fs fsr bs bsr mv ex del rpl
+		ins insl p unp picks pickl puts dpl see-version see-time
+		sabt edptr fnptr from timeptr pickptr ed-version ev
+^
+editl
+(editl nom/expression)
+	entre dans l'edition d'une structure de donnees arbitraire.
+
+	(editl a)
+		entre dans l'edition de la liste contenue dans la 
+		variable a
+
+	(editl expression)
+		entre dans l'edition de la liste valeur de l'evaluation 
+		de expression. 
+^
+(ev)
+	si vous editez une expression evaluable, la commande (ev) l'evalue
+	et vous ramene le resultat. Ceci est tres utile si vous voulez,
+	par exemple, tester une fonction avec plusieurs appels qui ne se
+	differencient que de peu. Dans ce cas, vous pouvez editer l'appel
+	et lancer la commande (ev) apres chaque modification.
+^
+dpl
+(dpl)
+	commande de "edit" : elle affiche la fenetre d'edition
+^
+mv
+(mv arg1 [num1] arg2 [num2] ..)
+	commande de "edit" : deplace le curseur a l'interieur de la
+	fonction editee.
+	arg-n peut etre:
+		l = gauche, r = droite, u = vers le haut, 
+		d = vers le bas
+		h = vers le debut
+	num-n precise combien de fois il faut deplacer le curseur 
+	dans le	sens de arg-n.
+	Exemple :
+		(mv r 2 d r r d r r r l 2)
+	deplace le curseur deux elements vers la droite, entre dans la
+	liste sur laquelle il pointe, deplace encore deux fois vers la
+	droite, entre encore dans une liste, va 3 elements plus loin 
+	vers la droite et recule de 2 elements vers la gauche.
+^
+add-anote
+(add-anote)
+	commande de  "edit" : ajoute une annotation a l'endroit ou pointe
+	le curseur. S'il y existe deja une annotation, cette annotation
+	sera editee.
+^
+fs
+(fs ele)
+	commande de "edit" : cherche la prochaine occurence de 'ele' a
+	droite du curseur
+^
+bs
+(bs ele)
+	commande de "edit" : cherche la prochaine occurence de 'ele' a
+	gauche du curseur
+^
+fsr
+(fsr ele1 ele2)
+	commande de "edit" : remplace toutes les occurences de 'ele1' a
+	droite du curseur par 'ele2'
+^
+bsr
+(bsr ele1 ele2)
+	commande de "edit" : remplace toutes les occurences de 'ele1' a
+	gauche du curseur par 'ele2'
+^
+edptr
+	variable globale de "edit" qui contient la liste
+	actuellement editee.
+^
+fnptr
+	variable globale de "edit" qui contient la fonction
+	actuellement editee.
+^
+timeptr
+	variable globale de "edit" qui contient la liste
+	des temps de modification
+^
+pickptr
+	variable globale de "edit" qui contient l'element
+	ou la liste des elements pris par la derniere commande 'pick'
+	ou 'pickl'
+^
+ex
+(ex)
+	commande de "edit" : fait sortir de l'editeur et
+	sauvegarde la fonction ou la donnee editee
+^
+del*
+(del [n])
+	commande de "edit" : enleve les 'n' elements suivants
+	(a droite du curseur). Si l'argument 'n' est absent, 
+	del enleve l'element a droite du curseur
+^
+rpl
+(rpl expr)
+	commande de "edit" : remplace l'element a droite du
+	curseur par 'expr'
+^
+ins
+(ins expr)
+	commande de "edit" : insere l'element 'expr' a droite
+	du curseur
+^
+insl
+(insl expr)
+	commande de "edit" : insere l'element 'expr' a la fin de
+	la liste a l'interieur de laquelle se trouve le curseur
+^
+p
+(p [num])
+	commande de "edit" : parenthese les 'num' elements suivants
+	a partir de la position du curseur.
+^
+unp
+(unp [num])
+	commande de "edit" : enleve au maximum 'num' paires de
+	parentheses autour de l'element suivant
+^
+picks
+(picks)
+	commande de "edit" : met dans un tampon interne (pickptr)
+	l'element a droite du curseur
+^
+pickl
+(pickl)
+	commande de "edit" : met dans un tampon interne (pickptr)
+	le reste de la liste a partir du curseur
+^
+puts
+(puts)
+	commande de "edit" : insere, a droite du curseur, le 
+	contenu	de pickptr (cf: pickptr, picks, pickl)
+^
+save
+(save)
+	commande de "edit" : sauvegarde la version courante de la
+	fonction editee et commence l'edition d'une nouvelle version.
+^
+see-version
+(see-version n)
+	commande de "edit" : permet l'exploration interactive 
+	de la version n	de la fonction editee
+^
+see-time
+(see-time t)
+	commande de "edit" : permet l'exploration interactive 
+	de la fonction editee telle qu'elle etait a l'instant 't'
+^
+ed-version
+(ed-version n)
+	commande de "edit" : permet l'edition de la version 'n' 
+	de la fonction editee
+^
+ed-time
+(ed-time t)
+	commande de "edit" : re-entre dans l'edition l'etat 
+	de la fonction tel qu'il etait au temps 't'
+^
+ed-entree
+(ed-entree)
+	commande de "edit" : permet l'edition de l'attache d'entree 
+	du point pointe par le curseur
+^
+ed-sortie
+(ed-sortie)
+	commande de "edit" : permet l'edition de l'attache de sortie 
+	du point pointe par le curseur
+^
+add-entree
+(add-entree expr)
+	commande de "edit" : ajoute 'expr' en tant qu'attache d'entree 
+	a l'endroit pointe par le curseur
+^
+add-sortie
+(add-sortie expr)
+	commande de "edit" : ajoute 'expr' en tant qu'attache de sortie 
+	a l'endroit pointe par le curseur
+^
+clear-entree
+(clear-entree)
+	commande de "edit" : enleve l'attache d'entree de l'endroit 
+	pointe	par le curseur
+^
+clear-sortie
+(clear-sortie)
+	commande de "edit" : enleve l'attache de sortie de l'endroit 
+	pointe par le curseur
+^
+sabt
+(sabt)
+	commande de "edit" : montre toutes les versions existantes a des
+	instants prealables (ordonnees par le temps de leur creation)

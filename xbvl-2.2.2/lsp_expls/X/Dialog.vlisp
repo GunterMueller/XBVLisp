@@ -1,0 +1,84 @@
+;;
+; exemple d'une interface utilsant un widget awDialog
+; la reponse est reccuperee dans la ressurces "values"
+;;
+;;
+; exemple des hierarchies de widgets po-pup avec l'utilisation de widgets
+; de dialogue.
+; Le widget racine est situe a la position du pointeur de la souris.
+;;
+
+(de Dialog(label mode) 
+	(if (not (and (iswidget 'dialog-popup "OverrideShell") (iswidget 'dialogue "awDialog")))
+	    (dialogo (xwinp) label mode)
+	  (xSetValues 'dialogue "value" "ENCORE" "label" label)
+	  (xPopup 'dialog-popup mode)))
+	   
+
+(de dialogo(-pere- label mode)
+    (let (-pop- (xCreateWidget 'dialog-popup "OverrideShell" -pere-))
+      (let(-dialog- (xCreateWidget 'dialogue "awDialog" -pop-
+				   "value"       " AQUI ES "
+				   "background" "#A0A"
+				   "label"       label))
+	(InsertCommand  -dialog- "FIN DIALOGUE" (strcat  "( get-dialog '" -pop- " '" -dialog- ")"))
+	(let (-pospointer- (xGetPosPointer))
+	  (xSetValues -pop- "x" (- (car -pospointer-) 10)
+		            "y" (- (cadr -pospointer-) 10)))
+	(xPopup -pop- mode)
+	[ -pop- -dialog- ])))
+
+;;
+;
+;;
+(de Confirm(label mode) 
+    (if (not (and (iswidget 'confirm-popup "OverrideShell") (iswidget 'confirm "awDialog")))
+	(xConfirm (xwinp) label mode)
+      (xSetValues 'confirm "label" label)
+      (xPopup 'confirm-popup mode)))
+;;
+; Pose une question a l'utilisateur ;
+;;
+
+(de xConfirm(-pere- message mode)
+    (let (-pop- (xCreateWidget 'confirm-popup "OverrideShell" -pere-))
+      (let(-dialog- (xCreateWidget 'confirm "awDialog" -pop-   "label"  message ))
+	(InsertCommand  -dialog- " OUI " (strcat "(get-reponse '" -pop- "  t )"))
+	(InsertCommand  -dialog- " NON " (strcat "(get-reponse '" -pop- "  nil )"))
+	(InsertCommand  -dialog- " Baaa.. " (strcat "(dialogo  " -pop- " \"RACONTE MOI DONC CETTE HISTOIRE\"  1)" ))
+	(let (-pospointer- (xGetPosPointer))
+	  (xSetValues -pop- 
+		      "x"  (- (car -pospointer-) 10)
+		      "y"  (- (cadr -pospointer-) 10)))
+	(xPopup -pop- mode)
+	[ -pop- -dialog- ])))
+
+
+;;
+; creation du widget command en lui en affectant un callback
+;;
+(de InsertCommand( -conteneur- name  fonction)
+    (if (null -conteneur-) (break insert)
+      (let (-command- (xCreateWidget name "awCommand"  -conteneur-))
+	(xAddCallback "callback" -command- fonction)
+	-command-
+	)))
+
+;;
+; fait disparaitre le popup 
+; et recupere le message de la boite de dialogue
+;;
+
+(de get-dialog ( -pop- -dialog- )
+    (xPopdown -pop-)
+    (xGetValues -dialog- "value" "String"))
+;;
+; fait disparaitre le popup 
+; et recupere la reponse de la boite de confirmation
+;;
+
+(de get-reponse ( -pop- reponse )
+    (xPopdown -pop-)
+    reponse
+    )
+

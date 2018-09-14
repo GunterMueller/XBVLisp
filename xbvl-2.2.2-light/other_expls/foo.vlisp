@@ -1,0 +1,9 @@
+(de foo (l)
+    (let ((li l)
+	  (x 0))
+      (cond 
+       ((null li) x)
+       ((listp li) 
+	(self (cdr li) (+ x (self (car li) 0))))
+       (t
+	(self (cdr li) (1+ x))))))

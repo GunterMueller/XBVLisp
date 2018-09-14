@@ -1,0 +1,255 @@
+; representation dynamique par dessin de visages ... ;
+;;
+(setq MAX_VAL 10000)  ; limite des petits nombres a + de 300000 so... ;
+;;
+
+(setq half_pi (* 180 64)
+      full_pi (* 360 64)
+      zeroPun (/ MAX_VAL 10)
+      nzeroPun (/ MAX_VAL (- 10)))
+
+(de DynFace (f params)
+    (ifn (member f all_functions) (strcat f " n'est pas une fonction")
+	 (setq flis ())
+	 (let (global-tree (cons f (cons (%suprev (%indexx [f] (%find (ival f) 4))))))
+	   (setq --dface-- (gensym))
+	   (put --dface-- 'name f)
+	   (put --dface-- 'tree global-tree)
+	   (put --dface-- 'stepping ())
+	   (dFaceInitWidgets)
+	   (dFaceInitFuncs (flat global-tree))
+	   (xRealize (get --dface-- 'app)))))
+	 
+; ;
+; Partie graphique : gestion des widgets et dessin des visages ;
+; ;
+
+(de kill-face-system (s f) 
+    (xRemoveWidget (get s 'name)) 
+    (put f 'entree ())
+    (put f 'sortie ())
+    (rplacd s ()))
+
+
+(de reinit-face-system (s)
+    (ifn (eq --dface-- s) (setq --dface-- s))
+    (FaceInitFuncs (flat (get --dface-- 'tree))))
+
+(de dface-stepper (s)
+    (ifn (eq --dface-- s) (setq --dface-- s))
+    (if (get --dface-- 'stepping) 
+	(progn 
+	  (xSetValues (get --dface-- 'stepper) "label" "Set Stepper On ")
+	  (put --dface-- 'stepping ()))
+      (xSetValues (get --dface-- 'stepper) "label" "Set Stepper Off")
+      (put --dface-- 'stepping t)))
+
+
+(de xSetLabel (w l)
+    (xSetValues w "label" (strcat l)))
+
+(de xGetVertDistance (widget)
+    (ifn (iswidget widget) 0
+	 (+ (xGetValues widget "y") (+ 5 (xGetValues widget "height")))))
+
+(de dFaceInitWidgets ()
+    (put --dface-- 'app (xCreateWidget (get --dface-- 'name) "ApplicationShell"))
+    (put --dface-- 'form (xCreateWidget "Face-Form" "awForm" (get --dface-- 'app)))
+    (put --dface-- 'quit (xCreateWidget "Face-cmd-quit" "awCommand" 
+				       (get --dface-- 'form) 
+				       "label" "Kill Face"
+				       "left" "ChainLeft" 
+				       "right" 2 "top" 0 "bottom" 0))	
+    (put --dface-- 'reinit (xCreateWidget "Face-cmd-reinit" "awCommand" 
+				       (get --dface-- 'form) 
+				       "label" "Re-Initialize"
+				       "horizDistance" (+ 9 (xGetValues (get --dface-- 'quit) "width"))
+				       "left" "ChainLeft" 
+				       "right" 2 "top" 0 "bottom" 0))
+    (put --dface-- 'stepper (xCreateWidget "Face-cmd-step" "awCommand"
+					   (get --dface-- 'form)
+					   "label" "Set Stepper On " 
+					   "horizDistance" (+ 5 (+ (xGetValues (get --dface-- 'reinit) "width")
+								   (xGetValues (get --dface-- 'reinit) "x")))
+					   "left" "ChainLeft" 
+					   "right" 2 "top" 0 "bottom" 0))
+    (put --dface-- 'cont (xCreateWidget "Face-cmd-cont" "awCommand"
+					   (get --dface-- 'form)
+					   "label" "Continue"
+					   "horizDistance" (+ 5 (+ (xGetValues (get --dface-- 'stepper) "width")
+								   (xGetValues (get --dface-- 'stepper) "x")))
+					   "left" "ChainLeft"
+					   "right" 2 "top" 0 "bottom" 0))
+    (put --dface-- 'label (xCreateWidget "Face-Label" "awLabel" (get --dface-- 'form)
+					"label" " " 
+					"width" 300
+					"horizDistance" (+ 14 (+ (xGetValues (get --dface-- 'quit) "width")
+								(xGetValues (get --dface-- 'reinit) "width")))
+					"left" "ChainLeft" 
+					"right" 2 "top" 0 "bottom" 0))
+    (put --dface-- 'draw-viewport (xCreateWidget "Face-vdraw" "awViewport"
+					       (get --dface-- 'form)
+					       "width" 800 "height" 800
+					       "vertDistance" (xGetVertDistance (get --dface-- 'quit))
+					       "allowVert" "True"
+					       "allowHoriz" "True"
+					       "left" "ChainLeft"
+					       "top" 0
+					       "vertDistance" (+ 9 (xGetValues (get --dface-- 'quit) "height"))))
+    (put --dface-- 'draw (xCreateWidget "Face-draw" "Drawxbvl" (get --dface-- 'draw-viewport)
+					"width" 800 "height" 800))
+    (xAddCallback (get --dface-- 'quit) "callback" (strcat "(kill-face-system '" --dface-- " '" f ")"))
+    (xAddCallback (get --dface-- 'reinit) "callback" (strcat "(reinit-face-system '" --dface--")"))
+    (xAddCallback (get --dface-- 'stepper) "callback" (strcat "(dface-stepper '" --dface-- ")")))
+
+; ;
+
+(de dFaceInitFuncs (tree)
+    (let ((toDo tree) (done ())
+	  (f (car tree)))
+      (ifn toDo t
+	   (if (member f done) 
+	       (self (cdr toDo) done (cadr toDo))
+	     (ifn (setq cur (get --dface-- f)) () 
+		  (setq cur (gensym))
+		  (put --dface-- f cur))
+	     (CalculateFunction f cur)
+	     (if (cdr toDo)
+		 (self (cdr toDo) 
+		       (cons (car toDo) done)
+		       (cadr toDo) 
+		       (get --dface-- (cadr toDo))))))))
+; ;
+
+; Partie analyse de la fonction pour l'atribution des valeurs initiales ;
+
+
+; Les donnees suivantes sont fonction de la forme de la fonction ;
+
+;    - tour_x           : nombre de fonction appellees / nombre d'appel a ces fonctions, 1 si 0 ;
+;    - tour_y           : nombre de variables globales / nombre totales de variables, 1 si 0 ;
+
+;    - nez_taille       : nombre de variables argument / nombre de variables locales, 0.5 si 0 ;
+
+;    - moustaches       : 1 - nez_taille ;
+;    - pupille_taille   : 0.5 ;
+
+(de get-calls (f)   
+    (let ((ex-l (cdr (fval f))) 
+	  (all ()) 
+	  (calls (%find (ival f) 4)))
+      (cond
+       ((or (null ex-l) (atom ex-l)) all)
+       ((atom (car ex-l)) (self (cdr ex-l) all calls))
+       ((and  (atom (caar ex-l)) 
+	      (not (member (car ex-l) all))
+	      (member (caar ex-l) calls))
+	(self (cdr ex-l) (cons (car ex-l) all) calls))
+       (t
+	(append (self (car ex-l) () calls) (self (cdr ex-l) all calls))))))
+
+
+
+(de CalculateFunction (f var)
+    (put var 'x 50)
+    (put var 'y 50)
+    (put var 'tx 100)
+    (put var 'ty 100)
+    (put var 'OEIL_TAILLE (/ MAX_VAL 2))
+    (put var 'OEIL_OUVERTURE (/ MAX_VAL 100))
+    (put var 'PUPILLE_TAILLE (/ MAX_VAL 2))
+    (put var 'BOUCHE_TAILLE (/ MAX_VAL 2))
+    (put var 'BOUCHE_OUVERTURE 0)
+    (put var 'TOUR_X 0)
+    (put var 'TOUR_Y 0)
+    (put var 'NEZ_TAILLE 0)
+    (if (listp (%find (ival f) 4))
+	(put var 'TOUR_X (/ (* (length (%find (ival f) 4)) MAX_VAL)
+			    (length (get-calls f))))
+      (put var 'TOUR_X MAX_VAL))
+    (if (and (listp (%find (ival f) 1)) (listp (%find (ival f) 0)))
+	(put var 'TOUR_Y (/ (* (length (%find (ival f) 1)) MAX_VAL)
+			    (+ (length (%find (ival f) 1)) 
+			       (length (%find (ival f) 0)))))
+      (put var 'TOUR_Y MAX_VAL))
+    (if (and (listp (car (fval f))) (listp (%find (ival f) 0)))
+	(put var 'NEZ_TAILLE (/ (* (length (car (fval f))) MAX_VAL)
+				(length (%find (ival f) 0))))
+      (put var 'NEZ_TAILLE (/ MAX_VAL 2)))
+    (put var 'MOUSTACHES (- MAX_VAL (get var 'NEZ_TAILLE))))
+
+
+
+; Partie d'animation de l'execution des fonctions ;
+
+; Les donnees suivantes sont fonction de l'execution de la fonction ;
+
+;    - BOUCHE_TAILLE    : init = 0.25 longeur ou valeur des argument augmentes : ;
+			; incr = zeroPun decroisse incr = nzeroPun ;
+;    - BOUCHE_OUVERTURE : arguments changes / nombre d'argument ;
+;    - OEIL_TAILLE      : si auto-recursion : incr = -0.05 si non incr = 0.1, debut = 0.5 ;
+;    - OEIL_OUVERTURE   : entree : incr = 0.1 sortie : incr = -0.1 ;
+
+(de f-entree (f environ)
+    (ifn (eq --dface-- environ) (setq --dface-- environ))
+    (let ((cur (get environ f))
+	  (args (car (fval f))))
+      (ifn cur ()
+					; Bouche ;
+	   (ifn args ()
+					; taille de la bouche ;
+		(ifn (get cur 'args-values) (put cur 'args-values (gensym)))
+		(let ((old-somme (get cur 'args-somme))
+		      (new-somme 0)
+		      (cur-v (get cur 'args-values))
+		      (changed 0))
+		  (mapc args
+			(lambda (x)
+			  (let (x-val (eval x))
+			    (if (neq x-val (get cur-v x)) (setq changed (+ 1 changed)))
+			    (put cur-v x x-val)
+			    (cond
+			     ((listp x-val) (setq new-somme (+ new-somme (length x-val))))
+			     ((numbp x-val) (setq new-somme (+ new-somme x-val)))))))
+		  (put cur 'args-sommes new-somme)
+		  (if old-somme 
+		      (let (BT (get cur 'BOUCHE_TAILLE))
+			(put cur 'BOUCHE_TAILLE
+			     (+ BT
+				(if (> new-somme old-somme)
+				    (if (< BT MAX_VAL) zeroPun)
+				  (if (> BT MAX_VAL) nzeroPun
+				    0))))))
+
+					; ouverture de la bouche ;
+		  (put cur 'BOUCHE_OUVERTURE (/ (* changed MAX_VAL) (length args)))
+		  (RedessineBouche cur f --dface--)))
+
+					; taille de l'oeil ;
+		  
+	   (let (OT (get cur 'OEIL_TAILLE))
+	     (put cur 'OEIL_TAILLE
+		(+ OT
+		   (if (eval `(chemin ,f ,f)) 
+		       (if (> OT (/ MAX_VAL 4)) (/ MAX_VAL (- 20)))
+		     (if (< OT MAX_VAL) (/ MAX_VAL 20)
+		       0)))))
+
+					; ouverture de l'oeil ;
+	   (if (< (get cur 'OEIL_OUVERTURE) MAX_VAL)
+	       (put cur 'OEIL_OUVERTURE (+ (get cur 'OEIL_OUVERTURE) (/ MAX_VAL 10))))
+	   (RedessineOeil cur f --dface--))))
+
+
+(de f-sortie (f environ)
+    (ifn (eq --dface-- environ) (setq --dface-- environ))
+    (let (cur (get environ f))
+      (ifn cur ()
+	   (if (> (get cur 'OEIL_OUVERTURE) 0)
+	       (put cur 'OEIL_OUVERTURE (- (get cur 'OEIL_OUVERTURE) zeroPun)))
+	   (RedessineOeil cur f --dface--))))
+
+
+	     
+
+<

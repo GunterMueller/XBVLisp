@@ -1,0 +1,40 @@
+^bibliographie
+^
+bibliographie
+
+	1) Asente Paul J. et Swick Ralph R. , X Window System Toolkit,
+	Digital Press, 1990. 
+	2) GREUSSAY Patrick, VLISP-11: Manuel de Reference, Departement
+	Informatique, Universite Paris 8, Janvier 1979. 
+	3) GREUSSAY Patrick, Le Systeme VLISP-UNIX, Departement Informatique,
+	Universite Paris 8, Janvier 1982.  
+	4) JONES Oliver, Introduction to the Window X System, Prentice Hall,
+	1989. 
+	5) NYE Adrian, Xlib Programming Manual, O'Reilly & Associates, 1990.
+	6) MEHAT Jean, Elements de Programmation Avec X, Departement
+	d'Informatique Universite de Paris 8, 1991. 
+	7) SENDOYA Ernesto, Etude et Realisation d'une Interface X pour
+	bVLISP,Universite Paris 8, DEA D'intelligence Artificielle, 1991.  
+	8) WERTZ Harald, Un Systeme de Comprehension, d'amelioration et de
+	Correction de Programmes Incorrects, Universite Paris 6, These de
+	3eme cycle, 1978.  
+	9) WERTZ Harald, The Design of an Integrated, Interactive and
+	Incremental Environement, pp. 157-165 dans Proc. 4th International
+	Conference on Software Engineering, Munchen (RFA), Sept. 1979.  
+	10) WERTZ Harald, A Systeme to Improve Incorrect Programs, pp. 286-293
+	dans Proc. 6th International Conference on Software Engineering,
+	Tokyo, 1982.  
+	11) WERTZ Harald, ETUDE, REALISATION ET EVALUATION D'UN ENVIRONNEMENT
+	DE PROGRAMMATION UTILISANT DES REPRESENTATIONS MULTIPLES POUR LE
+	DEVELOPPEMENT CONTINU DE LOGICIELS TRES EVOLUES, These de Doctorat
+	d'Etat, 1983.	
+	12) WERTZ Harald, An Integrated, Interative and Incremental
+	Programming Environnement for the Developement de Complex Systems,
+	pp. 235-250 dans Integrated Interactive Computing Systems, ed P.
+	Degano & E. Sandewall, North-Holland, Amsterdam, New York, Oxford,
+	1983.
+	13) WERTZ Harald, An Integrated, Interative and Incremental
+	Programming Environnement, dans Proc. AMC SIGSOFT/SIGPLAN
+	Symposium on Higth-Level Debugging, Assilomar (USA), mars 1983.
+	14) WERTZ Harald, (Common) LISP une introduction a la programmation,
+	Masson, 2eme editon, 1989. 

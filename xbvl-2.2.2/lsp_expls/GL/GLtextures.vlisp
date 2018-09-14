@@ -1,0 +1,76 @@
+; exemple d'application de textures à des objets graphiques en Open GL sous
+; Xbvl.
+
+(setq defun 'de)
+
+; initialisation d'un fenêtre d'interface avec Open GL
+(defun init_gl (label)
+  (let (root (xCreateWidget 'a "ApplicationShell" "title" label))
+    (let (form (xCreateWidget 'f "awBox" 'a))
+      (let ((quit (xCreateWidget 'quit "awCommand" form "label" "Fin de la démo"))
+	    (sp_m (xCreateWidget 'sph "awCommand" form "label" "Interp. Sphère"))
+	    (filt (xCreateWidget 'flt "awCommand" form "label" "Filtre +proche"))
+	    (gl   (GLwinopen 'gl form "width" 470 "height" 300)))
+	(xAddCallback quit "callback" (strcat "(xRemoveWidget '" root ")"))
+	(xAddCallback filt "callback" (strcat "(switch_filter '" filt ")"))
+	(xAddCallback sp_m "callback" (strcat "(switch_gen_mode '" sp_m ")"))
+	(setq switch_filter nil) 
+	(setq switch_gen_mode nil) 
+	(xRealizeWaiting root)
+	(GLdrive gl)
+	gl))))
+
+
+; Initialisation des textures (paramètres non modifiés)
+
+(defun init_texture (expr)
+  (eval expr)
+  (GLtexEnv "GL_TEXTURE_ENV_MODE" "GL_MODULATE")
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_WRAP_S" "GL_REPEAT")
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_WRAP_T" "GL_REPEAT")
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_MAG_FILTER" "GL_NEAREST")
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_MIN_FILTER" "GL_NEAREST")
+  (GLtexGen "GL_S" "GL_TEXTIRE_GEN_MODE" "GL_SPHERE_MAP")
+  (GLtexGen "GL_T" "GL_TEXTIRE_GEN_MODE" "GL_SPHERE_MAP")
+  (GLenable "GL_TEXTURE_GEN_S")
+  (GLenable "GL_TEXTURE_GEN_T")
+  (GLenable "GL_TEXTURE_2D"))
+
+; Paramètrisation des textures
+
+(defun switch_filter (wdg)
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_MAG_FILTER" (or (and switch_filter "GL_LINEAR") "GL_NEAREST"))
+  (GLtexParameter "GL_TEXTURE_2D" "GL_TEXTURE_MIN_FILTER" (or (and switch_filter "GL_LINEAR") "GL_NEAREST"))
+  (xSetValues wdg "label" (or (and switch_filter "Filtre linéaire") "Filtre +proche"))
+  (setq switch_filter (null switch_filter)))
+
+(defun switch_gen_mode (wdg)
+  (cond
+   (switch_gen_mode
+    (GLtexGen "GL_S" "GL_TEXTIRE_GEN_MODE" "GL_SPHERE_MAP")
+    (GLtexGen "GL_T" "GL_TEXTIRE_GEN_MODE" "GL_SPHERE_MAP")
+    (GLenable "GL_TEXTURE_GEN_S")
+    (GLenable "GL_TEXTURE_GEN_T")
+    (xSetValues wdg "label" "Interp. Sphère"))
+   (t
+    (GLdisable "GL_TEXTURE_GEN_S")
+    (GLdisable "GL_TEXTURE_GEN_T")
+    (xSetValues wdg "label" "Interp. planaire")))
+  (setq switch_gen_mode (null switch_gen_mode)))
+
+; démo 1 : mapping d'une photo sur un polygone
+; la photo texturée est un fichier rgb (photo.rgb)
+
+(defun demo_photo (have_gl)
+  (ifn have_gl (init_gl "Démo Photo"))
+  (init_texture '(GLtexRGB "photo.rgb"))
+  (let (liste (GLnewlist))
+    (GLbgn "GL_QUADS")
+    (GLtexCoord 0 0) (GLvertex 3 20 20 0)
+    (GLtexCoord 0 1) (GLvertex 3 20 100 0)
+    (GLtexCoord 1 1) (GLvertex 3 100 100 0)
+    (GLtexCoord 1 0) (GLvertex 3 100 20 0)
+    (GLend)
+    (GLendlist)
+    (GLrootlist liste)))
+

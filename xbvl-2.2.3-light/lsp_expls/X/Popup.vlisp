@@ -1,0 +1,55 @@
+;;
+; exemple d'une hierarchie de widgets po-pup.
+; On cree un menu utilisant un po-pup
+; le widget racine est situe a la position du pointeur de la souris.
+;;
+
+(de popup(mode)
+    (if (iswidget 'popup  "OverrideShell")
+	()
+      (xCreateWidget 'popup "OverrideShell" (xwinp))
+      (let(-box- (xCreateWidget 'box-pop "awBox" 'popup
+				"background" "gray"))
+	(creeCommand  -box- " PREMIER  ")
+	(creeCommand  -box- " DEUXIEME ")	
+	(creeCommand  -box- "TROISIEME ")
+	(creeCommand  -box- "QUATRIEME ")
+	(creeCommand  -box- "CINQUIEME ")))
+    (place-popup 'popup mode))
+
+;;
+; creation du widget command.
+;;
+
+(de creeCommand( -conteneur- name )
+    (let (-command-
+	  (xCreateWidget name "awCommand"  -conteneur-))
+      (xAddCallback  -command-  "callback" (strcat "(progn (print '" name") (xPopdown popup))"))
+      -command-   ))
+
+
+;;
+; affiche le menu a la position du pointeur de la souris,
+;;
+
+(de place-popup (-popup- mode)
+    (let (-pospointer- (xGetPosPointer))
+      (xSetValues -popup-
+		  "x" (- (car -pospointer-) 10)
+		  "y" (- (cadr -pospointer-) 10)))
+    (xPopup -popup- mode)
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+

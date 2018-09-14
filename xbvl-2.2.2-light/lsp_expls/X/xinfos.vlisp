@@ -1,0 +1,51 @@
+					;
+					; affiche les valeurs des ressources de la hierarchie des 
+					; widgettes d'une interface.
+					;
+(de xinfos ( top win canvas )
+    (if (null canvas)
+	(if (null win)(progn
+			(print "titre: " (xGetValuesw "title" top nil nil)
+			       " non: "  top
+			       " IconName: "(xGetValuesw "iconName" top nil nil))
+			(print "geometry: "   (xGetValuesw "geometry" top nil) )
+			(print "minWidth: "   (xGetValuesw "minWidth" top nil) 
+			       " minHeight: " (xGetValuesw "minHeight" top nil)
+			       " maxWidth: "  (xGetValuesw "maxWidth" top nil) 
+			       " maxHeight: " (xGetValuesw "maxHeight" top nil ) )
+			(print "wmTimeout: " (xGetValuesw "wmTimeout" top nil)
+			       " transient: "(xGetValuesw "transient" top nil)
+			       " waitForWm " (xGetValuesw "waitforwm" top nil))
+			(print-core-ressources top nil))
+	  (progn
+	    (print  " non: "  top "." win )
+	    (print "displayPosition: " (xGetValuesw "displayPosition" top win)
+		   " insertPosition: " (xGetValuesw "insertPosition" top win)
+		   " leftMargin: " (xGetValuesw "leftMargin" top win)
+		   " length: " (xGetValuesw "length" top win))
+	    (print "horizDistance: " (xGetValuesw "horizDistance" top win canvas)
+		   " vertDistance: " (xGetValuesw "vertDistance" top win canvas))
+	    (print-core-ressources top win nil)))
+      (print  " non: "  top "." canvas "."  win )
+      (print-core-ressources top win canvas)
+      )
+    )
+					;
+					; affiche les ressources de la racine de la hierarchie
+					;              la widgette Core
+					;
+(de print-core-ressources ( top win canvas )
+		       (progn
+			 (print "x: " (xGetValuesw "x" top win canvas) 
+				" y: " (xGetValuesw "y" top win canvas)
+				" width: "  (xGetValuesw "width" top win canvas) 
+				" heigth: "  (xGetValuesw "height" top win canvas)
+				" borderWidth: " (xGetValuesw "borderWidth" top win canvas))
+			 (print "background: " (xGetValuesw "background" top win canvas)
+				" foreground: " (xGetValuesw "foreground" top win canvas)
+				" borderColor: " (xGetValuesw "borderColor" top win canvas))
+			 t
+			 )
+		       )
+
+

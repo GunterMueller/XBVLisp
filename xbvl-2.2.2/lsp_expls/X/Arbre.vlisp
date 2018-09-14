@@ -1,0 +1,53 @@
+;;
+;test du representation des listes utilisant un widget Tree.
+;;
+
+;
+; une interface qui controle sa pressentation par des callbacks.
+;
+;
+
+;;
+;pour compativilite des versions 
+;;
+
+(de Arbre(-list-)
+    (if (iswidget 'Arbre-demo "ApplicationShell") ()
+      (xCreateWidget 'Arbre-demo "ApplicationShell" "x" 0 "y" -1 )
+      (xCreateWidget "Arbre-viewport" "awViewport" 'Arbre-demo
+		     "allowVert"  "True"
+		     "allowHoriz" "True"
+		     "width" 300
+		     "height" 300
+		     "useRight"    "True"  	    ))
+    (if (iswidget 'arbre "awTree")(xRemoveWidget 'arbre))
+    (let (-tree-  (xCreateWidget "arbre" "awTree" Arbre-viewport)) 
+      (if (listp -list-) 
+	  (creeNewDeriv -tree- nil -list-)
+	(creeArbreL -tree- nil -list-))
+      (xRealize 'Arbre-demo)
+      t
+      ))
+;;
+;
+;;
+(de creeNewDeriv (-treew- -superieur- -list-)
+    (let ( -newNode- ( xCreateTreeNode " " -treew- -superieur- ))
+      (creeArbreL -treew- -newNode- -list-) 
+      -newNode-
+      ))
+;;
+;
+;;
+
+(de creeArbreL (-treew- -superieur- -list- )
+    (cond
+     ((null -list-) t)
+     ((listp (car -list-)) 
+      (let (-newNode- (creeNewDeriv -treew- -superieur- (car -list-)))
+	(creeArbreL -treew- -newNode- (cdr -list-)))
+      (t ( let ( -continue- (xCreateTreeNode (car -list- ) -treew- -superieur-))
+	  (creeArbreL -treew- -continue- (cdr -list-) ))))))
+
+
+

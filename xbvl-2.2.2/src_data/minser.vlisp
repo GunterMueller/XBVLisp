@@ -1,0 +1,57 @@
+; ------ minser : pour completer des series numeriques --------- ;
+
+(dm seta (call) (rplacb call
+  ['set ['nth (caddr call) (cadr call)] (cadr (cddr call))]))
+
+(dm elm (call) (rplacb call
+  ['car ['nth (caddr call) (cadr call)]]))
+
+(dm send (call) (rplacb call
+  ['setq '$target (cadr call) '$msg (caddr call)]))
+
+(de m.series (let)
+  (setq ls 0 lk 0 status () start 0 3-uples nil)
+  (send 'initialiser let)
+  (while (neq $target 'fini)
+         ($target $msg))
+  (print $msg let)
+  (print '3-uples 3-uples)
+  'ok)
+
+(de initialiser (let)
+  (if (null let) (send 'newstart (1+ start))
+        (setq lk (1+ lk) status [nil . status])
+        (if (neq (nextl let) '?) (incr ls))
+        (initialiser let)))
+
+(de newstart (msg)
+  (setq start msg)
+  (cond
+        ((> start lk) (send 'fini 'succes))
+        ((elm status start) (newstart (1+ start)))
+        (t (send 'newmove 1))))
+
+(de newmove (msg)
+  (setq move msg)
+  (if (> (+ start (* move 2)) ls) (send 'fini 'echec)
+        (setq inc (- (setq predicted (elm let (+ start move)))
+                     (elm let start))
+               predicted (+ predicted inc))
+        (send 'verifier (+ start (* move 2)))))
+
+(de verifier (x) (cond
+  ((> x ls) (setq 3-uples [[start move inc] . 3-uples])
+            (send 'completer start))
+  ((neq predicted (elm let x)) (send 'newmove (1+ move)))
+  (t (setq predicted (+ predicted inc))
+     (verifier (+ x move)))))
+
+(de completer(x)
+  (if (> x lk) (send 'newstart (1+ start))
+        (seta status x t)
+        (and (> x ls)
+          (seta let x predicted)
+          (setq predicted (+ predicted inc)))
+        (completer (+ x move))))
+(de ed () (sh "ed minser.vlisp") (lib minser))
+(print "Lancer avec (m.series '(x x x x ? ? ?))")

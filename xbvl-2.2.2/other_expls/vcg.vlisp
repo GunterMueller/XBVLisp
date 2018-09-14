@@ -1,0 +1,188 @@
+;(print 
+;"un Generateur de Condition de Verification, d'apres C.A.R. Hoare,
+;                 par Harald Wertz ")
+
+
+(de vcg (prog pre post vcs)(vcg1 prog regles pre post vcs 
+    (if -trace- regl1))))
+
+(de vcg1 (prog regl pre post vcs regg)
+    (cond
+        ((null regl)(print "erreur dans le programme"))
+        ((spefiltre (caar regl) prog)
+          ; le CAR de la regle est le filtre ;
+          (p-p-p)
+          (eval (cadar regl))
+          ; le CDR est l'action ;)
+        ((vcg1 prog (cdr regl) pre post vcs (cdr regg))) ))))
+
+(de filtrage (filtre donnee xxx)(cond
+        ((null filtre) (null donnee))
+        ((null donnee) nil)
+        ((setq xxx (varp (car filtre)))
+		(nextl filtre)
+                (set xxx (nextl donnee))
+                (filtrage filtre donnee))
+        ((eq (car filtre)(car donnee))
+                (filtrage (cdr filtre)(cdr donnee)))
+        ((setq xxx (varp filtre))(set xxx donnee))
+        ((atom (car filtre)) nil)
+        ((filtrage (car filtre)(car donnee))
+                (filtrage (cdr filtre)(cdr donnee)))))
+
+; predicat pour tester si X est une variable ;
+(de varp (x)(if (and (listp x)(equal (car x) "!"))(cadr x) nil))
+
+; filtrage specialement adapte au filtre de la forme: (a ...) ;
+; ou "a" est tout sauf le dernier element                     ;
+(de spefiltre (filtre prog)
+   (if (eq (car filtre) 'a)
+        (when (filtrage (cdr filtre)(ncons (car (reverse prog))))
+            (setq a (reverse (cdr (reverse prog)))) t)
+        (filtrage filtre prog)))
+
+; prefix des variables ;
+(dmc ! () ['! (read)])
+
+; FIND cherche les assertions de la definition d'une procedure ;
+; et construit dans U et W les instantiations de ces assertions;
+(de find (f l)(escape out (mapc l
+  '(lambda (x)(if (eq f (cadr x))
+        (out (progn
+                (setq as (caddr x)
+                      u (subs vs (car x) as)
+                      w (subs vs (cadddr x) as))
+                (if (eq f (cadar rec)) nil
+                     (setq
+                        u (subs (caddddar rec) u (caddddr x))
+                        w (subs (caddddar rec) w (caddddr x))
+                        as (caddar rec)))
+                t)))))))
+
+(de caddddr (x)(caddr (cddr x)))
+(de caddddar (x) (cadddr (cdar x)))
+
+(de subs (appel condition vars)
+   (if (null vars) condition
+       (subst (car appel)(car vars)(subs (cdr appel) condition (cdr vars)))))
+
+(de subst (val var bod)(cond
+        ((eq var bod) val)
+        ((atom bod) bod)
+        ((eq (car bod) '#)
+           (cons (car bod)(cons (cadr bod)
+                (subst val var (cddr bod)))))
+        ((cons (subst val var (nextl bod))(subst val var bod)))))
+
+; impression (pour faire jolie) ;
+(de pr (l)(let ((l l)(c 1))
+   (if (null l)(print "ca y est")
+        (terpri)(print "theoreme" c ":")
+        (print (nextl l))(self l (1+ c)))))
+
+; entree (ca boucle jusqu'a ce qu'on verifie le programme NIL) ;
+(de vc (rec)(terpri)(terpri)(print "donnez le programme s.v.p.")
+        (setq prog (read))(if (null prog) "ok"
+        (print "donnez l'assertion d'entree s.v.p.")
+        (setq pre (read))(print "donnez l'assertion de sortie s.v.p.")
+        (setq post (read))
+        (princ "voulez-vous une trace? (si oui, tapez 'y')")
+        (if (eq (tyi) 121)(setq -trace- t)(setq -trace- nil))
+        (pr (vcg prog pre post))
+        (print '(tyi))(tyi)(vc rec))))))))
+
+(de ncons (el)(cons el ()))
+
+
+(setq regles '(
+
+ ; regle de consequence ;
+        ( () (cons [pre "=>" post] vcs) )
+
+ ; regle de definition de procedure ;
+        ( (procedure !f !as !es . !k)
+                (progn (setq rec [[pre f as post es] . rec])
+                (vcg k pre post vcs)))
+
+ ; regle d'affectation ;
+        ( (a (setq !x !e)) (vcg a pre (subst e x post) vcs) )
+
+ ; regle de consequence (2) ;
+        ( (a (assert-if: !b)) (vcg a pre [b "=>" post] vcs) )
+
+ ; regle de consequence (3) ;
+        ( (a (assert: !b)) (vcg a pre b (cons [b "=>" post] vcs) ) )
+
+ ; regle de l'iteration ;
+        ( (a (assert: !r (while !s . !b)))
+             (vcg a pre r (vcg b [r "et" s] r 
+                                (cons [r "et" ["non" s] "=>" post] vcs)
+                                ) ))
+
+ ; regle du conditionnel ;
+        ( (a (if !r1 !b . !c))
+             (vcg (append a [['assert-if: r1] b]) pre post
+                (vcg (append a [['assert-if: ["non" r1]] . c])
+                        pre post vcs) ))
+
+ ; regle de l'appel de procedure ;
+        ( (a (!f . !vs))
+             (if (find f rec)
+                 (vcg a pre ["^" as u "et" [w "=>" post]] vcs)
+                 ()))
+ ))
+
+(setq regl1 '(
+("regle de consequence (1):"
+"               P => Q
+              ----------
+              P {NULL} Q" )
+("regle de definition de procedure:"
+"       P {q (x; v)} R |-- P {A} R
+        --------------------------
+         P {proc. q (x; v); A} R" (P q A R))
+("regle d'affectation:"
+"               P {A} Q(e)
+            ------------------
+            P {A; x <- e} Q(x)")
+("regle de consequence (2):"
+"            P {A} Q => R
+            -------------
+            P {A; Q-if} R")
+("regle de consequence (3):"
+"             P {A} Q, Q => R
+              ---------------
+                P {A; Q} R")
+("regle de l'iteration:"
+"             P {A} R, R et S {B} R, R et (non S) => Q
+              ----------------------------------------
+                      P {A; R; while S do B} Q")
+("regle du conditionnel:"
+"             P {A; Q-if; B} R, P {A; (non Q-if); C} R
+              ----------------------------------------
+                     P {A; if Q then B else C} R")
+("regle de l'appel de procedure:"
+"       U (x; v) {q (x; v)} W (x; v)
+                P {A} U (a; e) et # a (W (a; e) => R)
+        |--     -------------------------------------
+                          P {A; q (a; e)} R")
+)))))))))
+
+(de p-p-p ()
+(if (null -trace-)()
+(terpri)
+(print "au programme")
+;  (pretty)(status print 3)
+;  (p-p prog)(status print 0)
+(print prog)
+  (terpri)(print "avec la precondition" pre )
+  (print "et la postcondition" post)
+  (print "s' applique la" (caar regg))
+  (print (cadar regg))))))))
+
+
+(de cadddr (x)(caddr (cdr x))))))
+
+(de caddar (x)(caddr (car x))))))))
+
+(print " a lancer par (vc) ")

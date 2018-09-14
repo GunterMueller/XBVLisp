@@ -1,0 +1,47 @@
+src Directory for xbvl system.
+The diferent authors of the files are :
+
+HW = Harald Wertz
+DP = Damien Ploix
+
+This directory contains a set of bvlisp system needed files as
+well as exemples of vlisp programs.
+
+The emplacment of this directory should be placed in the
+'vlisp_files.h' source file. It will be used by the system
+to retreave following files :
+
+- aidvlisp.dat and aidvlisp.:dat  = online help files. They
+	are generated from aidvl[123](fr|en).txt by the following method :
+	aidvl[123]fr.txt are the french help files for xbvl
+	aidvl[123]en.txt are the english help files for xbvl
+	aidvlisp.dat is the result of  $ cat aidvl[123](fr|en).txt > aidvlisp.dat
+	aidvlisp.:dat is the result of $ traaide < aidvlisp.dat > aidvlisp.:dat
+	traaide is just creating indexes.
+
+- bvlisp.sys			  = initialization of xbvl system.
+	This file is readed on system strarting and contains lisp definition
+	of primitives.
+
+The differents "packages" included in this directory are :
+
+- prtt.vlisp (HW)
+
+	Pretty printer and cross reference (by HW)
+	Public functions : crossfile prettyfile prettyf crossf
+
+- record.vlisp (HW)
+- match.vlisp (HW)
+- pretty.vlisp (HW)
+- mon.vlisp (HW)
+- eff.vlisp (HW)
+- EDIT.vlisp (HW)
+
+- GL-drive.vlisp (DP)
+
+	Window interface for openGL windows.
+	This file is loaded by bvlisp.sys if OPENGL is setted to t which
+	imply that OpenGL is available on the running system and monitor.
+	Public function : GLdrive
+
+

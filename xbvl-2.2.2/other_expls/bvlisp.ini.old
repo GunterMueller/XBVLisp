@@ -1,0 +1,11 @@
+(setq careful t)
+ (print "je charge Tree.vlisp") 
+ (include /ching/people/dario/xvlisp/expls/Tree.vlisp)   ;pour tester le popup bVLISP;
+ (print "je charge tfunc.vlisp")
+ (include /solair/people/damien/xbvl/tfunc.vlisp)
+ (include /solair/people/damien/xbvl/dea/widget.vlisp)
+ (inclde consp)
+ (defmacro Views (f)
+   (include /solair/people/damien/xbvl/dea/viewer.vlisp)
+   `(Views ,f))
+ (Views cons-print)

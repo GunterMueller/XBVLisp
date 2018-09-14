@@ -1,0 +1,103 @@
+^^Interface avec les Sockets
+^
+SOCKETS
+	Implémentation d'une interface entre les Sockets et xbvl.
+	Cette interface permet d'établir des liens de communication
+	de type socket entre une application quelconque et xbvl. Pour 
+	cela, les fonctionnalites suivantes sont disponibles :
+
+	La création et la destruction de sockets :  SOcreate, SOclose
+
+	La connection : SOconnect, SOlisten
+
+	Le dialogue : SOwrite, SOread
+
+	La récupération du hostname : SOhostname
+^
+SOcreate
+(SOcreate domain type protocol) SUBR3
+	SOcreate crée un point de communication et retourne son
+	descripteur. 
+
+	domain: "INET" pour internet (i.e. reseau), "RAW" (Lien protocol),
+		"UNIX" (BSD 4.3)
+	type: "STREAM", "DGRAM", "RAW"
+	protocol: "TCP", "UDP", type du protocol.
+
+	exemple:
+		(setq aSocket (SOcreate "INET" "STREAM" "TCP"))
+
+^
+SOclose
+(SOclose aSocketDescriptor)	SUBR1
+	SOclose ferme un point de communication.
+
+	aSocketDescriptor: un descripteur de socket retourné par SOcreate.
+
+	exemple:
+		(SOclose aSocket)
+^
+SOconnect
+(SOconnect aSocketDescriptor hostName port)	SUBR3
+	initialize une connexion sur une socket.
+
+	aSocketDescriptor: un descripteur de socket retourné par SOcreate.
+	hostName: nom de la machine hôte à contacter ou "ANY".
+	port: numéro de port de communication.
+
+	exemple:
+		(SOconnect aSocket "droopy" 5010) ; essaye de créer une
+			; connexion avec droopy sur le port 5010
+		(SOconnect aSocket "ANY" 5010) ; ouvre une connexion
+			; générale.
+
+	voir SOlisten
+^
+SOlisten
+(SOlisten aSocketDescriptor n)	SUBR2
+	Pour accepter des connexions et définir la taille de la file
+	d'attente de paquets entrants.
+
+	aSocketDescriptor: un descripteur de socket retourné par SOcreate.
+	n: taille de la file d'attente
+
+	exemple:
+		(SOlisten aSocket 3)
+^
+SOwrite
+(SOwrite aSocketDescriptor expr)	SUBR2
+	Ecrire une expression Lisp sur le descripteur.
+
+	aSocketDescriptor: un descripteur de socket retourné par SOcreate.
+	expr: une expression Lisp. Si l'expression est le nom d'une
+		fonction, LISP transmetera automatiquement la définition de la
+		fonction.
+
+	exemple:
+		(SOwrite aSocket '(print '(foo bar)))
+		(de foo (l) (car l))
+		(SOwrite aSocket foo)
+^
+SOread
+(SOread aSocketDescriptor [min sec])
+	Lire une expression Lisp sur le descripteur.
+
+	aSocketDescriptor: un descripteur de socket retourné par SOcreate.
+	min sec: paramètres optionels, permettent de définir le timeout de
+		la lecture.
+
+	exemple:
+		? (SOread aSocket)
+		= (print '(foo bar))
+		? (SOread aSocket 0 50)
+		= (print '(foo bar))
+	voir aussi SOwrite.
+^
+SOhostname
+(SOhostname) SUBR0
+	retourne le nom de la machine hôte.
+
+	exemple:
+		? (SOhostname)
+		= droopy
+

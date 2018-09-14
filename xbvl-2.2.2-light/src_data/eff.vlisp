@@ -1,0 +1,190 @@
+; 		-------- le micro-editeur "ef" ----------
+;		adapte a partir de "ef" de P. Greussay
+;		avec un minimum de version management
+
+(setq --x-- careful careful nil)
+
+(package ef)
+
+(setq VERSION 0 *** ())
+(setq version 0)
+
+(df |mv (l ;; x)
+  (EXEM1)
+  (while l (setq x (nextl l))
+           (setq |** (if (numbp x) 
+	   	(progn (setq *** (if (> x 1)(nth (1- x) |**)()))(nth x |**))
+		(setq *** |**)(car |**))))
+  (|p 2))
+
+(df |ajout-entree (l) (EXEM1)
+	(let ((y  (getcar |**)))
+	  (let ((z (member '|entree y)))
+		(if z
+		(rplacd y
+		  (cons (cons (car l) (cadr z)) 
+			(delete '|entree (delete (cadr z) (cdr y)))))
+		(putcar |** [(car l)]))
+		(putcar |** '|entree))))
+
+(df |ajout-sortie(l) (EXEM1)
+	(let ((y (getcar |**)))
+	  (let ((z (member '|sortie y)))
+		(if z
+		(rplacd y  
+		  (cons (cons (car l) (cadr z)) 
+			(delete '|sortie (delete (cadr z) (cdr y)))))
+		(putcar |** [(car l)]))
+		(putcar |** '|sortie))))
+
+(df |acar (l) (EXEM1)
+	(|mapc (reverse l) (lambda (x)(putcar |** x)))(|p 2))
+
+(df |acdr (l) (EXEM1)
+	(|mapc (reverse l) (lambda (x)(putcdr |** x)))(|p 2))
+
+(df |gcdr () (EXEM1)(getcdr |**))
+
+(df |gcar () (EXEM1)(getcar |**))
+
+(de sprint (n l)        ; pour imprimer l'expression l sur n niveaux
+  (if (null n)(setq n 1))
+  (|pretty)(status print 3)
+  (|p-p (if (or (atom l) (= n 0)) l (sprc l 0 n)))(status print 0)(terpri))
+
+(de sprc (l n1 n2) (cond
+  ((null l) nil)
+  ((> n1 n2) '|*)
+  ((atom l) l)
+  ([(sprc (nextl l) (1+ n1) n2) . (sprc l n1 n2)])))
+
+(de find (l a p x) (cond          ; pour aider fk et fp
+  ((atom l) (setq *** nil))
+  ((and a (equal (car l) a)) (setq *** (if (eq l x)() x)) l)
+  ((and p (filter (car l) p)) (setq *** (if (eq l x)() x)) l)
+  ((or (find (car l) a p l) (find (cdr l) a p l)))))
+
+(de filter (d p) (cond
+  ((eq p '|*))                   ; Ex. d'un tel filtre : (cond . *)
+  ((null p) (null d))
+  ((atom (car p))
+   (if (or (eq (car p) '|*) (eq (car p) (car d)))
+       (filter (cdr d) (cdr p))))
+  ((filter (nextl d) (nextl p)) (filter d p))))
+
+(df |ef (f) (setq |** (fval (car f)))      ; L'editeur lui-meme
+	   (if (null |**)(print "faudrait bien donner une fonction")
+	   (setq FONCTION (car f))
+	   (|menu)
+	   (EXEMPLE)
+		(|p 1)))
+
+(de EXEMPLE (-x-)
+	(EXEM1)
+	(setq -x- (|%find (ival FONCTION) 100))
+	(if -x-
+	    (if (null (car -x-))
+		(rplaca -x- t))))
+
+(de EXEM1 ()
+	(if (boundp 'FONCTION) ()
+	(print 
+	"il vaudrait peut-etre mieux de d'abord faire un (ef nom_de_fonction)")
+	(unwind)))
+
+(de |p(n)(EXEM1) (sprint n |**) '|*)
+
+
+(df |il (e)                      ; (il e1 e2 ... eN)
+  (EXEMPLE)
+  (putversion 'putcdr (last |**) nil)
+  (nconc |** e)
+  (|p 2))
+
+(df |i (l)
+  (EXEMPLE)
+  (if (null ***)()(putversion 'putcdr *** (copy |**)))
+  (nconc l (cons (car |**) (cdr |**)))
+  (rplacb |** l)
+  (|p 2))
+
+(df |fp (f)
+  (EXEM1)
+  (setq |** (find |** nil (car f) |**))
+  (|p 2))
+
+(df |fk (a ;; x)
+  (EXEM1)
+  (setq x (find |** (car a) nil |**))
+  (if x (setq |** x)
+        (print "pas trouve"))
+  (|p 2))
+
+(de putversion (ftn x y alle zz)
+  (setq alle (alle (append (cdr (getcar x))(cdr (getcdr x))) 0))
+  (ftn x [y])
+  (ftn x ['|version VERSION (+ version alle)]))
+
+(de alle (l n)(cond
+   ((null l) (if zz (1+ n) 0))
+   ((and (listp (car l))(eq (caar l) '|version)(eq (cadr (car l)) VERSION))
+	(setq zz t)
+	(alle (cddr l)(if (> (caddr (car l)) n) (caddr (car l)) n)))
+   (t (alle (cddr l) n))))
+
+(de |d (n ;; x)
+  (EXEMPLE)
+  (if (null n)(setq n 1))
+  (setq x (copy (car |**)))
+  (repeat n (rplacb |** (cdr |**)))
+  (putversion 'putcar |** x)
+  (|p 2))
+
+(df |dl (;; x)
+   (EXEMPLE)
+  (setq x |**) (while (cddr x) (nextl x))
+  (putversion 'putcar x (copy (cadr x)))
+  (rplacd x) (|p 2))
+
+(de |new-version ()(incr VERSION))
+
+(de |voir-version (n) (vversion (fval FONCTION)))
+
+(de vversion (l ;; x)(cond
+	((atom l) l)
+	((setq x (findversion (getcar l)))
+	     (cons (vversion x)
+		(vversion 
+		  (if (setq x (findversion (getcdr l))) x (cdr l)))))
+	((setq x (findversion (getcdr l)))(cons (car l)(vversion x)))
+	((atom (car l)) (cons (car l)(vversion (cdr l))))
+	(t (cons (vversion (car l))(vversion (cdr l))))))
+
+
+(de findversion (l)
+	(now (getit (cdr l)) () -1))
+
+(de getit (l)(cond
+	((null l) ())
+ 	((and (listp (car l))(eq (caar l) '|version)(eq (cadr (car l)) n))
+	   (cons (cons (caddr (car l))(cadr l))(getit (cddr l))))
+	(t (getit (cddr l)))))
+
+(de now (l res n)(cond
+	((null l) res)
+	((> (caar l) n)(now (cdr l)(cadr (car l))(caar l)))
+	(t (now (cdr l) res n))))
+
+(de |TR ()
+(|trace getit now findversion vversion))
+(de |effmenu ()
+(make-menu
+"ef ftn, d dele, i insert, il insert last, mv move, fp fk cherche, acar, gcar,"
+"ajout-entree, ajout-sortie, voir-version, new-version, dl d last, acdr, gcdr,"
+)(menu))
+
+(|effmenu)
+
+(package)
+
+(careful --x--)

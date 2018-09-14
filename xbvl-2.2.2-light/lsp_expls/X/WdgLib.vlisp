@@ -1,0 +1,68 @@
+;;
+; UNE LIBRERIE DES FONCTIONS DE MANIPULATION DE WIDGETS
+;;
+
+; des fonctions utils pour creer des widgets:
+;;
+(de creeBitmaps (pere dir lbitm)
+    (if (null lbitm) 'fini
+      (let (-command- (xCreateWidget (car lbitm)  "awCommand" pere
+				      "bitmap"      (strcat dir (car lbitm))
+				      "borderWidth"             4
+				      "foreground"       (getNewColor)	      ))
+	(default-callback -command-))
+      (creeBitmaps pere  dir (cdr lbitm))               
+      )
+    )
+
+;;
+; le callback par default inverse les couleurs du widget et retourne le nom
+;;
+(de default-callback (-widget-)
+    (xAddCallback -widget- "callback" "(inverseWidget '$O )") )
+;;
+; retourne une nouvelle couleur exprime en RGB ; 
+;;
+
+(de getNewColor () 
+    (strcat "#"
+	    '("F00" "0F0" "00F" "0FF" "F0F" "FF0" "CAF" "9FF" "FBB" "CCC" "FAA" "FF0" "CC0" "C0C"))
+    )
+
+
+;;
+; fait de bruit
+;;
+(de faire-bruit ()
+    (repeat 10
+       (let (n -100)
+	  (repeat 200 (xBeep (incr n))))
+       (sleep 1))))
+
+;;
+;inverse les couleurs du fond et du dessin du widget passe en parametre.
+; Note: Le type "Pixel" doit etre connu par xGetValues
+;;
+
+(de inverseWidget(widget)
+    (if (not(iswidget widget)) nil
+      (let (foreground (xGetValues widget  "foreground"  "Int"))
+	(let (bakground (xGetValues widget "background"  "Int"))
+	  (xSetValues widget
+		      "foreground"  bakground	
+		      "background"  foreground ) )
+	t      )))
+
+;
+;
+
+(de chgWdgColors(widget bak for bord width)
+    (if (and (numbp bak)(numbp for)(numbp bord) (numbp width))
+	(xSetValues widget
+		 "foreground" for
+		 "background"  bak
+		 "borderColor" bord 
+		 "borderWidth" width)
+      'mauvais-arguments      ))
+
+

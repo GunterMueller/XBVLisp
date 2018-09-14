@@ -1,0 +1,200 @@
+;
+; une interface qui controle sa pressentation par des callbacks.
+;
+
+;
+(de xDemo3()
+    (if (iswidget 'xDemo3 "ApplicationShell") (xRemoveWidget 'xDemo3))
+    (let ((top (xCreateWidget 'xDemo3 "ApplicationShell" )) (LINEAS 8)(COLOS 40))
+      (let (form (xCreateWidget "form3" "awForm" top ))
+	(let (lispwin (xCreateWidget "demoLisp" "Xbvlisp" form 
+				     "lignes"    LINEAS
+				     "colonnes"  COLOS
+				     "pages"       1   ))
+	  (print "top: " top)
+	  (print "form: " form)
+	  (print "lispWin: " lispwin LINEAS COLOS)
+	  (xSetValues top  "allowShellResize" 1)
+	  (let ((lisp-width (xGetValues  lispwin "width"  "Int"))
+		(lisp-height(xGetValues  lispwin "height" "Int")))
+	    (let (drawWin (xCreateWidget  "demoDraw" "Drawxbvl" form 
+					  "width"   lisp-width
+					  "height"  lisp-height
+					  ))
+	      (print "drawWin:" drawWin)(setq liste-W-demo3 [ lispwin  drawWin ])
+	      (let (viewport (xCreateWidget "viewport" "awViewport" form
+					    "allowVert"  "True"
+					    "allowHoriz" "True"
+					;"forceBars"      "True"
+					    "useRight"    "True"  	    ))
+		(print "wiewport :" viewport)
+		(let (box  (xCreateWidget "box" "awBox" viewport))
+		  (xCreateWidget "-Demo3-" "awLabel" box)
+		  (let (switches (creat-control-box box))
+		    (creeBitmaps box "./Icons/" (cdr fleches))
+		    (let ((boxWidth (xGetValues box "width" "Int"))
+			  (viewportWidth (xGetValues viewport "width" "Int"))
+					; (lispHeight  (xGetValues lispwin "height"  "Int"))
+					;(drawHeight  (xGetValues drawWin "height" "Int"))
+					;(drawWidth  (xGetValues drawWin "Width"  "Int"))
+			  )
+		      (print "\nboxWidth: " boxWidth " viewportWidth: " viewportWidth )
+		      (xSetValues lispwin 
+				  "fromHoriz" viewport
+				  "horizDistance" 10    )
+		      (xSetValues drawWin 
+				  "fromHoriz"  viewport 
+				  "horizDistance"  10
+				  "fromVert"     lispwin)
+		      (xSetValues viewport   "height"  (* lisp-height 2) )
+		      (xRealize  top)
+		      (xCreateWidget  "tortuga" "TortueObjetct" drawWin)
+					;(postortue top drawWin  (/ drawWidth 2) (/ drawHeight 2) 0)
+		      (enregistre-callbacks 'xDemo3)
+		      (callback (car switches) (strcat "(switch " (caddr switches) ")" ))
+		      (callback (cadr switches) (strcat "(switch " (caddr switches) ")"))
+		      t
+		    ))))))))))
+;
+;
+(de creat-control-box  (box)
+    (let (form (xCreateWidget "control-box" "awForm" box))
+	(if form (print "form Ok")
+	  (print "erreur en creation de Form\n") (break form))
+      (let (first (xCreateWidget "<-" "awCommand" form))
+	(if first (callback first (strcat "(decr-width " box ")"))
+		 (print "erreur en creation de First\n") (break first))
+	(let (second (xCreateWidget "->" "awCommand" form
+				  "fromHoriz"  first))
+	  (callback second (strcat "(incr-width " box ")"))
+	  (let (thirst (xCreateWidget "<<" "awCommand" form
+				    "fromVert" first))
+	    (callback thirst "(incr-inter)")
+	    (let (forth (xCreateWidget ">>" "awCommand" form
+				     "fromHoriz" thirst
+				     "fromVert"  second))
+	      (callback forth "(decr-inter)")
+	      (print form first second thirst forth)
+	      (let (new-form (xCreateWidget 'new-form "awForm" form
+					  "fromVert" forth))
+		(new-Switch new-form))
+	      ))))))
+
+;;
+(de decr-inter()
+    (decr-width 'demoLisp)
+    (decr-width 'demoDraw) )
+;;
+(de incr-inter()
+    (incr-width 'demoLisp)
+    (incr-width 'demoDraw))
+;;
+(de incr-width (widget)
+    (print widget)
+    (xSetValues  widget "width" (1+ (xGetValues widget "width")))
+    )
+;;
+(de decr-width (widget)
+    (print widget)
+    (xSetValues widget "width" (1- (xGetValues widget "width"))))
+
+;;
+;
+; pour creer des interrupteurs simpatiques made apb.
+;;
+
+(de new-Switch(papune)
+    (let (on (xCreateWidget 'basc "awCommand" papune
+			    "bitmap"   (strcat (getenv "HOME") "/xvlisp/icons/basc")
+			    "background"  "yellow"
+			    "foreground"    "red"               ))
+      (let (off (xCreateWidget 'basc2 "awCommand" papune
+			       "bitmap"  (strcat  (getenv "HOME")  "/xvlisp/icons/basc2")
+			       "background"             "red"
+			       "foreground"           "yellow"                           ))
+	(print " enregistrement de callbacks :")
+	(print (cons on (cons off (cons papune ()))))
+	)))
+;;
+;
+;;
+(de switch (form)
+    (mapcar liste-W-demo3 (lambda (x)( switch-manage x)) )
+    (xCircSubWidgets form 1))
+;;
+;
+;;
+(de switch-manage(widget)
+    (if (not (xUnmanage widget))
+	(xManage widget)
+      t)  )
+;;
+;
+;;
+(de enregistre-callbacks()
+    (callback  FLECHE17 "(my-stop)")
+    (callback FLECHE24 "(oblist)")
+    (callback FLECHE31 "(unwind)")
+    (callback FLECHE6  "(print\"bonjour\")") 
+    (callback FLECHE10  "(aide 'aide)")
+    (callback FLECHE18  "(aide)")   )
+;;
+;
+;;
+(de my-stop ()
+    (if (iswidget 'confirm-popup "OverrideShell") 
+	(place-popup 'confirm-popup 1)
+      (let (-pop- (xCreateWidget 'confirm-popup "OverrideShell" 'xDemo3))
+	(let(-dialog- (xCreateWidget 'dialogar "awDialog" -pop-  
+				     "label"  "VOULEZ VOUS QUITER bVLISP ?"
+				     "background" "gray"
+				     "borderWidth"  3 ))
+	  (InsertCommand  -dialog- "OUI!" "(stop)")
+	  (InsertCommand  -dialog- "NON!" "(xPopdown confirm-popup)")
+	  (InsertCommand  -dialog- "Baaa!!!" 
+			  (strcat "(dialogo  " -pop- " \"RACONTE MOI DONC CETTE HISTOIRE\"  0)" ))
+	  (place-popup 'confirm-popup 1)
+	  [ -pop- -dialog- ]))))
+;;
+;
+;;
+
+(de callback (widget message)
+    (if (not (iswidget widget)) (print "erreur : "  widget "n'est pas un widget\n")
+      (xAddCallback widget "callback" message)
+      (print "-> " widget "avec" message "enregistre")
+      ))
+
+
+;
+;pour debugger le widget d'interaction
+;
+(de oneXbvlisp() (xcreatexbvlisp "root-0" "Xbvlisp-0" 10 50 2
+		"Vamos a ver\nComo evoluciona\nEste primer Widget\n**** Made In Home ****\n au 31 r. de l'abbe Carton\ndu chemin pour en arriver la !!!!\n bon trabail Kamarade.\n\n\n perseverer !"
+		)
+    )
+
+(de xcreatexbvlisp(root interaction y x p string)
+    (let (racine (xCreateWidget root "ApplicationShell"))
+      (print racine)
+      (cond 
+       ((and (iswidget racine) (numbp y) (numbp x) (numbp p) (stringp string))
+	(let ( interact (xCreateWidget interaction "Xbvlisp" racine 
+				     "colonnes"   x 
+				     "lignes"     y
+				     "pages"      p
+				     "editType" "edit"
+				     "string"   string                    ) )
+	  (if (not interact)
+	      (progn (xRemoveWidget racine) 'Big-Bugg-xreeWidget)
+	    (xRealize racine)
+	    (cons racine (cons interact () )))
+	  ))
+       ((iswidget racine) (xRemoveWidget racine) 'mauvais-arguments)
+       (t 'rien-du-tou)
+       )
+      )
+    )
+
+
+

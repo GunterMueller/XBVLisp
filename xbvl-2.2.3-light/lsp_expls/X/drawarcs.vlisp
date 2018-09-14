@@ -1,0 +1,13 @@
+
+; essai de xDrawArcs
+
+(ifn (iswidget 'exemple1-root )
+     (xCreateXbvlisp 'exemple1 40 47 0 0 1)
+     (xflush)(sleep 2) )
+
+(let ( n 0)
+  (repeat 100
+	  (xDrawArcs 'exemple1 
+		     4 4	
+		     400  (+ 100 (incr n 5))
+		     0 (* 60 360))))

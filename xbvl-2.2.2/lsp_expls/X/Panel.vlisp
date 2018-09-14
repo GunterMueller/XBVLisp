@@ -1,0 +1,52 @@
+
+;;
+; pour creer des interfaces utilisant des widgets panels
+;;
+
+(de InitPanel (panel-name)
+    (let (root-w (xCreateWidget (strcat "root-" panel-name ) "ApplicationShell" 
+				"allowShellResize"  "True" ))
+      (let (-panel-(xCreateWidget  panel-name  "awPaned" root-w))
+	[root-w -panel-] )))
+
+
+;;
+
+(de Panel ( name )
+    (let ( p-hierarchie (InitPanel name))
+      (let ((-root- (car p-hierarchie))( -panel- (cadr p-hierarchie)))
+	(if (null -panel-) "Erreur de creation de VPaned"
+	  (let (-bvl- (InsertXbvlisp -panel- 'bvlisp 10 50 5))
+	    (if (null -bvl-)
+		(progn (xRemoveWidget -root-)
+		       "Erreur de creation de Xbvlisp1")
+	      (let (-bvl1- (InsertXbvlisp -panel- 'bvlisp1 5 50 5))
+		(xSetValues -bvl1- "fromVert" -bvl-)
+		(xSetValues -panel- "width" (xGetWidgetWidth -bvl-))
+		(xSetValues -panel- "height"
+			    (+ (xGetWidgetHeight -bvl-) (xGetWidgetHeight -bvl1-)))
+	      (xRealize -root-)
+	      [ -root- -panel- -bvl- -bvl1- ]
+	      )))))))
+
+
+; fait le travail de creation d'un la hierarchie Xbvlisp  ;
+(de InsertXbvlisp( -conteneur- w-name nlignes colonnes pages)
+    (xCreateWidget w-name "Xbvlisp" -conteneur-
+		   "font" "10x20"
+		   "lignes"      nlignes
+		   "colonnes"    colonnes
+		   "pages"       pages )   )
+
+;;
+;
+;;
+(de xGetWidgetHeight (-w-) 
+    (xGetValues -w- "height"))
+(de xGetWidgetWidth  (-w-)  
+    (xGetValues -w- "width"))
+	
+;
+; appel
+;
+(InitPanel 'exemple)

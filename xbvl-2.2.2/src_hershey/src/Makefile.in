@@ -1,0 +1,68 @@
+# Makefile.in --- Xbvlisp
+# Copyright (C) 1997
+#   Damien Ploix <damien@ai.univ-paris8.fr>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+########################################################################
+
+SHELL = /bin/sh
+CC = @CC@
+CPP = @CPP@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+srcincdir = $(top_srcdir)/include 
+libdir = @libdir@
+
+VPATH = @srcdir@
+FONTLIB = $(libdir)/hershey
+
+CPPFLAGS = @CPPFLAGS@ 
+SYS_CFLAGS = @SYS_CFLAGS@
+DEFS = @DEFS@ @OPEN_GL@ 
+CFLAGS = -O4 -DFONTLIB=\"$(FONTLIB)\"
+
+ALL_CFLAGS = $(CFLAGS) $(SYS_CFLAGS) $(DEFS)
+
+h2v:    h2v.o getchar.o
+	if test ! -r $(FONTLIB)/astrology ;\
+	 then  $(CC) -o $@ $@.o getchar.o -lm ;\
+	fi;
+
+fonts:  h2v
+	if test ! -d $(FONTLIB);\
+	  then mkdir $(FONTLIB);\
+	fi; \
+	if test ! -r $(FONTLIB)/astrology ; then \
+	  h2v data/hersh.oc;\
+	  h2v data/hersh.or fonts/japan.hmp japanese\;
+	  mv astrology cursive cyrillic futura.l futura.m gothic.eng \
+		gothic.ger gothic.ita greek japanese markers math.low \
+		math.upp meteorology music script symbolic times.g \
+		times.i times.ib times.r times.rb $(FONTLIB);\
+	  touch fonts;\
+	fi;
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -c $<
+
+all: libhershey.a fonts
+
+libhershey.a: htext.o check.o halloc.o fhtext.o
+        ar rcv libhershey.a htext.o check.o halloc.o fhtext.o
+        $(RANLIB) libhershey.a
+
+

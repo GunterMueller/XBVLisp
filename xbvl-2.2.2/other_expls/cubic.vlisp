@@ -1,0 +1,76 @@
+; @D.Ploix 93
+; ;
+; Cubic : visualisation des sources d'une fonction par des rectangles
+; de taille et de couleur différente suivant l'instruction détectée
+; ;
+(defmacro abs (n)
+  `(if (< 0 ,n) ,n (- ,n)))
+
+; fonction d'initialisation
+(df cubic (f)
+    (ifn (and f (not (= (ftyp (car f)) 0))) (print (car f) " not a function")
+	 (mapc f
+	       (lambda (x)
+		 (InstallCubic x)
+		 (construitcubic x)))))
+
+; récupération de la taille et de la couleur suivant l'instruction
+; retourne le format : (delta-x delta-y color) ;
+(de get-call-shape (acall)
+    (selectq acall
+	     ("car"    '(5   5 "#f00"))
+	     ("cdr"    '(-5 -5 "#f00"))
+	     ("cons"   '(10  0 "#0f0"))
+	     ("append" '(0  10 "#0f0"))
+	     ("quote"  '(1   1 "#fff"))
+	     ("let"    '(2  10 "#ff0"))
+	     ("lambda" '(3  10 "#ff0"))
+	     ("self"   '(-2 -2 "#0ff"))
+	     ("mapc"   '(10  3 "#9f0"))
+	     ("if"     '(-15   5 "#a40"))
+	     ("cond"   '(5   15 "#40a"))
+	     ("ifn"    '(-25   5 "#0a4"))
+	     ("null"   '(5  -10 "#0a4"))
+	     ("listp"  '(15  -5 "#a40"))
+	     ("atom"   '(5  -5 "#e27"))))
+
+
+; fonction de construction de la visualisation sur une fonction
+(de construitcubic (f)
+    (let (w (get cubic-root 'draw))
+      (setq cur-x (* 10 (length (get cubic-root 'func))) 
+	    cur-y 100
+	    sx (xGetValues w "width")
+	    sy (xGetValues w "height"))
+      (let ((body (cdr (fval f))))
+	(cond
+	 ((null body) t)
+	 ((atom body) t)
+	 ((atom (car body)) (self (cdr body)))
+	 (t
+	  (let (shape (get-call-shape (caar body)))
+	    (ifn shape ()
+		 (if (> (+ cur-x (car shape)) sx) (setq cur-x 0)
+		   (if (< (+ cur-x (car shape)) 0) (setq cur-x sx)))
+		 (if (> (+ cur-y (cadr shape)) sy) (setq cur-y 0)
+		   (if (< (+ cur-y (cadr shape)) 0) (setq cur-y sx)))
+		 (xSetForeground w (caddr shape))
+		 (xDrawRectangles w cur-x cur-y (abs (car shape)) (abs (cadr shape)))
+		 (setq cur-x (+ cur-x (car shape))
+		       cur-y (+ cur-y (cadr shape)))))
+	  (self (car body))
+	  (self (cdr body)))))))
+
+; fonction d'initialisation de Cubic
+(de InstallCubic (f)
+    (if (boundp 'cubic-root)
+	(put cubic-root 'func
+	     (cons f (if (atom (get cubic-root 'func)) 
+			 (cons (get cubic-root 'func) ())
+		       (get cubic-root 'func))))
+      (setq cubic-root (gensym))
+      (put cubic-root 'func f)
+      (put cubic-root 'draw (xCreate "Drawxbvl" "Cubic" () 300 300 t t))
+      (xRealizeWaiting (xGetSupWidget (get cubic-root 'draw) "ApplicationShell"))))
+
+

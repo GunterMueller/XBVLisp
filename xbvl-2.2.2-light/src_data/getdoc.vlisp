@@ -1,0 +1,10 @@
+(df |getdoc (---+x+---)
+   (mapc ---+x+---
+      (lambda (---+y+---)
+         ((lambda (---+z+---)
+            ((lambda (---+u+---)
+               (print ---+y+--- (if ---+u+---
+                     ---+u+---
+                     "raison inconnu"))) 
+	   (get (getcar ---+z+---) '|COM))) 
+      (fval ---+y+---)))))

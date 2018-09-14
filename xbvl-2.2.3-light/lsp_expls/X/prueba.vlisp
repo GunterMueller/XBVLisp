@@ -1,0 +1,43 @@
+(de prueba ()
+	(progn
+		(xcrewin "essai" 20 20 5 5 3)
+		(sleep 1)
+		(xflush)
+		(sleep 1)
+		(xRemoveWidget "essai")
+		(xflush)
+	)
+)
+(de cree (n)(xcrewin n 7 40 0 60)))
+
+(de detruir(n) (progn (xChangeWin "main")(xflush)(sleep 2)( xRemoveWidget n)))
+
+(de satur (n)(progn
+	(cree n)
+;(xEnable) 
+	(xChangeWin n)
+;(xDisable)
+	(print (oblist))
+;(xEnable)
+	(xChangeWin 'main)(detruir n)(xflush)(sleep 2)))
+
+(de lance(nb)
+	(let (n 0)(progn
+		(repeat nb
+			(satur "titi")
+			(satur "tata")
+;			(satur "main")
+;			(xcrewin  "cnt" 5 50 0 0 4)(xChangeWin 'cnt)(incr n)(print n)
+			(xChangeWin 'main)(incr n)(print n)
+		))
+	))
+		
+(de change ( nb )
+  (let (n 0)(repeat nb
+	(xcrewin 'bobo 8 40 20 20)(xChangeWin 'bobo)(incr n) (print n)(xRemoveWidget 'bobo)
+	(xflush )(sleep 2)                                                      
+        (xChangeWin 'main)(incr n) (princ n)                                    
+        (xflush )(sleep 2)                                                      
+    )))
+	
+	

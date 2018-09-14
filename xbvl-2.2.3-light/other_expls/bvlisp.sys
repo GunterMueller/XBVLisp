@@ -1,0 +1,965 @@
+; %I%, %R%, %B%, %D%,  %T%,  %M%
+
+(_setq --x-- careful careful nil)
+
+(_setq bord-effect 0)
+
+(df set (v)
+    (if careful (_setq bord-effect 1)) (_set (car v) (cadr v))    (if careful (_setq bord-effect 0)))
+
+(df setq (v)
+    (if careful (_setq bord-effect 2)) (_setq (car v) (cadr v))   (if careful (_setq bord-effect 0)))
+
+(df nconc (v)
+    (if careful (_setq bord-effect 3)) (_nconc (car v) (cadr v))  (if careful (_setq bord-effect 0)))
+    
+(df rplac (v)
+    (if careful (_setq bord-effect 4)) (_rplac (car v) (cadr v) (caddr v)) (if careful (_setq bord-effect 0)))
+
+(df rplaca (v)
+    (if careful (_setq bord-effect 5)) (_rplaca (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(df rplacd (v)
+    (if careful (_setq bord-effect 6)) (_rplacd (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(df rplacb (v)
+    (if careful (_setq bord-effect 7)) (_rplacb (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(df nreverse (v)
+    (if careful (_setq bord-effect 8)) (_nreverse (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(df incr (v)
+    (if careful (_setq bord-effect 9)) (_incr (car v) (cadr v))   (if careful (_setq bord-effect 0)))
+
+(df decr (v)
+    (if careful (_setq bord-effect 10)) (_decr (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(df put (v)
+    (if careful (_setq bord-effect 11)) (_put (car v) (cadr v) (caddr v)) (if careful (_setq bord-effect 0)))
+
+(df remprop (v)
+    (if careful (_setq bord-effect 12)) (_remprop (car v) (cadr v)) (if careful (_setq bord-effect 0)))
+
+(_setq careful --x--)
+(package bvlisp.sys)
+;
+;
+;==================================================================
+;quelques fonctions de manipulation et creation d'interfaces
+;==================================================================
+;
+; positionne les ressources pour faire le deplasement 
+; d'un widget. Les ressources ne sont pas les memes a positionner
+; dependant de la classe
+
+(de xMoveWidget ( -widget- yy xx )
+    (cond (
+	   ((not (iswidget -widget- )) nil)
+	   ((iswidget -widget- "ApplicationShell")
+	    (xSetValues -widget-  "x"  xx "y"  yy ))
+	   ((iswidget (xWidgetParent -widget- ) "awForm" )
+	    (xUnmanage -widget-)
+	    (xSetValues -widget- "horizDistance" xx "vertDistance" yy)
+	    (xManage -widget- ))
+	   (t 
+	    (xUnmanage -widget-)
+	    (xSetValues -widget-  "x" xx "y"  yy ))
+	    (xManage -widget- ))
+	  )
+    )
+
+;
+; la seule precaution qu'on prend est enlever de l'autorite parental le widget
+; s'il est a l'interieur d'un Widget composite.
+;
+(de xResizeWidget ( -widget- height width )
+    (cond (
+	   ((not (iswidget -widget- )) nil)
+	   ((iswidget (xWidgetParent -widget- ) "awComposite" )
+	    (xUnmanage -widget-)
+	    (xSetValues -widget-  "width" width "height" height ))
+	   (xManage -widget- ))
+	  (t 
+	   (xSetValues -widget-  "width" width "height" height ))
+	  )
+    )	
+
+;;
+; cree une hierarchie minimale pour un session interactive avec xbVLISP
+;;
+(de xCreateXbvlisp (w-name nlignes colonnes y x pages)
+    (if (iswidget w-name "Xbvlisp") 
+	w-name
+      (if (not(and (numbp nlignes)(numbp colonnes)(numbp y)(numbp x)(numbp pages)))
+	  (progn (print "Mauvais arguments") nil)
+	(let (new-xBVL (xInitXbvlisp w-name nlignes colonnes y x pages))
+	  (xRealize (car new-xBVL))
+	  (cadr new-xBVL)
+	  )
+	)
+      )
+    )
+
+; fait le travail de creation de la hierarchie Xbvlisp ;
+(de xInitXbvlisp (w-name nlignes colonnes y x pages)
+    (let (root-w (xCreateWidget (strcat w-name "-root") "ApplicationShell" ))
+      (let (bvlisp-win (xCreateWidget w-name "Xbvlisp" root-w
+				      "lignes"        nlignes
+				      "colonnes"      colonnes
+				      "pages"           pages   ))
+	(xSetValues root-w  "geometry"   (strcat "+" x "+" y ))
+	[ root-w bvlisp-win ]
+	)))
+;;
+;    Ramene l'atome contenamt la racine de la hierarchie du widget passe en
+;    argument. 
+;;
+
+(de xGetSupWidget(-widget- -class-)
+    (if (iswidget -widget- -class- ) -widget-
+	(if (iswidget -widget-)
+	    (xGetSupWidget (xGetValues -widget- "parent" ) -class-)
+	  nil)))
+;;
+; ramene la hierarchie de widgets auquel 
+; le appartien le widget passe en argument.
+;;
+
+(de xGetHierarchie ( -widget- )
+    (if (iswidget -widget- )
+	(xGetSousArbre (xGetSupWidget -widget- "Shell") () )
+      nil ))
+;;
+; recursivement construit une liste de tous les
+; descendants du widget passe en parametre.
+;;
+
+(de xGetSousArbre ( -widget- )
+    (let ( -children- (xGetValues -widget- "children"))
+      (if (null -children-) -widget-
+	(cons -widget-  (mapcar -children- 'xGetSousArbre) )
+	)))
+
+
+;;
+; cree une interface temporaire pour ratrapper des erreur 
+;;
+(de xcreeDisplay (top display-top)
+    (cond  
+     ( (not (iswidget top)) nil )
+     ( (iswidget display-top "Xbvlisp" ) [ (xGetRootWidget display-top) display-top] )
+     ( t		
+       (let ((cursor (xGetCursorpos top ))
+	     (_display ( xInitXbvlisp  display-top  15 80 0 0 3)))
+					;(print _display)
+	 (let((xbvl-top      (car _display))
+	      (display_width (xGetValues (cadr _display) "width"  "Int"))
+	      (display_haut  (xGetValues (cadr _display) "height" "Int"))
+	      (root-xbvl (car _display))
+	      (cursorx (car cursor))
+	      (cursory (cadr cursor)))
+	   (print "pos top : " cursor)
+	   (print "xbvl	 top-dims: " display_width display_haut )
+	    ;calculer la postion de la nouvelle interface
+	   (if (> (+ cursory display_haut) HEIGHT)
+	       (setq posy (- cursory  (+ display_haut 40) ))
+	     (setq posy (+ cursory 10)))
+	   (if (> (+ cursorx display_width) WIDTH)
+	       (setq posx (- WIDTH display_width))
+	     (setq posx cursorx))
+	   (xSetValues xbvl-top ; la racine de la hierarchie ;
+		       "iconName"  "!!***NON ICONIFIER CETTE FENETRE, RATTRAPEZ L'ERREUR QUI L'A GENEREE***!!"
+		       "geometry" (strcat "+" posx "+" posy ))
+	   (xRealize xbvl-top )
+	   _display 
+	   )
+	 )
+       )
+     )
+    )
+    
+     
+;----------------------------------------------------;
+; pour pouvoir utiliser les deux types d'interface   ;
+;----------------------------------------------------;
+;;
+;;
+;;
+
+(de changewin (w) (xChangeWin  w 0) )
+;;
+;;
+;;	 
+(de delwin (w)(xRemoveWidget (xWidgetParent w)))
+
+;;
+;;
+;;
+
+; --- voyageurs
+					;(sh "/public/dario/src/quiest-ce >> /public/dario/src/users &")
+
+(print "loading bvlisp.sys")
+(de mapc (-l- -f-) ; le mapc le plus simple ;
+    (if (null -l-) nil
+      (-f- (nextl -l-))
+      (mapc -l- -f-)))
+
+(de mapcar (-l- -f-) (and -l- [(-f- (nextl -l-)) . (mapcar -l- -f-)]))
+
+(de mapct (-l- -f- -x-) ; le mapcar arborescente ;
+    (and -l- 
+	 (progn (setq -x- (-f- (nextl -l-)))
+		(if -x- [-x- . (mapct -l- -f-)] (mapct -l- -f-)))))
+
+; --- une definition raisonnable de defmacro
+
+(dm |defmacro (call)
+  `(dm ,(cadr call) (call)
+	(letdicq ,(caddr call) (cdr call)
+		  (rplacb call (progn ,@(cdddr call))))))
+
+
+; --- definition d'auto-load :
+;(df autoload (e)
+;  (eval ['dm (car e) '(call) ['lib (cadr e)] 'call))
+
+; --- ex d'utilisation:
+;(autoload trace /public/dario/src/trace.vlisp)
+
+(dm |crossfile (call)
+	(lib "/public/dario/src/prtt")
+	call)
+
+;(dm |phenarete (call)(lib "/public/dario/src/phenar") call)
+;(dm |phenaretes (call)(lib "/public/dario/src/phenar") call)
+
+; en developpement
+;(dm |phenarete (call)(lib "phenar") call)
+;(dm |phenaretes (call)(lib "phenar") call)
+
+(dm |prettyfile (call)
+	(lib "/public/dario/src/prtt")
+	call)
+; en developpement
+(dm |steptr (call)(lib "/public/dario/src/stepper") call)
+
+(dm |prettyf (call)
+	(lib "/public/dario/src/prtt")
+	call)
+
+(dm |::= (call)
+	(lib "/public/dario/src/record")
+	call)
+
+(dm |record-type (call)
+	(lib "/public/dario/src/record")
+	call)
+
+(dm |match (call)
+	(lib "/public/dario/src/match")
+	call)
+
+(dm |crossf (call)
+	(lib "/public/dario/src/prtt")
+	call)
+
+; en developpement pour l'interface X
+
+(dm |trace (call)
+	(lib "/public/dario/src/trace")
+	call)
+(dm |pretty (call)
+	(lib "/public/dario/src/pretty")
+	call)
+
+(dm |monitor (call)
+	(lib "/public/dario/src/mon")
+	call)
+
+(dm |allpretty (call)
+	(lib "/public/dario/src/pretty")
+	call)
+
+(dm |ef (call)
+	(lib "/public/dario/src/eff")
+	call)
+
+(dm |edit (call)
+	(lib "/public/dario/src/EDIT")
+	call)
+
+(dm |editl (call)
+	(lib "/public/dario/src/EDIT")
+	call)
+
+(dm |do (call) ; de quoi faire un do pingouin ;
+ (rplacb call
+  `((lambda ,(mapcar (cadr call) 'car)
+	     (if ,(caar (cddr call)) (progn ,@(cdar (cddr call)))
+		,@(cdddr call)
+		  (self ,@(mapcar (cadr call) 'caddr))))
+     ,@(mapcar (cadr call) 'cadr))))
+
+; --- de quoi faire des prog et des go et des return
+;     ya des cas ou c'est utile
+
+(df prog (-call- ;; -ovals- -res- -etiq- -list-) ; pour des prog et des goto ;
+	  (setq -ovals- (mapcar (car -call-) 'car) -list- (cdr -call-))
+	  (escape return
+		  (unwind-protect
+		      (while t
+			(escape -prog-
+				(mapc -list- (lambda (--x--) (and (listp --x--) (eval --x--))))
+				(return)
+				)
+			(setq -list- (member -etiq- -call-)))
+		    (mapc (car -call-) (lambda (--x--) (set --x-- (nextl -ovals-))))
+		    )
+		  )
+	  )
+    
+(df go (etiq) ; le goto lisp ; (-prog- (setq -etiq- (car etiq))))
+	
+(de |parb (l)(setq ARBRE l lactive [[2 (car l)]])(parb1 l 0))))
+
+(de %prinar (l)  ; pour l'impression des arbres ; (status print 2)
+	(setq ARBRE l)
+	(outpos 2)
+	(setq lactive [[2 (car l)]])
+	(%prina l 2 2 -10)(outpos 1)(status print 0))
+
+(de %mpc (lis) ; pour l'impression des arbres ; (let ((x (%mpc1 lis)))
+	(if (null x)()[(cons tb x)])))
+
+(de %mpc1 (lis) ; pour l'impression des arbres ; 
+   (if (null lis) () (if (atom (car lis))
+	(cons (car lis) (%mpc1 (cdr lis))) (%mpc1 (cdr lis)))))
+
+(de %enl (at) ; pour l'impression des arbres ; (if (null lactive)()
+	(let ((x (delete at (car lactive))))
+		(setq lactive (if (= (length x) 1)(cdr lactive)
+			(cons x (cdr lactive)))))))
+
+(de %prina (l tb pi compt bool c) ; pour l'impression des arbres ; 
+  (let ((pi (escape ex(%outpot tb pi (getthem)))))
+	(prin1 (car l))
+	(%enl (car l)) ; doit enlever dans la premiere sousliste;
+	(if (listp (cadr l))(setq lactive (append (%mpc (cadr l)) lactive)))
+	(cond
+	 ((null (cdr l))(if bool (1+ c) (terpri)(outpos 2) ))
+	 ((atom (cadr l))
+		(if bool ()(terpri)(outpos 2))
+		(%prina (cdr l) tb 2 compt bool (1+ c)))
+	 (t (%prina (cadr l)(+ tb 12) (+ pi (plength (car l)))
+			(+ compt 12) bool c)
+	    (if (cddr l)(%prina (cddr l) tb 2 compt bool c))))))
+
+(de parb1 (l c tb)
+   (%enl (car l))
+   (if (listp (cadr l))(setq lactive (append (%mpc (cadr l)) lactive)))
+   (cond ((null (cdr l)) (1+ c))
+	((atom (cadr l))(parb1 (cdr l)(1+ c) ))
+	(t (parb1 (cadr l)(if (cddr l)(parb1 (cddr l) c) c)
+)))))))))))
+
+(de getthem (l) ; pour l'impression des arbres ; (mapcar lactive 'car))
+
+(de %outpot (ps pi x) ; pour l'impression des arbres ; 
+	(if (> ps pi)(cond
+	((zerop (rem (- pi 2) 12))
+	   (if (memq  pi x)
+		(if (ge pi compt)(princh "\\")(princh "|" 1))
+		(if (< pi compt)(princh " ")(princh "_" 1)))
+	   (%outpot ps (1+ pi) x))
+	((< pi compt)(princh " " 1)(%outpot ps (1+ pi) x))
+	(t (princh "_" 1)(%outpot ps (1+ pi) x))))
+(ex pi)))
+
+(de %varde (globalvar localvar) ; description des variables ;
+	(terpri)
+	(ifn globalvar ()
+		(print "variables globales : ")
+		(%vard1 globalvar 'globalvar)
+		(terpri)
+		(print "variables globales modifiees : ")
+		(%vard1 globalvar 'incr)
+		(terpri))
+	(ifn localvar ()
+		(print "variables locales : ")
+		(%vard1 localvar 'localvar)))
+
+(de %vard1 (li ind -a- -b-) ; pour la description des variables ;
+   (mapc li
+	(lambda (x)
+	  (setq -a- (%find (ival x) ind))
+	  (ifn -a- ()
+		  (setq -b- t)
+		  (prin1 x)
+		  (outpos 10)
+		  (prin1 "dans")
+		  (mapc -a- 'prin1)
+		  (terpri))
+	))
+    (if -b- () (print "aucune"))))))
+
+(de %find (x ind i) ; ca serche dans les ival ;
+	(if x (if (eq (caar x) ind)(if i (car x)(cdar x))(%find (cdr x) ind i))))))
+
+(print "ca prend un peu de temps ... ")
+
+(df %index (y) ; c'est pour les arbres ;
+	(setq |flis ())
+	(if y ()(setq y all_functions))
+	(mapc (if (eq (car y) '-%-) -%- y)
+		(lambda (x)
+		   (terpri)
+		   (%prinar (cons x (cons (%suprev 
+			(|%indexx x (%find (ival x) 4))))))
+))))))
+
+(df %a (y) ; l'impression des arbres ;
+   (mapc (if y y all_functions)
+	(lambda (x)(eval ['%index x]) ;(terpri))))
+))))
+
+(df %i (-%- -x- -y-) ; la construction des index ;
+	(if -%- (progn
+		   (setq -x- (mapcar -%- (lambda (x)
+			(%find (ival x) 1))))
+		   (setq -y- (mapcar -%- (lambda (x)
+			(%find (ival x) 0))))
+		   (setq -x- (flat -x-) -y- (flat -y-))) 
+		(setq -%- all_functions -x- globalvar -y- localvar))
+	(%index -%-)
+	(%varde -x- -y-))
+
+(de flat (x) ; comme son nom indique: ca applati une liste ; (cond
+	((null x) ())
+	((atom (car x))(cons (car x)(flat (cdr x))))
+	(t (append (flat (car x))(flat (cdr x)))))))))
+
+(de |%indexx (x %exp %arb) ; et encore pour les arbres ;
+	(setq |flis (cons x |flis))
+	(cond
+		((null %exp) %arb)
+	 	((memq (car %exp) |flis)
+			(|%indexx x (cdr %exp)(cons (car %exp) %arb)))
+		((setq aux (|%indexx (car %exp)(%find (ival (car %exp)) 4)))
+			(|%indexx x (cdr %exp)
+			   (append (list aux (car %exp)) %arb)))
+		(t (|%indexx x (cdr %exp)(cons (car %exp) %arb)))))
+))))))))
+
+(de %suprev (l) ; ca inverse un arbre ; 
+	(if (atom l) l (append (%suprev (cdr l))(list (%suprev (car l)))))))
+
+(df %descr (x) ; pour avoir une petite description ;
+  (if x ()(setq x (append (%union localvar globalvar) all_functions)))
+  (mapc x '%desc))))
+
+(de %desc (x aux) ; auxiliaire pour %descr ;
+  (setq aux (ival x))
+  (if (or (%find aux 'localvar t)(%find aux 'globalvar t))(%desca x))
+  (if (or (%find aux 3) 
+	  (%find aux 4)
+	  (%find aux 2)
+	  (%find aux 1)
+	  (%find aux 0))
+	(%descf x))))))
+
+(de %descf (x aux aux1)  ; auxiliaire pour %descr ;
+	(terpri)
+	(outpos 20)
+	(print "----------" x "----------")
+	(terpri)
+	(if (setq aux (%find (ival x) 201))
+	    (print "type = " (car aux) "(type utilisateur)")
+	(print "type = " 
+	    (selectq (ftyp x)
+		(7 "EXPR")(8 "FEXPR")(9 "MACRO")(10 "ESCAPE")(11 "MACOUT")
+	(() "inconnu (soit escape, soit fonction indefinie, soit variable)"))))
+;	(if (setq aux (%find (ival x) 10))
+;		(print "        post-recursive"))
+	(if (setq aux (%find (ival x) 0))
+		(progn (prin1 "variables locales = ")
+		       (mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 1))
+		(progn (prin1 "variables globales = ")
+		       (mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 2))
+		(progn (prin1 "variables globales modifiees = ")
+			(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 4))
+		(progn (prin1 "utilise = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 3))
+		(progn (prin1 "utilisee par = ")(mapc aux 'prin1)(terpri)))
+	(terpri)))))))
+
+(de %desca (x aux) ; pour la doc des variables ;
+	(terpri)
+	(outpos 20)
+	(print "----------" x "----------")
+	(terpri)
+	(if (setq aux (%find (ival x) 'globalvar))
+		(progn (prin1 "est globale dans = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 'incr))
+		(progn (prin1 "et modifiee dans = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 'localvar))
+		(progn (prin1 "est locale dans = ")(mapc aux 'prin1)(terpri)))
+	(terpri))))))
+	
+(de %union (x y) ; que fait donc cette fonction ? ;
+	(if (null x) y (%union (cdr x)(if (memq (car x) y) y
+		(cons (car x) y)))))
+     
+(de %ubv (nom var -x- -y-) ; ah, les erreurs variable indef ;
+    (let (-window- (xwinp))
+      (let 
+	  (err_display 
+	   (if (atom -window-)
+	       (cadr (xcreeDisplay -window- '_err-display ))
+	     (xcree_display (car (xwinp)) (cadr (xwinp)) '_Err-Display_ '_err-display_)))
+	;(xflush)(xflush)
+	(print -window- err_display)
+	(changewin err_display)(xDisable)
+	(let ((**x** (%ubv1 nom var -x- -y-)))
+	  (changewin -window- ) (xEnable)
+	  (delwin err_display)
+	  (if (equal **x** 'fini)(unwind) **x**)))))
+
+
+(de %ubv1 (nom  var -x- -y-)
+     ; auxiliaire de %ubv : undefined variable ;
+    (escape ++fini++
+	    (setq -y- (cadr (cdddr (frame 5))))
+	    (prin1 "  * variable indefinie :" var)
+	    (ifn -y- (terpri) 
+		 (print "dans" 
+			(if (neq 'lambda (car -y-)) (car -y-) 
+			  (cons (car -y-)(cadr -y-)))))
+	    (print "pour entrer dans une boucle d'inspection, tapez 'i'")
+	    (if (and -y- (atom (car -y-)))
+		(print "pour avoir (si possible) une proposition d'amelioration, tapez 'p'"))
+	    
+			;	(if -y-
+			;	(print "pour editer" (if (neq 'lambda (car -y-))(car -y-)(cadr -y-))","
+			;		"tapez 'e'"))
+	    
+	    (print "pour revenir au toplevel, tapez '-'")
+	    (princ "pour donner une valeur a" var "tapez 'v', (sinon tapez 'x') :")
+	    (setq -x- (itoa (tyo (tyi-or-print))))(terpri)
+	    (if (and -y- (atom (car -y-))(equal -x- "p"))
+		(progn
+		  (|phenaretes [
+			(selectq (ftyp (caadr (cdddr (frame 5))))
+				(7 'de)(8 'df)(9 'dm))
+			(caadr (cdddr (frame 100))) . 
+			    (fval (caadr (cdddr (frame 5))))])
+		(print "si vous voulez gardez cette version proposee, tapez 'g', sinon")
+		(princ "tapez '-', 'x', 'v', 'i' ou 'e', dependant de ce que vous voulez :")
+		(setq -x- (itoa (tyo (tyi-or-print))))(terpri)
+		(if (equal -x- "g")(progn (eval PROPOSITION)
+			(print "c'est fait") (++fini++ 'fini)))))
+
+	(if (null (equal -x- "i"))()
+		(print "terminez la boucle en tapant 'fin' !!!!")		
+		(break fin)
+		(princ "tapez '-', 'e', 'v' ou 'x', dependant de ce que vous voulez :")
+		(setq -x- (itoa (tyo (tyi-or-print))))(terpri))
+
+       (if (equal -x- "e")
+	(if -y-
+	 (progn (if (neq 'lambda (car -y-))(eval ['|edit (car -y-)])
+		  (editl (cadr -y-)))'fini)
+	    (print "y'a rien a editer!")())
+    (if (equal -x- "-") 'fini
+      (if (equal -x- "v")(progn
+			   (princ "donnez une valeur pour" var ":\n")
+			   (set var (eval (read))))
+					; else ;  (princ "donnez une valeur :\n")
+	(eval (read)))))))
+
+)))
+
+(enable error-ubv '%ubv)
+
+(print "mais ca progresse quand meme ...")
+
+(de %ubf (nom  ftn args form dans -x- -y-)
+   ; ah, les erreurs undefined function ;
+    (let (-window- (xwinp))
+					;(print "-> " -window-)
+      (let (err_display 
+	    (if (atom -window-)
+		(cadr (xcreeDisplay -window- '_err-display ))
+	      (xcree_display (car -window-) (cadr -window-) '_Err-Display_ '_err-display_)))
+					;(print " --> " err_display)
+	(changewin err_display)
+	(prin1 "  * fonction indefinie :" ftn "avec" args)
+	(if dans (print "dans" dans)(terpri))
+	(let ((**x** (%ubf1 nom ftn args form t)))
+	  (changewin -window- ) 
+	  (delwin err_display)
+	  (if (equal **x** 'fini)(unwind)**x**)))))
+
+
+(de %self (nom  ftn args form  dans -x- -y-)
+    ; handler pour l'erreur self ;
+    (let (-window- (xwinp)) 
+      (let 
+	  (err_display 
+	   (if (atom -window-)
+	       (cadr (xcreeDisplay -window- '_err-display ))
+	     (xcree_display (car -window- ) (cadr -window-) '_Err-Display_ '_err-display_)))
+	(print -window- err_display)
+	(changewin err_display)
+	(print "  * self hors fonction :"  ftn args)
+	(let ((**x** (%ubf1 nom ftn args form)))
+	  (changewin -window-) 
+	  (delwin err_display)
+	  (if (equal **x** 'fini)(unwind)**x**)))))
+
+(de %ubf1 (nom  ftn args form -x- -y-)
+   ; aux pour handler erreur self et erreur undef function ;
+    (escape ++fini++
+	(if  (and -x- (neq dans 'toplevel) dans (atom dans))
+	(print "pour avoir (si possible) une proposition d'amelioration, tapez 'p'"))
+	(if dans 
+	(print "pour editer" dans ", tapez 'e'"))
+	(print "voulez vous donnez une valeur ou une fonction?")
+	(print "tapez 'v' pour valeur, 'f' pour fonction (ca modifie)")
+	(print "pour revenir sur le toplevel, tapez '-', (sinon tapez 'x')")
+	(princ "pour entrer dans une boucle d'inspection, tapez 'i' : ")
+	(setq -x- (itoa (tyo (tyi-or-print))))(terpri)
+	(when (and dans (atom dans)(neq dans 'toplevel)(equal -x- "p"))
+		(|phenaretes [
+			(selectq (ftyp dans)
+				(7 'de)(8 'df)(9 'dm))
+			dans . (fval dans)])
+		(print "si vous voulez gardez cette version proposee, tapez 'g', sinon")
+		(princ "tapez '-', 'v', 'i', 'e' ou 'x', dependant de ce que vous voulez :")
+		(setq -x- (itoa (tyo (tyi-or-print))))(terpri)
+		(if (equal -x- "g")(progn (eval PROPOSITION)
+			(print "c'est fait")(++fini++ 'fini))))
+	(if (null (equal  -x- "i"))()
+		(print "terminez la boucle en tapant 'fin' !!!!")
+		(break fin)
+		(princ "dites 'f', 'v', 'e' ou 'x' dependant de ce que vous voulez faire :")
+		(setq -x- (itoa (tyo (tyi-or-print))))(terpri))
+	(cond ((equal -x- "-")(++fini++ 'fini))
+	      ((and dans (equal -x- "e"))
+		(if (equal dans 'toplevel)(progn (print "y'a rien a editer") nil)
+                   (if (atom dans)(eval ['edit dans])(editl dans)))
+			(++fini++ 'fini))
+	      ((equal -x- "v") 
+		(princ "maintenant donnez la valeur :\n")
+		(setq -x- (eval (read)))
+		(setq -y- (gensym))
+		(eval ['de -y- () [quote -x-]]) -y-)
+	      ((equal -x- "f")
+		(princ "maintenant donnez la fonction :\n")
+		(if (equal (car form) ftn) 
+		    (rplaca form (setq -x- (read)))
+		    (if (eq (car (cadr form)) 'apply)
+			(progn (setq -x- (read))
+			       (if (eq (car (cadr (cadr form))) 'quote)
+				   (rplaca (cdr (cadr (cadr form))) -x-)
+				   (rplaca (cdr (cadr form)) -x-)))
+			(setq -x- (read))
+			(print "je ne peux pas modifie votre fonction")))
+		-x-)
+	      (t 
+		(princ "maintenant donnez la fonction :\n")
+		(read))))))))))))))
+
+(enable error-ubf '%ubf)
+(enable self '%self)
+
+(df ind (x)
+   ; permet de definir des types utilisateurs pour la doc ;
+   (let ((ftn (car x))(type (cadr x))(z (ival (car x))))
+	(let ((y (%find z 200 t)))
+	     (if y (rplacd y [type]) 
+		(ival ftn (cons [200 type](ival ftn)))))))
+
+
+(de example (x  y) ; pour les attaches exemple ;
+   (if (listp y)(put x 'example y)(if (eq y t)()(exit (get x 'example))))
+   (let ((z (ival x)))
+	(if (null z)(ival x (cons  '(100 t) (ival x)))
+	   (if (eq (caar z) 100)
+		(rplacd (car z) [t])(self (cdr z)))))
+    x))))))))
+
+(de enleve-entree (ftn at) ; enleve la fonction ftn des activites d'entree ;
+	(put at 'entree (%enleve ftn (get at 'entree))))
+
+(de enleve-sortie (ftn at); enleve la fonction ftn des activites de sortie ;
+	(put at 'sortie (%enleve ftn (get at 'sortie))))
+
+(print "c'est deja la moitie ....")
+
+(de %enleve (ftn -l-) ; aux pour enleve-entree et enleve-sortie ;
+	(if (null -l-)()
+	    (if (eq (caar -l-) ftn)(cdr -l-)
+		(cons (car -l-)(%enleve ftn (cdr -l-))))))
+
+(df unassert-e (at) ; pour temporairement enlever des assertions d'entree ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst 'as-en-dummy  'assert-ent (get at 'entree)))))
+at)
+
+(df unassert-s (at) ; pour temporairement enlever des assertions de sortie ;
+    (mapc at (lambda (at)
+	(put at 'sortie (subst 'as-so-dummy  'assert-sor (get at 'sortie)))
+	(put at 'entree (subst '%%aux-dummy '%%aux (get at 'entree)))))
+at)
+
+(de as-so-dummy ()())
+(de %%aux-dummy ()())
+(de as-en-dummy ()())
+
+(df reassert-e (at) ; pour reactiver des activites d'entree ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst 'assert-ent 'as-en-dummy (get at 'entree)))))
+at)
+
+(df reassert-s (at) ; pour reactiver des activites de sortie ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst '%%aux '%%aux-dummy (get at 'entree)))
+	(put at 'sortie (subst 'assert-sor 'as-so-dummy (get at 'sortie)))))
+at)
+
+(setq pile () )
+(de push (-x-)(setq %pile (cons -x- %pile)))
+(de pop ()(nextl %pile)))
+
+(de test-entree (x . y)
+	(putcar x y)(putcar x 'entree))
+
+(de test-sortie (x . y)
+	(putcar x y)(putcar x 'sortie))
+
+(de assert-ent (ftn -x-)
+	(if (eval -x-)()
+	    (terpri)
+	    (print "l'assertion d'entree de" ftn ":")
+	    (outpos (+ lmargin 10))(print -x-)
+	    (print "n'est pas verifiee pour l'appel :")
+	    (outpos (+ lmargin 10))
+	    (print (cons ftn (mapcar (car (fval ftn))
+			(lambda (y)(eval y)))))
+	    (terpri)))))))
+
+(de assert-entree (ftn -x-)
+	(put ftn 'entree (append (get ftn 'entree)
+				[['assert-ent [quote ftn][quote -x-]]])))
+
+(de %%aux (ftn) 
+	(if (car (%find (ival ftn) 10))
+		(put ftn 'ASSERT_P (if (null (get ftn 'ASSERT_P)) 1 
+				(1+ (get ftn 'ASSERT_P)))))
+	(mapc (reverse (car (fval ftn)))	
+			(lambda (-x-)(push (eval -x-)))))
+
+(de assert-sor (ftn -x- ind)
+	(if (eval -x-)
+		(if ind ()(mapc (car (fval ftn))(lambda (x)(pop)))
+		     (if (car (%find (ival ftn) 10))
+			(put ftn 'ASSERT_P (if (zerop (get ftn 'ASSERT_P)) 0
+				(1- (get ftn 'ASSERT_P))))))
+	    (outpos lmargin)
+	    (print "l'assertion de sortie de" ftn ":")
+	    (outpos (+ lmargin 10))(print -x-)
+	    (print "n'est pas verfiee pour l'appel :")
+	    (outpos (+ lmargin 10))
+	    (if (null ind)
+	        (prin1 (cons ftn (mapcar (car (fval ftn)) (lambda (x)(pop)))))
+		(prin1 (cons ftn (mapcar (car (fval ftn))(lambda (x)(eval x))))))
+	    (print "="  sortie)
+	    (if (and (null ind)(car (%find (ival ftn) 10)))
+		(put ftn 'ASSERT_P (if (zerop (get ftn 'ASSERT_P)) 0
+				(1- (get ftn 'ASSERT_P)))))
+	    (terpri))
+	(if (and (null ind) (car (%find (ival ftn) 10)))
+		(let ((%%x%% (get ftn 'ASSERT_P))
+		      (%%y%% (mapcar (car (fval ftn))(lambda (x) (eval x)))))
+			(while (ge %%x%% 0)
+			  (mapc (car(fval ftn))(lambda (-x-)(set -x- (pop))))
+			  (assert-sor ftn -x- t)
+			  (setq %%x%% (1- %%x%%)))
+			  (put ftn 'ASSERT_P 0)					(1- (get ftn 'ASSERT_P)))))
+))
+)
+
+(de assert-sortie (ftn -x-) ; pour coller des assertions de sortie ;
+	(put ftn 'entree (append (get ftn 'entree)
+		[['%%aux [quote ftn]]]))
+	(put ftn 'sortie (cons ['assert-sor [quote ftn][quote -x-]]
+				(get ftn 'sortie))))
+
+
+(de entree (ftn -x-) ; pour coller des assertions d'entree ;
+   (put ftn 'entree (cons -x- (get ftn 'entree))))
+
+(de sortie (ftn -x-)
+   (put ftn 'sortie (cons -x- (get ftn 'sortie))))
+
+(de all ()(setq -all- t))
+(de not-all () (setq -all- nil))
+
+
+(de trans (x) (nconc (cons "(" (alltrans x)) ")"))
+
+(de alltrans (x)
+  (cond
+      ((equal x "")())
+    (t (cons (strcar x)(alltrans (strcdr x))))))
+;
+; d'ici on ajout de l'environnement
+;
+
+(dmc |^ ()(implode(trans (readlin))))
+
+
+;;
+; ca fout la m... a l'evaluation de selections
+;;
+
+;(dml |? ()
+;  (let ((-window- (xwinp))
+;	(break 'titi)
+;	(if (not (xwindowp "*Aide" "*aide"))
+;	    (xcree_display (car -window-) (cadr -window-) "*Aide" "*aide")
+;	  (xchangwin "*Aide" "*aide") (xDisable)
+;	  (read-objets)
+;	  (changewin -window-)(xEnable)
+;	  nil
+;	  ))))
+
+;(de read-objets ()
+;    (read-objet)
+;(print "pour avoir de l'aide sur un autre sujet, tapez <esc>H")
+;    (princ "pour retourner a votre activite, tapez un caractere quelconque ")
+;    (cleos)
+;    (when (equal (tyi) 27)
+;	  (let ((x (tyi)))
+;	    (if (equal x 80)(save-screen)
+;	      (when (equal x 72)(read-objets)
+;		    )))))))))
+
+;(de read-objet ()
+;    (home)(cleos)
+;    (princ "l'objet: ")
+;    (let ((x (read)))
+;      (let ((y (strcar x)))
+;	(if (equal y "~")(setq x (strcdr x)) (setq y nil))
+;	(if (stringp x)(aide x y)
+;	  (if (and (null y)(ival x))(eval ['%descr x])
+;	    (if x (progn (aide x y) 
+;		(if y (let ((q nil))
+;			(mapc (append all_functions (append localvar globalvar))
+;			      (lambda (z)(if (strincp x z)(progn (setq q t)
+;								 (prin1 z)))))
+;			(if q (terpri)))))
+;	      (aide)
+;	      (mapc (append all_functions (append localvar globalvar))
+;		    'prin1) (terpri)
+;		    )))
+;	))
+;    )
+
+(print "et bientot ca sera termine ...")
+
+(de existe-qqc (x)
+ (let ((y (oblist))(z))
+   (while y (if (strincp x (car y)) (newl z (nextl y)) (nextl y))) z))
+
+
+(print "et encore .... ")
+
+(de tyi-or-print ()
+     (let ((tyi-or-print (tyi)))
+	(ifn (equal tyi-or-print 27) tyi-or-print
+	  (let ((tyi-or-print (tyi)))
+	    (ifn (equal tyi-or-print 80) tyi-or-print (save-screen)(tyi))))))
+		
+(de first-call (x n)
+  (let ((y (frame 5000)))
+     (while (neq (caar y) 'first-call)(nextl y))
+     (nextl y)
+     (and (eq (caar y) x) (lc1 n (cdr y)))))
+
+(de lc1 (n pil)
+   (if (null pil) (eq n 1) 
+       (if (eq (caar pil) x) 
+	  (if (eq n 1) ()
+		(lc1 (1- n) (cdr pil))))))
+
+(df chemin-entree (x)
+   ; test si <pile> = ft1->ftn2->ftn3 (mais pour les assertions ;  
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin-entree)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+	    (if (get (car x) '%%remprop) ()
+		(sortie (car x) `(%%remprop ',(car x)))
+		(put (car x) '%%remprop t)
+		(chemin1 x (cdr x) (cdr y))))))
+
+(df chemin-sortie (x) 
+   ; test si <pile> = ft1->ftn2->ftn3 (mais pour les assertions ;
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin-sortie)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+		(chemin1 x (cdr x) (cdr y))))))
+
+(df chemin (x) ; test si <pile> = ft1->ftn2->ftn3 ;
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+		(chemin1 x (cdr x) (cdr y))))))
+
+(de %%remprop (ftn)
+   (remprop ftn '%%remprop)
+   (enleve-sortie '%%remprop ftn))
+
+(de chemin1 (z y pil)
+  (if (null y) t
+   (if (null pil) ()
+      (if (eq (caar pil)(car y)) (chemin1 y (cdr y)(cdr pil))
+        (if (eq (caar pil) (car z)) 
+	   (if (equal z x) () (chemin1 z y (cdr pil))))))))
+
+(df |getdoc (---+x+---)
+   (mapc ---+x+---
+      (lambda (---+y+---)
+         ((lambda (---+z+---)
+            ((lambda (---+u+---)
+               (print ---+y+--- (if ---+u+---
+                     ---+u+---
+                     "raison inconnu"))) 
+	   (get (getcar ---+z+---) '|COM))) 
+      (fval ---+y+---)))))
+
+(not-all)
+(package)
+
+(print "ouf! c'est fait.")
+(sleep 1)
+(let (-window- (xwinp))
+  (xscroll -window- 0 7)
+  (poscur -window- 0 0) 
+  )
+; --- l'annonce standard
+(print "bvlisp UNIX Portable pour vous servir")
+; --- avertissons
+;(print "pour avoir des renseignements, tapez '?'")
+(print "Signalez tous les bugs avec un mail a 'bvlisp'");
+
+
+
+
+
+
+

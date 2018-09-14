@@ -1,0 +1,496 @@
+
+ Fonction  nb-total 		Def  /solair/people/damien/xbvl/dea/view-affect
+  vers  list-len 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  list-len 		Def  /solair/people/damien/xbvl/dea/view-affect
+  de    list-len 		Def  /solair/people/damien/xbvl/dea/view-affect
+  de    nb-total 		Def  /solair/people/damien/xbvl/dea/view-affect
+  de    nb-doublets 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  nb-doublets 		Def  /solair/people/damien/xbvl/dea/view-affect
+  vers  list-len 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  nb-atome 		Def  /solair/people/damien/xbvl/dea/view-affect
+  vers  var 			Def  nil
+
+ Fonction  dyn-arg-modify-out 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-arg-value-out 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-arg-modify-in 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-arg-value-in 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-out 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-in 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  dyn-self-call 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  anal-arg-var 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  anal-global-var 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  anal-descant-call 	Def  /solair/people/damien/xbvl/dea/view-affect
+  vers  get-calls 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  anal-typed-call 	Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  var-view-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  var 			Def  nil
+  de    nb-atome 		Def  /solair/people/damien/xbvl/dea/view-affect
+  de    var-symbolic-in 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  var-symbolic-in 	Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  var 			Def  nil
+
+ Fonction  face-out 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  f 			Def  nil
+
+ Fonction  face-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  f 			Def  nil
+
+ Fonction  reset-face-componantsDef  /solair/people/damien/xbvl/dea/view-in-out
+  vers  RedessineMoustaches 	Def  /solair/people/damien/xbvl/dea/view-draw
+  vers  RedessineNez 		Def  /solair/people/damien/xbvl/dea/view-draw
+  vers  RedessineBouche 	Def  /solair/people/damien/xbvl/dea/view-draw
+  vers  RedessineOeil 		Def  /solair/people/damien/xbvl/dea/view-draw
+  vers  RedessineTour 		Def  /solair/people/damien/xbvl/dea/view-draw
+  vers  exec-setting 		Def  /solair/people/damien/xbvl/dea/view-affect
+
+ Fonction  symbolic-out 	Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  atFunc 			Def  nil
+
+ Fonction  symbolic-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  atFunc 			Def  nil
+
+ Fonction  atFunc 		Def  nil
+  de    symbolic-out 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    symbolic-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    historic-out 		Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  historic-out 	Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  atFunc 			Def  nil
+
+ Fonction  historic-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  vers  lstrcat 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  RedessineOeil 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  filled 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    drawOeil 		Def  /solair/people/damien/xbvl/dea/view-draw
+
+ Fonction  RedessineNez 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  RedessineMoustaches 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  RedessineBouche 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  RedessineTour 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+
+ Fonction  drawOeil 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    RedessineOeil 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    drawFace 		Def  /solair/people/damien/xbvl/dea/view-draw
+
+ Fonction  drawNez 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    RedessineNez 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    drawFace 		Def  /solair/people/damien/xbvl/dea/view-draw
+
+ Fonction  drawBouche 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    RedessineMoustaches 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    RedessineBouche 	Def  /solair/people/damien/xbvl/dea/view-draw
+  de    drawFace 		Def  /solair/people/damien/xbvl/dea/view-draw
+
+ Fonction  drawTour 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    RedessineTour 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    drawFace 		Def  /solair/people/damien/xbvl/dea/view-draw
+
+ Fonction  drawFace 		Def  /solair/people/damien/xbvl/dea/view-draw
+  de    FaceInitFuncs 		Def  /solair/people/damien/xbvl/dea/view-faces
+
+ Fonction  exec-setting 	Def  /solair/people/damien/xbvl/dea/view-affect
+  de    reset-face-componants 	Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    FaceInitFuncs 		Def  /solair/people/damien/xbvl/dea/view-faces
+
+ Fonction  find-car-on-cdr 	Def  /solair/people/damien/xbvl/dea/view-lib
+  de    reverse-popup-widget 	Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  lstrcat-1 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    lstrcat-1 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    lstrcat 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  AddFacePopup 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-realist-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-realist-widgets Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-meters-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-historic-widgetsDef  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-settings 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-face-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  init-symbolic-widgetsDef  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-realist-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-meters-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-historic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-settings 		Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-face-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  init-symbolic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  vers  xCreateLabel 		Def  widget
+  vers  xCreateCom 		Def  widget
+
+ Fonction  draw-meters 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    update-meters 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  update-meters 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  draw-meters 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  view-atom 		Def  /solair/people/damien/xbvl/dea/view-var
+  vers  xModify 		Def  widget
+  vers  lstrcat 		Def  /solair/people/damien/xbvl/dea/view-lib
+  vers  view-cree-atom-widget 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  view-cree-atom-widgetDef  /solair/people/damien/xbvl/dea/view-var
+  de    view-atom 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-pays-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  replace-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  vers  add-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  update-stats 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-stat-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  replace-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  vers  add-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  reinit-stats 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-meters-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-type-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-val-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-type-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-type-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  init-meters-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  xPopupAtPointer 	Def  widget
+  vers  init-val-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  init-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  vers  xPopupAtPointer 	Def  widget
+
+ Fonction  init-var-meter 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  xPopupAtPointer 	Def  widget
+  vers  add-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  init-var-call 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  kill-var-call 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  vers  init-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  vers  kill-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  print-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    print-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  replace-ival 	Def  /solair/people/damien/xbvl/dea/view-lib
+  de    add-in-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    init-meters-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-val-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-pays-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-stat-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    set-influence 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  set-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    set-var-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  get-calls 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    anal-descant-call 	Def  /solair/people/damien/xbvl/dea/view-affect
+  de    set-var-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  set-var-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    set-influence 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  set-var-value 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  add-var-in-form 	Def  /solair/people/damien/xbvl/dea/view-var
+  vers  xGetHoriz 		Def  widget
+  vers  xGetVert 		Def  widget
+
+ Fonction  add-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    init-meters-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-val-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-pays-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-stat-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-meter 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    displayVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  add-in-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    displayVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  p-p 			Def  nil
+  de    displayFunc 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  displayVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    node-callback 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  get-func-tree 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    get-func-tree 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    node-callback 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  killVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    node-callback 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  displayFunc 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    node-callback 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  node-callback 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  displayVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  get-func-tree 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  killVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  displayFunc 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  get-settings-string 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-settings 		Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    redisplay-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  get-menu-widgets 	Def  /solair/people/damien/xbvl/dea/view-lib
+  de    reverse-popup-widget 	Def  /solair/people/damien/xbvl/dea/view-lib
+  de    redisplay-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  redisplay-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    modif-methode    		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  modif-methode    	Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  redisplay-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  modif-affect-setting 	Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  modif-componant 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  set-param 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  set-root 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  DelParam 		Def  nil
+  de    set-affect 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  AddParam 		Def  nil
+  de    set-affect 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  set-affect 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  DelParam 		Def  nil
+  vers  AddParam 		Def  nil
+
+ Fonction  set-type 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  modif-affect-setting Def  /solair/people/damien/xbvl/dea/view-lib
+  de    modif-methode    		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    sys-method 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  sys-method 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  modif-affect-setting 	Def  /solair/people/damien/xbvl/dea/view-lib
+  vers  reverse-popup-widget 	Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  reverse-popup-widget Def  /solair/people/damien/xbvl/dea/view-lib
+  de    sys-method 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    sys-settings 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  sys-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  reverse-popup-widget 	Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  settings-menu 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  enter-settings 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  init-variables 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  init-face 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  FaceInitFuncs 		Def  /solair/people/damien/xbvl/dea/view-faces
+
+ Fonction  init-symbolic 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  init-historic 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  del-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    replace-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    killVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    quit-widget 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  quit-widget 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  xRemove 		Def  widget
+  vers  del-ival 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  reinit-hist-system 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  FaceInitFuncs 	Def  /solair/people/damien/xbvl/dea/view-faces
+  de    init-face 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    reinit-face-system 	Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  reinit-face-system 	Def  /solair/people/damien/xbvl/dea/view-cmds
+  vers  FaceInitFuncs 		Def  /solair/people/damien/xbvl/dea/view-faces
+
+ Fonction  stepper 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  tree-switch 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  d-switch 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  is-good-func 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    cfunc-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    cfunc-get-calls 	Def  /solair/people/damien/xbvl/dea/view-analyse
+
+ Fonction  cfunc-get-calls 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    cfunc-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    build-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+
+ Fonction  cfunc-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    cfunc-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    build-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+
+ Fonction  build-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  vers  cfunc-get-calls 	Def  /solair/people/damien/xbvl/dea/view-analyse
+  vers  cfunc-call-tree 	Def  /solair/people/damien/xbvl/dea/view-analyse
+
+ Fonction  detruitcubic 	Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  enleve-cubic-trace 	Def  /solair/people/damien/xbvl/dea/cubic
+  vers  xRemove 		Def  widget
+
+ Fonction  n 			Def  nil
+  de    abs 			Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  abs 			Def  /solair/people/damien/xbvl/dea/cubic
+  vers  n 			Def  nil
+
+ Fonction  get-call-shape 	Def  /solair/people/damien/xbvl/dea/cubic
+  de    construitcubic 		Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  construitcubic 	Def  /solair/people/damien/xbvl/dea/cubic
+  de    cubic 			Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  InstallCubic 	Def  /solair/people/damien/xbvl/dea/cubic
+  de    cubic 			Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  cubic 		Def  /solair/people/damien/xbvl/dea/cubic
+  vers  construitcubic 		Def  /solair/people/damien/xbvl/dea/cubic
+  vers  InstallCubic 		Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  xPopupAtPointer 	Def  widget
+  de    init-type-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-visu 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-meter 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  FillPopup 		Def  widget
+  de    init-settings 		Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  lstrcat 		Def  /solair/people/damien/xbvl/dea/view-lib
+  de    historic-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    view-atom 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    xCreatePopupCommand 	Def  widget
+
+ Fonction  xCreatePopupCommand 	Def  widget
+  vers  xGetVert 		Def  widget
+  vers  lstrcat 		Def  /solair/people/damien/xbvl/dea/view-lib
+
+ Fonction  xsetColor 		Def  widget
+  de    kill-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    init-var-call 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    print-influence 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    set-influence 		Def  /solair/people/damien/xbvl/dea/view-var
+  de    set-var-value 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  xSetLabel 		Def  widget
+
+ Fonction  xRealizeWaiting 	Def  widget
+  de    view-cree-atom-widget 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    InstallCubic 		Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  xRemove 		Def  widget
+  de    quit-widget 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    enleve-cubic-trace 	Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  widget 		Def  nil
+  de    xRealizeWaiting 	Def  widget
+  de    xModify 		Def  widget
+
+ Fonction  xModify 		Def  widget
+  de    init-meters-visu 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    view-atom 		Def  /solair/people/damien/xbvl/dea/view-var
+
+ Fonction  xCreate 		Def  widget
+  de    init-meters-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-symbolic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-historic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    InstallCubic 		Def  /solair/people/damien/xbvl/dea/cubic
+
+ Fonction  xCreateLabel 	Def  widget
+  de    init-meters-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-face-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-symbolic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-historic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  xCreateCom 		Def  widget
+  de    init-meters-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-face-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    viewer-initWidgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+
+ Fonction  xGetVert 		Def  widget
+  de    init-settings 		Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-face-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-symbolic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    init-historic-widgets 	Def  /solair/people/damien/xbvl/dea/view-widgets
+  de    add-var-in-form 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    displayVars 		Def  /solair/people/damien/xbvl/dea/view-cmds
+  de    FillPopup 		Def  widget
+  de    xCreatePopupCommand 	Def  widget
+  de    xCreateLabel 		Def  widget
+  de    xCreateCom 		Def  widget
+
+ Fonction  xGetHoriz 		Def  widget
+  de    add-var-in-form 	Def  /solair/people/damien/xbvl/dea/view-var
+  de    xCreateLabel 		Def  widget
+  de    xCreateCom 		Def  widget
+
+ Fonction  clear-screen 	Def  widget
+  de    displayFunc 		Def  /solair/people/damien/xbvl/dea/view-cmds
+
+ Fonction  file 		Def  nil
+  de    play-sound 		Def  widget
+
+ Fonction  play-sound 		Def  widget
+  vers  file 			Def  nil
+
+ Fonction  f 			Def  nil
+  de    face-out 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    face-in 		Def  /solair/people/damien/xbvl/dea/view-in-out
+  de    is-good-func 		Def  /solair/people/damien/xbvl/dea/view-analyse
+  de    Views 			Def  bvlisp.ini
+
+ Fonction  Views 		Def  bvlisp.ini
+  vers  f 			Def  nil
+
+

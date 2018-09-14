@@ -1,0 +1,290 @@
+;;
+; integration des tetes
+;;
+
+; structuration des donnees proche des FACE_SETTINGS...
+
+(setq TETE_FILE   "/solair/people/damien/xbvl/dea/tete/tete0"
+      TETE_PARAMS '((1 . 6) (2 . 8) (3 . 4) (4 . 7))
+      TETE_METHODS 
+      '( "                      Controle                   "
+	("Fin des affectations                             " . 0)
+	("Montre le visage avec les parametres             " . 1)
+	 "      Methodes de calcul sur les procedures      " 
+	("Parametre invariant                              " . ())
+	 "    Numeration Syntaxique sur les procedures     " 
+	("Appels arboressant / appels utilisateurs         " . anal-descant-call)
+	("Appels a un type de procedure / tous les appels  " . anal-typed-call)
+	("Variables globales / toutes les variables        " . anal-global-var)
+	("Variables argument / variables locales           " . anal-arg-var)
+	 "Variation/Numeration Dynamique sur les procedures"
+	("Valeur/Longeur des arguments a l'entree          " . dyn-arg-value-in)
+	("Valeur/Longeur des arguments a la sortie         " . dyn-arg-value-out)
+	("Arguments changes / Nombre d'argument a l'entree " . dyn-arg-modify-in)
+	("Arguments changes / Nombre d'argument a la sortie" . dyn-arg-modify-out)
+	 "      Comportement Dynamique des procedures      "
+	("Entree dans la procedure                         " . dyn-in)
+	("Sortie de la procedure                           " . dyn-out)
+	("Auto-recursion                                   " . dyn-self-call)
+	 "        Parametre des methodes de calcul         "
+	("Type de procedure                                " . 2))
+      TETE_SETTINGS '((1) (2) (3) (4))
+      DECREMENT -3
+      BAD_MODE  -2
+      INCREMENT -1
+      PROC_TYPE 0)
+
+
+(de anal-typed-call (f mode)
+    (if mode BAD_MODE
+      (/ MAX_VAL 2)))
+
+(de anal-descant-call (f mode)
+    (if mode BAD_MODE
+      (if (listp (%find (ival f) 4))
+	  (/ (* (length (%find (ival f) 4)) MAX_VAL)
+	     (length (get-calls f)))
+	MAX_VAL)))
+
+(de anal-global-var (f mode)
+    (if mode BAD_MODE
+      (if (and (listp (%find (ival f) 1)) (listp (%find (ival f) 0)))
+	  (/ (* (length (%find (ival f) 1)) MAX_VAL)
+	     (+ (length (%find (ival f) 1)) 
+		(length (%find (ival f) 0))))
+	MAX_VAL)))
+
+(de anal-arg-var (f mode)
+    (if mode BAD_MODE
+      (if (and (listp (car (fval f))) (listp (%find (ival f) 0)))
+	  (/ (* (length (car (fval f))) MAX_VAL)
+	     (length (%find (ival f) 0)))
+	(/ MAX_VAL 2))))
+
+
+(de dyn-self-call (f mode cur)
+    (ifn mode BAD_MODE
+;	 (break io);
+	 (if (eval `(chemin ,f ,f dyn-self-call)) INCREMENT DECREMENT)))
+
+(de dyn-in (f mode cur)
+    (ifn mode BAD_MODE
+	 (if (eq mode 'e) INCREMENT DECREMENT)))
+
+(de dyn-out (f mode cur)
+    (ifn mode BAD_MODE
+	 (if (eq mode 'e) INCREMENT DECREMENT)))
+
+(de dyn-arg-value-in (f mode cur) 
+    (ifn (and (eq mode 'e) (car (fval f))) BAD_MODE
+	 (let ((old-somme (get cur 'args-somme))
+	       (new-somme 0))
+	   (ifn old-somme (setq old-somme 0))
+	   (mapc (car (fval f))
+		 (lambda (x)
+		   (let (x-val (eval x))
+		     (cond
+		      ((listp x-val) (setq new-somme (+ new-somme (length x-val))))
+		      ((numbp x-val) (setq new-somme (+ new-somme x-val)))))))
+	   (put cur 'args-sommes new-somme)
+	   (if (> new-somme old-somme) INCREMENT
+	     (if (< new-somme old-somme) DECREMENT
+	       BAD_MODE)))))
+
+
+(de dyn-arg-modify-in (f mode cur) 
+    (ifn (and (eq mode 'e) (car (fval f))) BAD_MODE
+	 (let ((cur-v (get cur 'args-values))
+	       (changed 0))
+	   (mapc (car (fval f))
+		 (lambda (x)
+		   (if (neq (eval x) (get cur-v x)) (setq changed (+ 1 changed)))))
+	   (/ (* changed MAX_VAL) (length (car (fval f)))))))
+
+(de dyn-arg-value-out (f mode cur) 
+    (ifn (and (eq mode 's) (car (fval f))) BAD_MODE
+	 (let ((old-somme (get cur 'args-somme))
+	       (new-somme 0))
+	   (ifn old-somme (setq old-somme 0))
+	   (mapc (car (fval f))
+		 (lambda (x)
+		   (let (x-val (eval x))
+		     (cond
+		      ((listp x-val) (setq new-somme (+ new-somme (length x-val))))
+		      ((numbp x-val) (setq new-somme (+ new-somme x-val)))))))
+	   (put cur 'args-sommes new-somme)
+	   (if (> new-somme old-somme) INCREMENT
+	     (if (< new-somme old-somme) DECREMENT
+	       BAD_MODE)))))
+
+
+(de dyn-arg-modify-out (f mode cur) 
+    (ifn (and (eq mode 's) (car (fval f))) BAD_MODE
+	 (let ((cur-v (get cur 'args-values))
+	       (changed 0))
+	   (mapc (car (fval f))
+		 (lambda (x)
+		   (if (neq (eval x) (get cur-v x)) (setq changed (+ 1 changed)))))
+	   (/ (* changed MAX_VAL) (length (car (fval f)))))))
+	
+
+					 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+					 ; Initialisation des fenetres ;      
+					 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
+(de SetTete (func-tree)
+    (ifn (boundp 'tete-root) (setq tete-root (gensym)))
+    (initTeteWinds)
+;    (mapc func-tree 'affectTete);
+    (xRealize tete-root)
+    (xPopup (get tete-root 'root-popup)))
+
+(de quit-tete-setting () (xRemove tete-root))
+
+(de AddFacePopup (form func numb name)
+
+    (setq tmp-c (xCreateWidget (gensym) "awCommand" form 
+			       "label" (strcat numb)
+			       "horizDistance" tmp-x))
+    (xAddCallback tmp-c "callback" (strcat "(" func " " numb " '" tmp-c ")"))
+    (setq tmp-v (xCreateWidget (gensym) "Drawxbvl" form 
+			       "width" 100 "height" 100
+			       "horizDistance" (setq tmp-x 
+						     (+ tmp-x (xGetValues tmp-c "width")))))
+    (setq tmp-x (+ tmp-x 104))
+    (put tmp-d numb tmp-v))
+
+
+(de initTeteWinds ()
+    (setq tete-root (xCreateWidget tete-root "ApplicationShell"))
+    (setq tmp (xCreateWidget (gensym) "awCommand" tete-root "label" "Quit Settings"))
+    (xAddCallback tmp "callback" "(quit-tete-settings)")
+    (put tete-root 'root-popup (xCreateWidget (gensym) "OverrideShell" tete-root))
+    (setq tmp (xCreateWidget (gensym) "awForm" (get tete-root 'root-popup)))
+    (put tete-root 'result (xCreateWidget (gensym) "Drawxbvl" tmp "width" 100 "height" 100 
+					  "borderWidth" 5))
+    (setq tmp-x1 110)
+    (put tete-root 'draws (setq tmp-d (gensym)))
+    (setq tmp-d1 (gensym))
+    (mapc TETE_PARAMS 
+	  (lambda (x)
+	    (setq tmp-d tmp-d1)
+	    (setq tmp-x tmp-x1)
+	    (AddFacePopup tmp "set-root " (car x) (car x))
+	    (put tete-root (car x) (xCreateWidget (gensym) "OverrideShell" tete-root))
+	    (setq tmp-1 (xCreateWidget (gensym) "awForm" (get tete-root (car x))))
+	    (setq tmp-x1 tmp-x)
+	    (setq tmp-d (gensym))
+	    (setq tmp-x 4)
+	    (setq cnt 0)
+	    (while (< cnt (1+ (cdr x)))
+	      (AddFacePopup tmp-1 "set-param " cnt (strcat (car x) cnt))
+	      (incr cnt))
+	    (xSetValues (get tete-root (car x)) "y" 110)
+	    (xPopup (get tete-root (car x)))
+	    (setq cnt 0)
+	    (while (< cnt (1+ (cdr x)))
+	      (xDisplayBitmap (get tmp-d cnt) (strcat TETE_FILE (car x) cnt ".bmp") 0 0 6)
+	      (incr cnt))
+	    (xPopdown (get tete-root (car x)))))
+    (put tete-root 'affect-popup (xCreateWidget (gensym) "OverrideShell" tete-root "y" 220))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get tete-root 'affect-popup)
+				  "background" 2))
+    (setq tmp ())
+    (mapc TETE_METHODS
+	  (lambda (cur)
+	    (if (stringp cur)
+		(setq tmp-com (xCreateWidget (gensym) "awLabel" tmp-form
+					     "label" cur
+					     "foreground" 0 "background" 1))
+	      (setq tmp-com (xCreateWidget (gensym) "awCommand" tmp-form
+					   "label" (car cur)))
+	      (xAddCallback tmp-com "callback" 
+			    (strcat "(set-affect '" tmp-com " '" (cdr cur) ")")))
+	    (if tmp (xSetValues tmp-com "vertDistance" (xGetVert tmp)))
+	    (setq tmp tmp-com)))
+    (put tete-root 'proc-popup (xCreateWidget (gensym) "OverrideShell" tete-root))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" (get tete-root 'proc-popup)))
+    (put tete-root 'proc-label (setq tmp (xCreateWidget (gensym) "awLabel" tmp-form "label" "NONE  " 
+							"background" 1 "foreground" 0)))
+
+    (mapc '((-1 . fin)  (0 . NONE)  (1 . SUBR0) (2 . SUBR1) (3 . SUBR2) (4 . SUBR3) (5 . NSUBR) 
+	    (6 . FSUBR) (7 . EXPR)  (8 . FEXPR) (9 . MACRO) (10 . ESCAPE) (11 . MACOUT))
+	  (lambda (cur)
+	    (setq tmp (xCreateWidget (gensym) "awCommand" tmp-form "label" (cdr cur)
+				     "vertDistance" (xGetVert tmp)))
+	    (xAddCallback tmp "callback" (strcat "(set-type '" cur))))
+
+    (xPopup (get tete-root 'root-popup))
+    (mapc TETE_PARAMS
+	  (lambda (x)
+	    (xDisplayBitmap (get tmp-d1 (car x)) (strcat TETE_FILE (car x) ".bmp") 0 0 6)))
+    (xPopdown (get tete-root 'root-popup)))
+					; callback routines ;
+
+(de set-root (num cmd)
+    (print num cmd)
+    (put tete-root 'cur-root num)
+    (xClearArea (get tete-root 'result) 0 0 100 100)
+    (xDisplayBitmap (get tete-root 'result) (strcat TETE_FILE num ".bmp") 0 0 7)
+    (xPopup (get tete-root num))
+    (xPopup (get tete-root 'affect-popup)))
+
+(de set-param (num cmd)
+    (print num cmd)
+    (let (old-cmd (get tete-root 'cur-cmd))
+      (if old-cmd 
+	  (xSetValues old-cmd "foreground" 1 "background" 0))
+      (xSetValues cmd "foreground" 0 "background" 1)
+      (put tete-root 'cur-param num)
+      (put tete-root 'cur-cmd cmd)))
+
+(de set-proc-type ()
+    (xPopupAtPointer (get tete-root 'proc-popup)))
+
+(de set-type (type)
+    (if (< 0 (car type)) (xPopdown (get tete-root 'proc-popup))
+      (xSetValues (get tete-root 'proc-label) "label" (cdr type))))
+
+(de set-affect (cmd func)
+    (let ((cur-t (get tete-root 'cur-root))
+	  (cur-p (get tete-root 'cur-param)))
+      (cond
+       ((= func 0) 
+	(xPopdown (get tete-root 'affect-popup))
+	(xPopdown (get tete-root cur-t))
+	(put tete-root 'cur-param ()))
+       ((= func 1)
+	(xClearArea (get tete-root 'result) 0 0 100 100)
+	(xDisplayBitmap (get tete-root 'result) (strcat TETE_FILE cur-t ".bmp") 0 0 7)
+	(mapc (%find TETE_SETTINGS cur-t)
+	      (lambda (x)
+		(if (cadr x)
+		    (xDisplayBitmap (get tete-root 'result) 
+				    (strcat TETE_FILE cur-t (car x) ".bmp") 0 0 7)))))
+       ((= func 2) 
+	(set-proc-type))
+       (t
+	(if func
+	    (AddParam (get tete-root 'result) cur-t cur-p))
+	(ifn (%find TETE_SETTINGS cur-t)
+	     (rplacd (car (member `(,cur-t) TETE_SETTINGS)) `((,cur-p  ,func)))
+	     (let (sets (%find (%find TETE_SETTINGS cur-t) cur-p))
+	       (ifn sets 
+		    (if func (rplacd (%find TETE_SETTINGS cur-t) 
+				     `((,cur-p  ,func) ,@(cdr (%find TETE_SETTINGS cur-t)))))
+		    (rplaca sets func)
+		    (ifn func (DelParam (get tete-root 'result) cur-t cur-p)))))))))
+	
+    
+					; Routines de dessin ;
+
+(de AddParam (wig tete param)
+    (ifn (iswidget wig) ()
+	 (xDisplayBitmap wig (strcat TETE_FILE tete param ".bmp") 0 0 7)))
+
+(de DelParam (wig tete param)
+    (ifn (iswidget wig) ()
+	 (xDisplayBitmap wig (strcat TETE_FILE tete param ".bmp") 0 0 6)
+	 (xDisplayBitmap wig (strcat TETE_FILE tete ".bmp") 0 0 7)))
+

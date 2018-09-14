@@ -1,0 +1,22 @@
+
+
+;;
+; List all functions definition files, there calls definition file and where they were
+; called from....
+;;
+
+(de PrintFuncUses (func type label)
+    (let (calls (%find (ival func) type))
+      (ifn calls ()
+	   (print label (car calls) "\t\tDef " (car (%find (ival (car calls)) 10)))
+	   (self (cdr calls)))))
+
+(de PrintUses (funcs file)
+    (if file (output file))
+    (mapc (ifn funcs all_functions (if (listp funcs) funcs (list funcs)))
+	  (lambda (x)
+	    (print "Fonction " x "\t\tDef " (car (%find (ival x) 10)))
+	    (cond
+	     ((%find (ival x) 3) (PrintFuncUses x 3 " de   "))
+	     ((%find (ival x) 4) (PrintFuncUses x 4 " vers ")))))
+    (output))

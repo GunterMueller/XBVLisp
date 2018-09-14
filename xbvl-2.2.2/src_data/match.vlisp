@@ -1,0 +1,154 @@
+;			le pattern-matcher			;		
+
+(setq --x-- careful careful nil)
+(package match)
+(de e ()(sh "edith /usr/vlisp80/hw/lisp/src/match.vlisp"))
+(ctrlz t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(de |match (pat dat alist 3arg)
+  [
+   (if (match1 (vor (subst1 nil "~~%%~~" pat))
+	      (vor (subst1 nil "~~%%~~" dat))) '|ok '|non)
+      (subst1 "~~%%~~" nil (|mapcar alist 'nach1))])
+
+(de match1 (pat dat ;; x alist2 pat2 xx)
+   (escape exit (cond
+	((null pat) ; fin du pattern ; (null dat))
+	((atom pat) (equal pat dat))
+	((and dat (atom dat)) ())
+	((eval (car 3arg)) ; pour des activites user defined ;
+		(eprogn (cdr 3arg)))
+	((atom (car pat))
+		(if (equal (nextl pat)(nextl dat))(match1 pat dat)()))
+	((equal (caar pat) "!") ; y'a un element a matcher ;
+	  (if (null dat)(exit nil))
+	  (if (setq x (assq (cadar pat) alist))
+		(match1 (if (atom (cdr x)) [(cdr x) . (cdr pat)]
+				(append ['%%% . (append (cdr x) '(%%1))]
+					 (cdr pat))) dat)
+	 	(setq x (nextelem) alist2 alist)
+		(ifn (equal (cadar pat) "-")
+		     (setq alist [[(cadar pat) . (enleve x)] . alist]))
+		; eventuellement des contraintes sur les valeurs ;
+		(or (prep1 (cddar pat))(exit (nextl alist) nil))
+		(or (match1 (cdr pat) dat)(progn (setq alist alist2) nil))))
+	((equal (caar pat) "@")
+	   ; y'a choix entre plusieurs constantes ;
+	   (setq x (cdr (nextl pat)) alist2 alist)
+	   (while x
+	      (and (match1 [(nextl x) . pat] dat)(exit t))
+	      (setq alist alist2)))
+	((equal (caar pat) "&") ; un segment ;
+	   (if (setq x (assq (cadar pat) alist))
+		(match1 (vor (append (cdr x)(cdr pat))) dat)
+		(setq x (nextl pat) pat2 [(cadr x)])
+		(cond
+		  ((null pat) ; si c'est le dernier segement ;
+			(if (equal (cadr x) "-") t
+			    (setq alist [[(cadr x) . dat] . alist])
+			    (or (prep1 (cddr x))(exit (nextl alist)()))))
+		  (t ; y'a des essais a faire ;
+		    (if (equal (car pat2) "-") () (setq alist [pat2 . alist]))
+		    (setq alist2 alist)
+		    (while dat ; boucle des essais successifs ;
+			(escape ex (or (prep1 (cddr x))(ex))
+				   (and (match1 pat dat) (exit t)))
+			(setq alist alist2)
+			(if (equal (car pat2) "-")(nextelem)
+				(setq xx (nextelem))
+				(nconc pat2 (if (atom xx) [xx] xx))))
+			(ifn (equal (car pat2) "-")
+				(setq alist (cdr alist2))) 
+			nil)))))))
+
+; pour l'evaluation des contraintes ;
+
+(de prep1 (x)(eval ['and . (prep x)]))
+
+(de prep (x)(cond
+	((atom x) x)
+	((member (car x) '("&" "!"))
+		(if (cddr x)
+		  [[quote (cdr (assq (cadr x) alist))] . (prep (cddr x))]
+		  [quote (cdr (assq (cadr x) alist))]))
+	(t [(prep (car x)) . (prep (cdr x))])))
+
+; pour enlever les parentheses ;
+
+(de vor (x)(cond
+	((atom x) x)
+	((atom (car x))[(car x) . (vor (cdr x))])
+	((member (caar x) '("&" "!" "@")) [(car x) . (vor (cdr x))])
+	(t (append (append ['%%% . (vor (car x))] '%%1)(vor (cdr x))))))
+
+; pour enlever les paraentheses de trop
+
+(de enleve (x)
+  (if (eq (car x) '%%%)(enleve1 (cdr x)) x)))
+
+(de enleve1 (l)(if (cdr l)(cons (car l)(enleve1 (cdr l))) ())))
+
+; pour remettre les parentheses ;
+
+(de nach1 (x)(nach))
+
+(de nach ()(cond
+	((atom x) x)
+	((eq (car x) '%%1)(nextl x) ())
+	((eq (car x) '%%%)(nextl x)[(nach) . (nach)])
+	(t [(nextl x) . (nach)])))
+
+; pour avancer dans dat ;
+
+(de nextelem ()
+   (if (neq (car dat) '%%%) (nextl dat)(nextelem1 0)))
+
+(de nextelem1 (x)(cond
+	((eq (car dat) '%%1)
+	  (if (eq x 1) [(nextl dat)][(nextl dat) . (nextelem1 (1- x))]))
+	((eq (car dat) '%%%)
+	  [(nextl dat) . (nextelem1 (1+ x))])
+	([(nextl dat) . (nextelem1 x)])))
+
+; pour eviter les problemes avec nil
+
+(de subst1 (x y z)(cond
+	((atom z) z)
+	((equal (car z) x)[y . (subst1 x y (cdr z))])
+	([(subst1 x y (car z)) . (subst1 x y (cdr z))])))
+
+; macro-caractere de segement
+
+(dmc "&" (x)(setq x (read))(if (atom x) ["&" x]["&" . x]))
+
+; macro-caractere d'element
+
+(dmc "!" (x) (setq x (read))(if (atom x) ["!" x]["!" . x]))
+
+; macro-caractere de constantes multilples
+
+(dmc "@" (x) (setq x (read))(if (atom x) ["@" x]["@" . x]))
+
+(package)
+
+(print "match.vlisp charge")
+
+(careful --x--)

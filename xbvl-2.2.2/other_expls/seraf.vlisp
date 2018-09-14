@@ -1,0 +1,103 @@
+; conversion d'une ER en AF ;
+
+; 26 noeuds sont possibles (a etendre) ;
+
+(setq Noeuds '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+
+(de initNoeuds ()
+    (setq Noeuds '(X Y))
+    (setq CompteurNoeuds 0)
+    (put (car Noeuds) 'init t)
+    (put (cadr Noeuds) 'term t))
+
+(de initChaqueNoeud (-noeuds-)
+    (if (null -noeuds-) t
+      (put (car -noeuds-) 'init nil)
+      (put (car -noeuds-) 'term nil)
+      (put (car -noeuds-) 'to nil)
+      (initChaqueNoeud (cdr -noeuds-))))
+
+(de explodeIntelligent (uneListe)
+    (cond
+     ((null uneListe) ())
+     ((and (atom uneListe) (not (null (explode uneListe))))
+      (explode uneListe))
+     ((atom uneListe) uneListe)
+     ((listp (car uneListe))
+      (cons 
+	(explodeIntelligent (car uneListe))
+	(explodeIntelligent (cdr uneListe))))
+     ((and (atom (car uneListe))
+	   (not (null (cdr (explode (car uneListe))))))
+      (append (explode (car uneListe)) (explodeIntelligent (cdr uneListe))))
+     (t
+      (cons (car uneListe) (explodeIntelligent (cdr uneListe))))))
+
+(de nouveauNoeud ()
+    (setq CompteurNoeuds (1+ CompteurNoeuds))
+    (setq Noeuds (append Noeuds (gensym 'Noeud- CompteurNoeuds)))
+    (car (reverse Noeuds)))
+
+(de parcour (-noeuds-)
+    (if (null -noeuds-) t
+      (if (null (get (car -noeuds-) 'to)) (parcour (cdr -noeuds-))
+	(let ((unTo (get (car -noeuds-) 'to)) 
+	      (Tofinal ()) 
+	      (nouvNoeud))
+	  (cond
+	   ((null unTo) 
+	    (if (not (null Tofinal)) (put (car -noeuds-) 'to Tofinal))
+	    (parcour (cdr -noeuds-)))
+	   ((atom (cadar unTo))         ; Fin... de fleche... ;
+	    (self (cdr unTo) (append Tofinal [(car unTo)])))
+	   ((and (listp (cadar unTo))   ; id ;
+		 (null (cdr (cadar unTo))))
+	    (self (append (cdr unTo) [(cons (caar unTo) (car (cadar unTo)))])
+		  Tofinal))
+	   ((eq (cadr (cadar unTo)) '+)       ; + ;
+	    (self (append (cdr unTo)
+			  (append [(cons (caar unTo) [(car (cadar unTo))])]
+				  [(cons (caar unTo) [(cddr (cadar unTo))])]))
+		  Tofinal))
+	   ((eq (cadr (cadar unTo)) '*)
+	    (self (append (cdr unTo) 
+			  (append [(cons (car -noeuds-) [(car (cadar unTo))])]
+				  [(cons (caar unTo) [(cddr (cadar unTo))])]))
+		  Tofinal))
+	   (t
+	    (setq -noeuds- (append -noeuds- (setq nouvNoeud (nouveauNoeud))))
+	    (put nouvNoeud 'to [(cons (caar unTo) [(cdr (cadar unTo))])])
+	    (self (append (cdr unTo) [(cons nouvNoeud [(car (cadar unTo))])])
+		  Tofinal))))
+      )))
+
+(de eraf (ER Noeuds CompteurNoeud)
+    (if (null ER) ()
+      (setq ER (explodeIntelligent ER))
+      (initNoeuds)
+      (put (car Noeuds) 'to [(cons (cadr Noeuds) [ER])])
+      (parcour Noeuds)
+      (dessine (car Noeuds))))
+
+(de dessine (aFaire Fait)
+    (setq Fait ())
+    (dessine1 aFaire))
+
+(de dessine1 (aFaire)
+    (if (null aFaire) t
+      (print "Noeud" aFaire)
+      (dessineFleches (get aFaire 'to))
+      (let ((unTo (get aFaire 'to)))
+	(if (not (or (member (caar unTo) Fait)
+		     (eq (caar unTo) aFaire)))
+	    (progn
+	      (setq Fait (append Fait aFaire))
+	      (dessine1 (caar unTo))))
+	(if (not (null unTo)) (self (cdr unTo))))))
+
+(de dessineFleches (l)
+    (if (null l) t
+      (print "---" (cdar l) "--->" (caar l))
+      (dessineFleches (cdr l))))
+
+

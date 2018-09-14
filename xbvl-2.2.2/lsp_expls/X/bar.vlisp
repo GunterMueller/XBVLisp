@@ -1,0 +1,30 @@
+;calcul du factoriel 
+
+; avec :
+
+; recursion non terminal
+(de bar (n)
+    (if (= 0 n) 
+	1
+      (* n (bar (- n 1)))
+      )
+    )
+	
+; recurtion terminal    
+(de t-bar(n r)
+    (if (or (not (numbp r)) (< r 1))
+	(t-bar n 1)
+      (if (= 0 n) r
+	(t-bar (1- n) (* n r))
+	)
+      )
+    )
+
+;
+
+(de affiche (l)
+    (if (null l)
+	t
+      (print "--------------")
+      (print (car l))
+      (affiche (cdr l))))

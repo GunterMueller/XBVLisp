@@ -1,0 +1,139 @@
+!
+!       /usr/lib/app-defaults/Xbvl
+!
+!
+!	resources de l'application xbvl
+!       -------------------------------
+*Background:gray95
+*Foreground:black
+*BorderColor: seagreen
+*WinPages : 2
+*WinHaut : 15
+*WinLarge : 80
+*DefaultDistance: 0
+*BorderWidth: 1
+*Font : 9x15
+!
+!
+!
+!
+!       pour les sessions interactives
+!	------------------------------
+!    les translations pour les widgettes utilisees
+!    pour les sessions interatctives.
+!	
+*bVLISP*defaultDistance : 0
+!	un message pour la session interactive
+!
+*xbvl-form.background : gray40
+*aide*background : wheat
+*Aide-root*foreground : black
+*form-aide.background : black
+!
+*menu*borderColor: red
+*menu*borderWidth: 3
+*menu*horizDistance : 0
+*menu*vertDistance : 0
+!
+!	les widgette d'acces au modules
+!	de Documentation
+!
+*doc-bVLISP*borderWidth : 2
+*doc-bVLISP*docWiewPort*borderColor : black
+*doc-bVLISP*Forme.defaultDistance : 3
+*doc-bVLISP*docUnmap.label : unmap
+*doc-bVLISP*docLocal.label : doc local
+*doc-list*defaultColumns : 4
+*doc-form.background : gray50
+!
+!
+!resources du pop-menu
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Appearance resources
+!
+*std-menu-form.background : gray40
+*std-menu-label.label:  Menu Principal
+*std-menu-label.background: white
+!--------------------------
+*std-command0.label:  Creer
+*std-command0.cursor:  pencil
+*std-command0.background : green
+!--------------------------
+*std-command1.label:  Aide
+*std-command1.cursor: question_arrow
+*std-command1.background: blue
+*std-command1.foreground: white
+!--------------------------
+*std-command2.label:  Break
+*std-command2.cursor: star
+*std-command2.background:  yellow
+!--------------------------
+*std-command3.label:  Arret
+*std-command3.cursor: star
+*std-command3.background:  gray5
+*std-command3.foreground:  white
+!--------------------------
+*std-command4.label:  Stop
+*std-command4.cursor: pirate
+*std-command4.background : red
+!--------------------------
+!
+*pshell.Box.hSpace: 0
+*pshell.Box.vSpace: 0
+*menubox*width:  80
+*menubox.Command.justify: left
+!
+! Functional resources
+!
+
+*menubox.Command.translations:\
+   <EnterWindow>:   highlight() \n\
+   <LeaveWindow>:   reset() \n\
+   <BtnUp>:         set() notify() unset()
+
+!
+*pshell.translations:\
+   <BtnUp>:         MenuPopdown(pshell)
+!
+*menu.translations : \
+		<BtnDown>:	placeMenu() MenuPopup(pshell) \n\
+		<Leave>:	toggle_border_color() \n\
+		<Enter>: 	toggle_border_color() \n\
+		<Key>F1:	liste_aide() \n\
+		<Key>F2:	cree_bVLISP_window()  \n\
+		<Key>F3:	arret()  \n\
+		<Key>F4:	stop()  
+
+*docTitre.translations : #augment \
+	<EnterWindow> : toggle_foreground_color() \n\
+        <LeaveWindow> : toggle_foreground_color() \n\
+
+
+*docLocal.translations: \
+   <EnterWindow>:     toggle_foreground_color()  highlight()   \n\
+   <LeaveWindow>:     toggle_foreground_color()  reset()        \n\
+   <BtnUp>:           set() notify() unset()
+
+*docViewPort.translations : #augment \
+	<EnterWindow> : toggle_border_color() \n\
+	<LeaveWindow> : toggle_border_color() \n\
+	<Key>F1 : toggle_background_color()
+
+*docList.translations : #augment \
+		<Key>F1:	toggle_border_color() \n\
+		<Key>F2:	toggle_background_color() \n\
+		<Key>F3:	cree_bVLISP_window()  \n\
+		<Key>F4:	arret()  \n\
+		<Key>F5:	stop()  
+
+! Boite de Dialoge utilisee par bVLISP
+*dialog*Command*label:	Fin Dialog 
+*dialog*Command*background: blue
+*dialog*Command*foreground: white
+*dialog*Command*Cursor : hand2
+*dialog*Command*accelerators : <Key>Escape:  set() notify() 
+*dialog*Command*acceleratorString: (ESC)
+
+! Boite de Confirmation utilisee par bVLISP
+*confirm*Command.Cursor : hand2
+*confirm*Command*accelerators : <Key>o:  set() notify()

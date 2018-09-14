@@ -1,0 +1,53 @@
+(de min l (trouve '<  10000 l))
+(de max l (trouve '> -10000 l))
+
+(de trouve (f val l)
+  (cond ((null l) val)
+	((f (car l) val) (trouve f (car l) (cdr l)))
+	(t (trouve f val (cdr l)))))
+
+(setq x '(((8 7 3)(9 1 6)(2 4 1))((1 3 5)(3 9 2)(6 5 2))((1 2 3)(9 7 2)
+   (16 6 4))))
+
+(de valeur-static (situation) situation)
+
+(de fini (situation) (atom situation))
+
+(de mouvemts-possibles (situation) situation)
+
+(de new-valeur-static (situation depth) 
+	(if (null(zerop (rem depth 2))) situation (- 0 situation)))
+
+(de alpha-beta (situation alpha beta prof)(escape exit
+            (let 
+	      ((list-de-situs (mouvemts-possibles situation))
+	       (situ-suivant nil)(nouvelle-valeur nil)
+	       (mv-nombre 1)(liste-de-mvs nil)(resultat [alpha nil]))
+	      (if (or (fini situation)(null list-de-situs))
+		  [(new-valeur-static situation prof) nil]
+		(let ((list-de-situs list-de-situs)(mv-nombre mv-nombre))
+		   (if (null list-de-situs) resultat
+		       (setq situ-suivant (car list-de-situs)
+		             nouvelle-valeur 
+				(alpha-beta situ-suivant
+					   (- 0 beta) 
+					   (- 0 alpha) (1+ prof)))
+		       (setq liste-de-mvs (cadr nouvelle-valeur)
+       		             nouvelle-valeur 
+				(- 0 (car nouvelle-valeur)))
+			(if (> nouvelle-valeur alpha)
+				(setq alpha nouvelle-valeur
+				      resultat [nouvelle-valeur
+					(cons mv-nombre liste-de-mvs)]))
+			(if (ge alpha beta)
+			  (exit 
+			     (print "a la profondeur"
+				prof "coupure de"
+				(length (cdr list-de-situs)) 
+				(if (listp situ-suivant) ["+" (length (cdr situ-suivant))] "")
+				"branche(s)")
+			      resultat))
+		       (self (cdr list-de-situs)(1+ mv-nombre))))))))
+
+(de foo (x)(alpha-beta x -100 100 1))
+(de bar ()(sh "emacs")(lib cour))

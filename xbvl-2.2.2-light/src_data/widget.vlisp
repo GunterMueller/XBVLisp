@@ -1,0 +1,281 @@
+; @D.Ploix 93 ;
+; ;
+; Package de routines utilisees pour la gestion des widgets ;
+; ;
+; inibition de careful lors du chargement ;
+(setq --x-- careful careful nil 
+      defun 'de) ; pour le font-lock-mode de emacs
+
+; definitions du graphic context ;
+(setq GC_COPY 3
+      GC_OR   7
+      GC_XOR  6
+      GC_SET  15)
+
+					; ****************************************************** ;
+					; création/effacement/réalisation de widgets spécifiques ;
+					; ****************************************************** ;
+;
+; réalisation d'un widget avec attente de la réalisation effective
+;
+(defmacro xRealizeWaiting (widget)
+  `(progn
+     (xRealize ,widget)
+     (while (not (xCheckEvent ,widget "MapNotify")))))
+;
+; destruction d'un widget par la destruction de son parent (ApplicationShell)
+;
+(defmacro xRemove (widget)
+  `(xRemoveWidget (xGetSupWidget ,widget "ApplicationShell")))
+
+;
+; création d'un widget de type awCommand 
+; les arguments sont :
+;    root : parent
+;    nom  : nom du nouveau widget 
+;    left-widget : widget a gauche du nouveau
+;    top-widget  : widget au dessus du nouveau
+;    command     : callback associe avec le nouveau widget
+;
+(defun xCreateCom (root nom left-widget top-widget command font)
+   (let (com (xCreateWidget '--AC-- "awCommand" root
+			     "label" nom))
+     (if font (xSetValues com "font" font))
+     (if left-widget
+	 (xSetValues com "horizDistance" (xGetHoriz left-widget)
+		     "x" (xGetHoriz left-widget)))
+     (if top-widget
+	 (xSetValues com "vertDistance" (xGetVert top-widget)
+		     "y" (xGetVert top-widget)))
+     (xSetValues com "left" "ChainLeft" "right" 2 "top" 0 "bottom" 0)
+     (if command
+	 (xAddCallback com "callback" command))
+     com
+     ))
+
+;
+; creation d'un widget de type label 
+; les arguments sont :
+;    root : parent du nouveau
+;    label : label d'initialisation
+;    left-widget : widget a gauche du nouveau
+;    top-widget  : widget au dessus du nouveau
+;    is_right    : redimensionnement a droite ?
+;    is_left     : redimensionnement a gauche ?
+;
+(defun xCreateLabel (root label width left-widget vert-widget is_right is_left)
+   (let (com (xCreateWidget (gensym) "awLabel" root
+			    "top" 0 "bottom" 0
+			    "label" label))
+     (ifn is_right (xSetValues com "right" 2))
+     (ifn is_left  (xSetValues com "left" "ChainLeft"))
+     (if width
+	 (xSetValues com "width" width))
+     (if left-widget
+	 (xSetValues com "horizDistance" (xGetHoriz left-widget)
+		     "x" (xGetHoriz left-widget))
+	(xSetValues com "horizDistance" 4))
+     (if vert-widget
+	 (xSetValues com "vertDistance" (xGetVert vert-widget)
+		     "y" (xGetVert vert-widget)))
+     com
+     ))
+
+;
+; craation d'un widget avec les donnees suivantes :
+;    type : type du widget
+;    name : nom
+;    pixmap : fichier bitmap lie a  l'icone du nouveau widget
+;    scroll-vert, scroll-horiz : scroll bars ??
+;    values : valeur supplementaires sous la forme (("type1" . val1) ( . ) ..) 
+;    is_realized : lancement de xRealize ??
+;
+(defun xCreate (type name pixmap lenght width scroll-vert scroll-horiz values is_realize)
+    (let (root (xCreateWidget (gensym) "ApplicationShell" "title" name "iconName" name))
+      (if pixmap (xSetValues root "iconPixmap" pixmap))
+      (let (view (xCreateWidget (gensym) "awViewport" root
+				"allowVert" (if scroll-vert "True" "False")
+				"allowHoriz" (if scroll-horiz "True" "False")
+				"height" lenght
+				"width" width))
+	(let (ret (xCreateWidget (gensym) type view "width" width "height" lenght))
+	  (mapc values
+		(lambda (x) 
+		  (xSetValues ret (car x) (cadr x))))
+	  (if is_realize (xRealize root))
+	  ret))))
+
+;
+; Creation d'un widget list avec donnees...
+;
+; Arguments : title list defaultColumns [font] [width|100] [height|100] [allowHoriz]
+;
+(defun xCreateList (title list dcol font w h ah)
+    (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" title "iconName" title))
+	(let (vp (xCreateWidget '--AV-- "awViewport" root "allowVert" "True"
+				"allowHoriz" (if ah "True" "False")
+				"width" (if w w 100)
+				"height" (if h h 100)))
+	  (let (lst (xCreateWidget '--AL-- "awList" vp "list" list "columnSpacing" 1
+				   "defaultColumns" dcol
+				   "forceColumns" (if dcol "True" "False")))
+	    (if font (xSetValues lst "font" font))
+	    (xRealize root)
+	    lst)))))
+;
+; Creation d'un widget text d'edition/affichage
+;
+; Arguments: nom pere label editable [x y width height scrollH scrollV])
+;
+(defun xCreateText (nom pere label editable x y w h)
+    (let (tmp-src (xCreateWidget '--ASRC-- "awAsciiSrc" (xGetSupWidget pere "ApplicationShell") "type" "string"))
+      (let (tmp-txt (xCreateWidget nom "awAsciiText" pere "textSource" tmp-src))
+	(xSetValues tmp-txt "string" label)
+	(if editable (xSetValues tmp-txt "editType" "append"))
+	(if (or x y) (xSetValues tmp-txt "x" x "y" y))
+	(if (or w h) (xSetValues tmp-txt "width" w "heigth" h))
+	tmp-txt)))
+	
+; ************************************* ;
+; Géstion/Création des widgets de popup ;
+; ************************************* ;
+
+;
+; creation d'un element dans un popup
+;
+(defun xCreatePopupCommand (popup name command)
+    (let (-command- (xCreateWidget (gensym) "awCommand" popup "label" name))
+      (xAddCallback -command- "callback" (lstrcat command))
+      (if (iswidget popup "awForm")
+	(let (y (xGetVert (cadr (reverse (xGetValues popup "children")))))
+	  (xSetValues -command- 
+		      "vertDistance" y "y" y)))
+      -command-))
+
+;
+; Remplissage d'un popup
+;  command : commande liee avec les elements du popup
+;  values  : liste d'elements : ( "Label" ("Commande" . Argument) ...)
+;  set-fonts : font a utiliser pour les elements du popup
+;
+(defun FillPopup (popup command values set-fonts pkg)
+    (break)
+    (let ((form (xCreateWidget (gensym) "awForm" popup "background" 2))
+	  (currents values)
+	  (tmp ()))
+      (ifn currents form
+	   (if (stringp (car currents))
+	       (setq tmp-com (xCreateWidget (gensym) "awLabel" form
+					    "label" (car currents)
+					    "foreground" 0 "background" 1))
+	     (setq tmp-com (xCreateWidget (gensym) "awCommand" form
+					  "label" (caar currents)))
+	     (xAddCallback tmp-com "callback" 
+			   (strcat "(" (if pkg (strcat pkg "|" command) command)
+				   " '" tmp-com 
+				   " '" (if pkg (strcat pkg "|" (cdar currents)) (cdar currents)) ")")))
+	   (if set-fonts (xSetValues tmp-com "font" set-fonts))
+	   (if tmp (xSetValues tmp-com "vertDistance" (xGetVert tmp) "y" (xGetVert tmp)))
+	   (self form (cdr currents) tmp-com))))
+
+
+;
+; Realisation d'un popup a la position de la souris
+;
+(defun xPopupAtPointer (popup mode)
+    (let (-pospointer- (xGetPosPointer))
+      (xSetValues popup "x" (- (car -pospointer-) 10)
+		  "y" (- (cadr -pospointer-) 10)))
+    (xPopup popup mode)
+    popup)
+
+; ****************** ;
+; Boites de dialogue ;
+; ****************** ;
+;
+; Creation d'une boite de dialogue
+;   x,y    = position de la boite
+;   label  = label de la boite de dialogue
+;   value  = valeur initiale
+;   expr   = expression a evaluer lors de la selection de OK ou Cancelm
+;            la valeur retournee sera presente dans la variable xDialogValue
+;
+(defun xCreateDialogBox (label value expr) 
+    (let (root (xCreateWidget '--AW-- "ApplicationShell" "title" label))
+      (let (tmp (xCreateWidget '--DB-- "awDialog" root "label" label "value" (strcat value)))
+	(let ((cmd-ok (xCreateWidget '--CW-- "awCommand" tmp "label" "Ok"))
+	      (cmd-cl (xCreateWidget '--CW-- "awCommand" tmp "label" "Cancel")))
+	  (setq xDialogBoxConfirm expr)
+	  (xAddCallback cmd-ok "callback" (strcat "(xDialogBoxConfirm t   '" tmp ")"))
+	  (xAddCallback cmd-cl "callback" (strcat "(xDialogBoxConfirm nil '" tmp ")"))
+	  (xRealize root)))))
+
+(defun xDialogBoxConfirm (is-ok dwidget)
+    (let (xDialogValue (if is-ok (xGetValues dwidget "value")))
+      (xRemoveWidget (xGetValues dwidget "parent"))
+      (if is-ok (eval xDialogBoxConfirm))))
+
+(defun xGetDialogValue (wdialog)
+    (implode (explode (xGetValues wdialog "value"))))
+
+
+
+					; ************************** ;
+					; Modification des resources ;
+					; ************************** ;
+;
+; Modification de resources d'un widget avec Unrealize + Realize
+;
+(defmacro xModify (widget prop value)
+  `(ifn (iswidget ,widget) ()
+	(let (root (xGetSupWidget ,widget "ApplicationShell"))
+	  (xUnrealize root)
+	  (xSetValues  root ,prop ,value)
+	  (xSetValues ,widget ,prop ,value)
+	  (xRealizeWaiting root)
+	  t)))
+
+; modification du label
+(defun xSetLabel (w l)
+    (xSetValues w "label" (strcat l)))
+
+; modification de la couleur d'un ou d'une liste de widget
+(defun xsetColor (wl color what)
+    (mapc (if (atom wl) `(,wl) wl)
+	  (lambda (w)
+	    (xSetValues w (if what what "background") color))))
+
+; effacement de l'ecran suivant le type du widget ;
+(defun clear-screen (widget)
+    (ifn (iswidget widget) (setq widget 'main-bVLISP))
+    (poscur widget 0 0)
+    (let ((old-for (xGetValues widget "foreground"))
+	  (old-bac (xGetValues widget "background")))
+      (xSetValues widget "foreground" 0)
+      (if (iswidget widget "Text") (cleos widget)
+	(xFillRectangles widget 0 0 (xGetValues widget "width") (xGetValues "height")))
+      (xSetValues widget "foreground" old-for)))
+
+
+					; ********************************************* ;
+					; Récupération des informations sur les widgets ;
+					; ********************************************* ;
+
+; récupération du titre de la fenêtre parent (ApplicationShell)
+(defmacro xGetParentTitle (widget)
+  `(xGetValues (xGetSupWidget ,widget "ApplicationShell") "title"))
+
+; récupération du placement horizontal d'un widget ;
+(defun xGetHoriz (widget)
+    (ifn (iswidget widget) 4
+	 (+ (if (= (xGetValues widget "x") 0) 4 (xGetValues widget "x"))
+	    (+ 5 (xGetValues widget "width")))))
+
+; récupération du placement vertical d'un widget ;
+(defun xGetVert (widget)
+    (ifn (iswidget widget) 4
+	 (+ (if (= (xGetValues widget "y") 0) 4 (xGetValues widget "y"))
+	    (+ 5 (xGetValues widget "height")))))
+
+(setq careful --x--)
+

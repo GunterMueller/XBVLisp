@@ -1,0 +1,37 @@
+;;
+; pour tester le gc de strings ;
+;;
+(de test-gc ()
+    (let ((stay t)(n 0) )
+      (teste-oblists)
+      (print "test de gc")
+      (gc t)
+      (while stay
+	(princ " continuer  [t/\?] " )
+	(let ( a (tyi))
+	  (princ " >>> " a " " (incr n))
+	  (cond
+	   ((= a 49;1;) (lib expls/bar) (print "bar"))
+	   ((= a 50;2;) (lib expls/test-gc)(print "test-gc"))
+	   ((= a 51;3;) (lib expls/xDemo4)(print "xDemo4"))
+	   ( t (escape "get-out" (print "au-revoir") ("get-out" t) (setq stay nil)))
+	    ))
+	   (teste-oblists)
+	   (gc t)
+	   (print "-------------------------------------------------")
+	   )
+	    "escape marche de quelle facon ?") 
+	   )
+	    
+;;
+;;(de get-out()  'au-revoir)
+
+
+(de teste-oblists()
+    (print "oblist == "(length (oblist)))
+    (print "myoblist == "(length (myoblist)))
+    (if (= (length (oblist))(length (myoblist)))
+	(print "oblist == myoblist" t )
+      (print "teste myoblist")(teste-uniq (myoblist))
+      (print "teste oblist")(teste-uniq (oblist)))
+    )

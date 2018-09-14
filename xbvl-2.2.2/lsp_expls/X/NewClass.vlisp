@@ -1,0 +1,6 @@
+(de xCreateNew (class)
+    (let (-root- (xCreateWidget 'new-root "ApplicationShell"))
+      (let ( new-widget (xCreateWidget 'new-widget class -root-))
+	(if (null new-widget) (xRemoveWidget -root-) (xRealize -root-))
+	new-widget
+	)))

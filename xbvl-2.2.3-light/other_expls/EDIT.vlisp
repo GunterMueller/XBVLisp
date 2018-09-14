@@ -1,0 +1,921 @@
+; 		l'editeur		;
+;					;
+; avec traitement de versions etc	;
+;					;
+;	Alain Rostain			;
+;	Harald Wertz			;
+
+(setq -x- careful careful nil)
+
+(princ "je charge EDIT.vlisp")
+(package EDIT)
+
+(setq EWIN () AFF ())
+
+(de |dpl (x y)
+   (cond (-display-
+          (cond (|edptr 
+                 (attach '---> |edptr)
+                 (display-fn x y)
+                 (rplacb |edptr (cdr |edptr))
+                 t)
+                (t (cond ((upmove) (rplaca |edptr (cons '---> nil)) 
+                                   (downmove) (display-fn x y) (upmove) 
+                                   (rplaca |edptr nil) (downmove))
+                         ((leftmove) (rplacd |edptr (cons '---> nil))
+                                     (rightmove) (display-fn x y) (leftmove)
+                                     (rplacd |edptr nil) (rightmove))))))))
+(de dpl-on ()
+   (setq -display- t))
+
+(de dpl-off ()
+   (setq -display- nil))
+
+(de dpl-vers ()
+  (let ((-x- 'main-bVLISP))
+	(xChangeWin |editwindow)
+	(poscur 0 65)(cleol)(print  "VERSION:"
+	(if (equal |STRUCTURE '|OLD-VERSION)
+		(if (boundp 'NOMBRE) (car NOMBRE) version-num)version-num))
+	(xChangeWin -x-)))
+
+(dmo efface x (cleol))
+
+(de delwin (w)
+    (xRemoveWidget (xGetSupWidget w "ApplicationShell")))
+
+(de display-fn (x y)
+  (let ((-window- 'main-bVLISP))
+      (xChangeWin |editwindow)
+      (if y (delwin y))
+     (when (null x)
+      (home)
+      (cleos)
+      (prin1 "Structure being edited: " |STRUCTURE)
+      (if (equal |STRUCTURE '|OLD-VERSION)(print "of" FNAME)(terpri))
+      (dpl-vers))
+      (poscur 1 0)
+      (cleol)
+      (poscur 1 0)
+      (print |fnptr '(efface))
+      (when EWIN
+     	(|mapc EWIN
+		(lambda (-x-)
+	  		 (if -x- (delwin -x-))))
+        (setq EWIN ()))
+      (xChangeWin -window-)))
+
+   
+(df |edit (fname)
+  (let ((fname (car fname))(TYP (cadr fname)))
+   (setq FNAME fname)
+   (when (and (boundp '|STRUCTURE) |STRUCTURE) 
+	(setq EWIN [|editwindow] AFF t)
+		(while (|ex)(newl EWIN |editwindow))
+		(setq -edit- t AFF ()))
+   (setq edit.type 'fn)
+   (edit-sub fname)))
+
+(df |editl (name)
+  (let ((name 
+	(if (atom (car name)) (car name)
+	    (setq |DUMMY (eval (car name))) '|DUMMY))(TYP 0))
+   (setq FNAME name)
+   (when (and (boundp '|STRUCTURE) |STRUCTURE) 
+	(setq EWIN [|editwindow] AFF t)
+		(while (|ex)(newl EWIN |editwindow))
+		(setq -edit- t AFF ()))
+   (setq edit.type 'list)
+   (edit-sub name)))
+
+(de |add-anote ()
+   (cond ((getcar |edptr)
+          (setq edit.type 'list name '|ANNOTATION)
+          (set name (cdr (getcar |edptr)))
+          (edit-sub name))
+         (t (putcar |edptr ["<name>" "<value>"])(|add-anote))))
+
+
+(de |anoted ()
+   (cond ((getcar |edptr)
+          (setq edit.type 'list name '|ANNOTATION)
+          (set name (cdr (getcar |edptr)))
+          (edit-sub name))
+         ((princ "NO |ANNOTATIONS, do you want to add one (n/y)")
+		(let ((x (tyi)))(if (equal (itoa x) "y")(|add-anote) nil)))))
+
+(de |ed-entree ()
+   (cond ((|get-entree)
+          (setq edit.type 'list name '|ENTREE)
+          (set name (|get-entree))
+          (edit-sub name))
+         ((print "NO ENTREE") nil)))
+
+(de |ed-sortie ()
+   (cond ((|get-sortie)
+          (setq edit.type 'list name '|SORTIE)
+          (set name (|get-sortie))
+          (edit-sub name))
+         ((print "NO SORTIE") nil)))
+
+(de |see-version (num)
+   (let ((l (copy (version num))))
+        (cond (l (setq edit.type 'list name '|OLD-VERSION
+		       NOMBRE (if (boundp 'NOMBRE) (cons num NOMBRE) [num]))
+                 (set name l)
+                 (edit-sub name))
+              ((print "VERSION NUMBER NONEXISTENT!")))))
+
+(de |see-time (give-time)
+   (let ((l (copy (|tver give-time))))
+        (cond (l (setq edit.type 'list name '|OLD-TIME)
+                 (set name l)
+                 (edit-sub name))
+              ((print "TIME NONEXISTENT!")))))
+
+
+
+(de edit-sub (name)
+   (init-stacks)
+   (setq |editwindow (apply 'gensym (list '|edit- (gensym))))
+   (let ((-x- 'main-bVLISP)) (xCreateXbvlisp |editwindow 15 100 0 0 10)
+		(xChangeWin -x-))
+   (pick-type name)
+)
+
+(de init-stacks ()
+   (cond
+      ((boundp '-edit-)
+         (print "Restarting edit on new structure")
+         (newl timeptrstack |timeptr)
+         (newl vnumstack version-num)
+         (newl nvnumstack next-version-num)
+         (newl STRUCTUREstack |STRUCTURE)
+         (newl edptrstack |edptr)
+         (newl fromstack |from)
+	 (newl windowstack |editwindow)
+         (newl edit.typestack edit.type)
+         (newl fnptrstack |fnptr))
+      (t (setq |pickptr ())
+         (print "Welcome to wonderful edit")
+         (setq timeptrstack ()
+		windowstack ()
+         	vnumstack ()
+         	nvnumstack ()
+         	STRUCTUREstack ()
+         	edptrstack ()
+         	fromstack ()
+         	fnptrstack ()
+         	edit.typestack ()))))
+
+(de pick-type (fname)
+   (cond
+      ((eq edit.type 'fn)
+         (cond
+            ((= 0 (fval fname))
+               (print "Defining new function," fname)
+               (eval (list (or TYP 'de) fname ['|<arguments>] "<body>")))
+            (t (print "Editing old function," fname)))
+         (setq |fnptr (fval fname) |edptr (fval fname)
+               |STRUCTURE fname))
+      ((eq edit.type 'list)
+         (cond
+            ((boundp fname) 
+             (print "Editing old list," fname)
+             (setq |STRUCTURE fname |fnptr (eval fname)))	    
+            (t (print "Defining list," fname)
+               (setq |STRUCTURE fname)
+	        (set fname '("<empty>"))
+               (setq |fnptr (eval fname))))
+         (setq |edptr |fnptr)))
+   (setq |from ())
+   (init)
+   (|save)
+   (if (and (boundp '-edit-) -edit-) (|dpl)
+      ; (menu |menu1) ; (|dpl) (setq -edit- t)))
+
+(de EXEMPLE (-x-)
+	(setq -x- (|%find (ival FNAME) 100))
+	(if -x-
+	    (if (null (car -x-))
+		(rplaca -x- t))))
+
+(de |ex ()(let ((-x- |editwindow) (-y- |STRUCTURE))
+   (if (or (not (boundp '-edit-)) (not -edit-)) 
+       (exit (print "Cannot exit") nil))
+   (if (boundp 'NOMBRE)(nextl NOMBRE))
+   (if (memq (ftyp FNAME) '(7 8 9 11)) (EXEMPLE))
+   (clearcarprop |fnptr '|edptr)
+;   (putcarprop |fnptr '|edptr (cons |edptr nil))
+   (clearcarprop |fnptr '|TIMEPTR)
+   (putcarprop |fnptr '|TIMEPTR |timeptr)
+   (clearcarprop |fnptr '|VNUM)
+   (putcarprop |fnptr '|VNUM (cons version-num ()))
+   (clearcarprop |fnptr '|NVNUM)
+   (putcarprop |fnptr '|NVNUM (cons next-version-num ()))
+   (setq |edptr (nextl edptrstack)
+   	 |fnptr (nextl fnptrstack)
+   	 |from (nextl fromstack)
+   	 |timeptr (nextl timeptrstack)
+	 |editwindow (nextl windowstack)
+   	 version-num (nextl vnumstack)
+   	 |STRUCTURE (nextl STRUCTUREstack)
+   	 next-version-num (nextl nvnumstack))
+   (print "Structure" -y- "has been saved.")
+   (cond
+      (|STRUCTURE
+	(if AFF () ; (delwin -x-)
+         (print "Now editing:" |STRUCTURE)
+         (|dpl () -x-)) t)
+      (t (if AFF () (delwin -x-))
+	 (setq -edit- nil) nil))))
+
+(de init-fn (fn start-time)
+   (cond
+      ((getcarprop fn '|INIT)
+         (setq |edptr (or (car (getcarprop fn '|edptr)) |fnptr)
+         	version-num (car (getcarprop fn '|VNUM)))
+         (clearcarprop fn '|VNUM)
+         (setq next-version-num (car (getcarprop fn '|NVNUM)))
+         (clearcarprop fn '|NVNUM)
+         (setq |timeptr (getcarprop fn '|TIMEPTR))
+         (clearcarprop fn '|TIMEPTR))
+      (t (putcarprop fn '|INIT t)
+         (setq |edptr |fnptr |timeptr '("0") version-num 0 
+		next-version-num 1)))
+   (setq -display- t))
+
+
+(de init ()
+   (init-fn |fnptr (time)))
+
+(df |edhelp (arg)
+ (print (if arg
+          (selectq (car arg)
+           (|anoted anotedhlp)
+	   (|add-anote  add-anotehlp)
+           (|ed-entree  ed-entreehlp)
+           (|ed-sortie  ed-sortiehlp)
+           (|add-entree add-entreehlp)
+           (|add-sortie add-sortiehlp)
+           (|get-entree get-entreehlp)
+           (|get-sortie get-sortiehlp)
+           (|clear-entree clear-entreehlp)
+           (|clear-sortie clear-sortiehlp)
+           (|fs fshlp)
+           (|bs bshlp)
+           (|fsr fsrhlp)
+           (|bsr bsrhlp)
+           (|mv mvhlp)
+           (|ex exhlp)
+           (|del delhlp)
+           (|rpl rplhlp)
+           (|ins inshlp)
+           (|help helphlp)
+           (|p phlp)
+           (|unp unphlp)
+           (|picks pickshlp)
+           (|pickl picklhlp)
+           (|puts putshlp)
+           (|dpl dplhlp)
+           (|see-version see-versionhlp)
+           (|save savehlp)
+           (|see-time see-timehlp)
+           (|sabt sabthlp)
+           (|edptr edptrhlp)
+           (|fnptr fnptrhlp)
+           (|from fromhlp)
+           (|timeptr timeptrhlp)
+           (version-num vrnumhlp)
+           (|pickptr pickptrhlp)
+           (next-version-num nvrnumhlp)
+	   (|tver tverhlp)
+           (|ed-version ed-versionhlp)
+           (t unknownhlp))
+	helphlp))
+     t)
+
+(setq add-anotehlp "adds an annotation if there doesn't existe one,
+otherwise, it edits the existing annotation"
+
+unknownhlp "Command not found!"
+
+tverhlp "(tver time)
+                    where time is a string, 
+                    prints the functions state 
+                    as of given time."
+
+fshlp "(fs sexpr)
+                conducts a froward search for sexpr"
+
+bshlp "(bs sexpr)
+                conducts a backward search for sexpr"
+
+bsrhlp "(bsr old new)
+                rplaces all future occurences of old with new"
+
+ fsrhlp "(fsr old new)
+                rplaces all previous occurences of old with new"
+
+ sabthlp "(sabt)
+                     prints all versions by time"
+
+ edptrhlp "edptr: current list being edited"
+
+ fnptrhlp "fnptr: current function being edited"
+
+ fromptr "fromptr: used to keep track of movement within fn"
+
+ timeptrhlp "timeptr: list of times recorded"
+
+ vrnumhlp "version-num: version being worked on"
+
+ nvrnumhlp "next-version-num: next unused version number"
+
+ pickptrhlp "pickptr: contains contents of pick buffer"
+
+ mvhlp "(mv arg1 {num1} arg2 {num2} ..)
+                   where argn = (l, r, u, d, h)
+                   and numn is number of times
+                   to execute command argn.  
+                   Used move within function.
+                   l = left, r = right, u = up,
+                   d = down, h = home."
+
+ exhlp "(ex) exits the editor and saves function"
+
+ delhlp "(del {n})  deletes n expressions to the right of the
+                     current pointer position; default is 1."
+
+ rplhlp "(rpl arg) replaces the expression to the right of 
+                     the current pointer position by arg."
+
+ inshlp "(ins arg) insertss the expression arg immediately to the 
+                     right of the current pointer position."
+
+ helphlp "To get help on a keyword, type '(edhelp keyword)
+		the possible keywords are:
+			fs bs fsr bsr mv ex del rpl ins help p unp picks
+			pickl puts dpl save see-version ed-version
+			add-entree add-sortie anoted add-anote tver
+			sabt edptr fnptr from timeptr version-num pickptr
+			next-version-num help
+               To see menus, type '(menu menu1)"
+
+ phlp "(p {num}) places the next num s-expressions in parenthesis."
+
+ unphlp "(unp) removes a set of parenthesis from the next s-expression."
+
+ dplhlp "(dpl) displays the current state of the function."
+
+ pickshlp "(picks) places the next s-expression in the pick buffer."
+
+ picklhlp "(pickl) places the remainder of the current list in the buffer."
+
+ putshlp "(puts)  places the contents of the pick buffer in the current
+                     position."
+
+ savehlp "(save) saves the current version of the function"
+
+ see-versionhlp "(see-version n) displays version number n
+                               NOTE: no changes to function are recorded!"
+
+ ed-versionhlp "(ed-version n) edits version number n"
+
+ see-timehlp "(see-time t) displays version at time t
+                               NOTE: no changes to functions are
+                                     recorded!"
+ ed-entreehlp "(ed-entree) edits entree"
+
+ ed-sortiehlp "(ed-sortie) edits sortie"
+
+ anotedhlp "(anoted) edits annotations"
+
+ add-entreehlp "(add-entree arg) adds arg as entree"
+
+ add-sortiehlp "(add-sortie arg) adds arg as sortie"
+
+ get-entreehlp "(get-entree) gets entree"
+
+ get-sortiehlp "(get-sortie) gets sortie"
+
+ clear-entreehlp "(clear-entree) clears entree"
+
+ clear-sortiehlp "(clear-sortie) clears sortie"
+
+ |menu1
+"* MENUS: - menu1: this menu        - menu4: time menus                      *
+ *        - menu2: edit menus       - menu5: global variables                *
+ *        - menu3: version menus                                             *
+ -----------------------------------------------------------------------------"
+
+ |menu2
+"* EDIT:  - edit1: standard commands    - edit3: special commands            *
+ *        - edit2: more commands        - edit4: annotation commands         *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |menu3
+"* VERSION:  - version1: seeing old versions                                 *
+ *           - version2: editing old versions                                *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |menu4 
+"* TIME:  - time1: see old time                                              *
+ *        - time2: edit old time                                             *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |menu5
+"* GLOBALS:  - fnptr     - pickptr            - timeptr                      *
+ *           - edptr     - version-num        - -display-                    *
+ *           - from      - next-version-num   MANY MORE!!!!                  *
+ -----------------------------------------------------------------------------"
+
+ |edit1
+"* commands: - (mv):  move    - (rpl): replace  - (dpl):    display          *
+ *           - (del): delete  - (ins): insert   - (edhelp): help             *
+ *                    type '(edhelp command-name)' for more info             *
+ -----------------------------------------------------------------------------"
+
+ |edit2
+"* commands: - (p):   paren    - (picks): pick sexpr  - (puts): put          *
+ *           - (unp): unparen  - (pickl): pick list   - (ex):   exit         *
+ *                    type '(edhelp command-name)' for more info             *
+ -----------------------------------------------------------------------------"
+
+ |edit3 
+"* commands: -(fs): forward search   -(fsr) forward search and replace       *
+ *           -(bs): backward search  -(bsr) backward search and replace      *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |edit4
+"* commands: - anoted:    edit annots   - add-{entree,sortie}                *
+ *           - ed-sortie: edit sortie   - get-{entree,sortie}                *
+ *           - ed-entree: edit entree   - clear-{entree, sortie}             *
+ -----------------------------------------------------------------------------"
+
+ |version1
+"* commands: - (save)     : save fn                                          *
+ *           - (see-version n): see version number n                         *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |version2
+"* commands: - (ed-version n): edit version n                                *
+ *                                                                           *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |time1
+"* commands: - (sabt):  see progression of function by time                  *
+ *           - (see-time):  see state of function at given time              *
+ *                                                                           *
+ -----------------------------------------------------------------------------"
+
+ |time2
+"* commands: - (ed-time):  edit an old time.                                 *
+ *                                                                           *
+ *                                                                           *
+ -----------------------------------------------------------------------------")
+
+(apply 'make-menu [|menu1 |menu2 |menu3 |menu4 |menu5 |edit1 |edit2 |edit3 |version1 |version2 |time1 |time2]))
+
+(de |p (num)
+     (ifn (numbp num) (setq num 1))
+     (when |edptr (save-edptr) 
+         (rplaca  |edptr  (list (car |edptr))))
+     (while (and (> num 1) (cdr |edptr))
+            (nconc (car |edptr) [(cadr |edptr)])
+            (rplac |edptr (car  |edptr) (cddr  |edptr))
+            (decr num))
+     (|dpl t))
+
+(de |unp ()
+     (if (or (null |edptr)(not (listp (car |edptr)))) nil
+         (save-edptr) (unparen_sub))
+     (|dpl t))
+
+(de unparen_sub ()
+      (let ((count 0) (l (copy (car |edptr))))
+           (while l (attach (nextl l) |edptr)
+                    (rightmove)
+                    (incr count))
+           (leftmove) (rplacd |edptr (cddr |edptr))
+           (while (> count 1) (leftmove) (decr count))))
+
+(de |pickl ()
+      (when |edptr (setq |pickptr (copy |edptr))))
+
+(de |picks ()
+      (when |edptr (setq |pickptr (copy (car  |edptr)))))
+
+(de |puts ()
+      (eval ['|ins |pickptr]))
+
+(de prettyl (pretty.f)
+   (terpri)
+   (status print 3)
+   (setq lmargin 0)
+   (|p-p pretty.f)
+   (terpri)
+   (status print 0))
+
+(de rplacall (e1 e2)
+	(rplacb e1 e2)
+      	(clearcar e1)
+	(clearcdr e1)
+        (let ((l (reverse (cdr (getcar e2)))))
+	     (while l 
+		(putcar e1 (nextl l))))
+        (let ((l (reverse (cdr (getcdr e2)))))
+	     (while l 
+		(putcdr e1 (nextl l))))
+	e1)
+
+(de rplacan (e1 e2)
+      	(clearcar e1)
+	(clearcdr e1)
+        (let ((l (reverse (cdr (getcar e2)))))
+	     (while l 
+		(putcar e1 (nextl l))))
+        (let ((l (reverse (cdr (getcdr e2)))))
+	     (while l 
+		(putcdr e1 (nextl l)))))
+
+(df |fs (arg)
+   (let ((tfrom |from) (tedptr |edptr) (found t)(arg (car arg)))
+      (if (*equal arg (car |edptr)) (rightmove))
+      (when (not (fs-sub arg)) 
+             (setq |edptr tedptr |from tfrom found nil))
+      (|dpl t)
+      found))
+   
+
+(de fs-sub (arg ;; found not-found)
+   (if (*equal arg (car |edptr)) (setq found t)
+            (cond ((downmove) (fs-sub arg))
+                  ((rightmove) (fs-sub arg))
+                  (t (while (leftmove))
+                     (when (upmove) (rightmove) (fs-sub arg))))))
+
+(df |bs (arg)
+   (let ((tfrom |from) (tedptr |edptr)(arg (car arg)))
+      (cond ((and (bs-sub-sub) (bs-sub arg)) (|dpl t) t)
+            ((setq |edptr tedptr |from tfrom) nil))))
+
+(de bs-sub (arg)
+   (cond ((*equal arg (car |edptr)))
+   	 ((downmove) (while (rightmove)) (bs-sub arg))
+         ((bs-sub-sub) (bs-sub arg))))
+
+
+(de bs-sub-sub ()
+   (cond ((leftmove))
+         ((upmove) (bs-sub-sub))))
+
+
+(df |fsr (arg)
+   (let ((tedptr |edptr) (tfrom |from)(old (car arg))(new (cadr arg)))
+        (dpl-off)
+        (while (eval ['|fs old]) (eval ['|rpl new]))
+        (setq |edptr tedptr |from tfrom)
+        (dpl-on)
+        (|dpl t)))
+
+(df |bsr (arg)
+  (let ((old (car arg))(new (cadr arg)))
+   (dpl-off)
+   (while (eval ['|bs old]) (eval ['|rpl new]))
+   (dpl-on)
+   (|dpl t)))
+
+
+(de *equal (expr1 expr2)
+   (cond ((or (not (boundp 'expr1))(not (boundp 'expr2)))())
+	 ((eq expr1 '|*) t)
+         ((atom expr1) (eq expr1 expr2))
+         ((atom expr2) nil)
+	 ((eq (car expr1) '|*)
+              (let ((found nil) (done nil))
+ 	             (while (and (not found) (not done)(listp expr2))
+		            (if (*equal (cdr expr1) expr2) (setq found t))
+			    (if (not expr2) (setq done t))
+                            (nextl expr2))
+                     found))
+         ((*equal (car expr1) (car expr2)) (*equal (cdr expr1) (cdr expr2)))))
+
+    
+(de save-edptr ()
+   (let ((count 0) (nil-edptr nil))
+        (when (not |edptr) (setq nil-edptr t) (upmove))
+        (while (leftmove) (incr count))
+        (save-version |edptr)
+        (while (> count 0) (rightmove) (decr count))
+        (if nil-edptr (downmove))))
+
+(de leftmove ()
+   (when (not (or (null |from) (eq (caar |from) '|d)))
+	 (setq |edptr (cadr (nextl |from))) t))
+
+(de rightmove ()
+        (when (and |edptr (listp |edptr))
+		 (newl |from (list '|r |edptr)) (nextl |edptr) t))
+
+(de downmove ()
+   (cond ((or (null |edptr)(atom |edptr)) nil)
+         ((or (listp (car |edptr)) (null (car |edptr)))
+          (newl |from (list '|d |edptr))
+          (setq |edptr (car |edptr)) t)))
+
+(de upmove ()
+   (when (equal (caar |from) '|d) (setq |edptr (cadr (nextl |from))) t))
+
+
+(de |del (num)
+   (save-edptr)
+   (if (not (numbp num)) (setq num 1))
+   (while (and |edptr (> num 0))
+          (cond ((cdr |edptr) (rplacb |edptr (cdr |edptr)) (decr num))
+           	((leftmove) (rplacd |edptr nil) (rightmove)
+                                     (setq num 0))
+                ((upmove) (save-edptr) (rplaca |edptr nil) 
+                          (downmove) (setq num 0))
+                (t (print "illegal operation") (setq num 0))))
+   (|dpl t))
+
+(df |rpl (expr)            
+  (let ((expr (car expr)))
+   (cond (|edptr (save-edptr)
+                (rplac |edptr expr (cdr |edptr)))
+         (t  (eval ['|ins expr])))
+   (|dpl t)))
+
+(df |insl (expr)
+    (save-edptr)
+    (if |edptr (let ((-x- |edptr))
+		     (if (null (cdr -x-))(rplacd -x- expr)
+			 (self (cdr -x-))))
+	   (print "error in insert-last!"))
+    (|dpl t))
+
+(df |ins (expr)
+   (let ((expr (car expr)))
+   (save-edptr)
+   (cond (|edptr (attach expr |edptr))
+         ((upmove) (rplaca |edptr (cons expr nil)) (downmove))
+         (t (print "error in insert!")))
+   (|dpl t)))
+
+(de |ev ()
+  (if (and (boundp |DUMMY)(listp |DUMMY))(eval |DUMMY)))
+
+(df |mv (args)
+   (eval (cons 'mv-sub args))
+   (|dpl t))
+
+(df mv-sub (args ;; command number)
+         (setq command (car args))
+         (when args
+              (if (numbp (cadr args)) (setq number (cadr args)
+                                          args (cddr args))
+                  (setq number 1 args (cdr args)))
+              (selectq command 
+                 (|l (while (> number 0) (if (leftmove) (decr number)
+			(setq number 0))))
+                 (|r (while (> number 0) (if (rightmove) (decr number)
+			(setq number 0))))
+                 (|u (while (> number 0) (if (upmove) (decr number)
+			(let ((tfrom |from)(tedptr |edptr)(found t))
+			  (let ()(ifn (leftmove) (setq found nil number 0)
+				(ifn (upmove)(self))))
+			  (ifn found (setq |edptr tedptr |from tfrom)
+				(decr number))))))
+                 (|d (while (> number 0) (if (downmove) (decr number)
+			(let ((tfrom |from)(tedptr |edptr)(found t))
+			  (let ()(ifn (rightmove) (setq found nil number 0)
+				(unless (listp (car |edptr))
+					(self))))
+			  (ifn found (setq |edptr tedptr |from tfrom)
+				(downmove)(decr number))))))
+                 (|h (setq |edptr |fnptr |from nil))
+                 (t (exit (print "illegal command encountered") 
+			(|edhelp |mv))))
+              (eval (cons 'mv-sub args))))
+
+(de putcarprop (l name value)
+   (if (listp l)
+          (if (memq name (cdr (getcar l))) 
+    	         (rplacd (memq name (cdr (getcar l))) (cons value 
+   		         (cddr (memq name (cdr (getcar l))))))
+           (putcar l value) (putcar l name))))
+
+(de getcarprop (l name)
+     (cadr (memq name (cdr (getcar l)))))
+
+(de clearcarprop (l name)
+   (when (memq name (cdr (getcar l)))
+	  (if (cddr (memq name (cdr (getcar l))))
+                 (rplacb (memq name (cdr (getcar l))) 
+                         (cddr (memq name (cdr (getcar l)))))
+		 (rplacb (cdr (getcar l)) (reverse (cddr 
+					     (reverse (cdr (getcar l)))))))
+          (if (equal (cdr (getcar l)) '(())) (clearcar l))))
+
+(de getcdrprop (l name)
+     (cadr (memq name (cdr (getcdr l)))))
+
+(de putcdrprop (l name value)
+   (if (memq name (cdr (getcdr l))) 
+    	  (rplacd (memq name (cdr (getcdr l))) (cons value 
+   			(cddr (memq name (cdr (getcdr l))))))
+	(putcdr l value) (putcdr l name)))
+
+(de clearcdrprop (l name)
+   (when (memq name (cdr (getcdr l)))
+	  (if (cddr (memq name (cdr (getcdr l))))
+                 (rplacb (memq name (cdr (getcdr l))) 
+                         (cddr (memq name (cdr (getcdr l)))))
+	 	(rplacb (cdr (getcdr l)) (reverse (cddr 
+					     (reverse (cdr (getcdr l)))))))
+          (if (equal (cdr (getcdr l)) '(())) (clearcdr l))))
+
+(df |add-entree (arg)
+     (putcarprop |edptr 'entree (cons (car arg) (getcarprop |edptr 'entree))))
+
+(df |add-sortie (arg)
+     (putcarprop |edptr 'sortie (cons (car arg) (getcarprop |edptr 'sortie))))
+
+(de |get-entree ()
+   (getcarprop |edptr 'entree))
+
+(de |get-sortie ()
+   (getcarprop |edptr 'sortie))
+
+(de |clear-entree ()
+   (clearcarprop |edptr 'entree))
+
+(de |clear-sortie ()
+   (clearcarprop |edptr 'sortie))
+
+
+
+(de put-time (l give-time)
+   (putcarprop l '|TIMES (cons give-time (getcarprop l '|TIMES))))
+
+(de |get-time (l)
+  (if (null l)(getcarprop |edptr '|TIMES)
+   (getcarprop l '|TIMES)))
+
+(de put-version-num (l num)
+   (putcarprop l '|VERSION-NUM (cons num (getcarprop l '|VERSION-NUM))))
+
+(de get-version-num (l)
+   (getcarprop l '|VERSION-NUM))
+
+(de get-old-version (l)
+   (getcarprop l '|OLD-VERSION))
+
+(de put-old-version (l old)
+   (putcarprop l '|OLD-VERSION old))
+ 
+(de lex (e1 e2)
+   (le (strcmp e1 e2) 0))
+
+(de lot (give-time fn) ;latest-of-time ;
+   (if (not (get-old-version fn)) fn
+       (let ((branch nil) (l fn) (done nil))
+                 (while (and l (not done))
+                    (if (lex (car (|get-time l)) give-time)
+                           (setq done t branch l)
+                        (setq l (get-old-version l))))
+                 branch)))
+
+
+
+(de pt (give-time fn) ; print time;
+   (let ((l (copy-all fn)))
+        (pt-sub give-time l)))
+
+(de |tver (give-time) (pt give-time |fnptr))
+
+(de |ed-time (give-time)
+  (let ((cur-time (time)))
+   (newl |timeptr cur-time)
+   (print "The Structure has been saved as Version:" version-num)
+   (print "Future work is on Version:" next-version-num)
+   (setq version-num next-version-num)
+   (incr next-version-num)
+   (setq |edptr |fnptr |from '())
+   (ed-time-sub give-time |fnptr cur-time)
+   (|dpl)))
+
+
+
+(de ed-time-sub (give-time fn cur-time)
+   (let ((l fn))
+         (if (atom l) l
+             (switch l (lot give-time l) cur-time)
+                 (while l (ed-time-sub give-time (car l) cur-time) (nextl l)))))
+
+
+(de |sabt ()
+   (let ((l (reverse |timeptr)))
+        (while l (print (|tver (print (nextl l)))))))
+
+(de pt-sub (give-time fn)
+   (if (atom fn) fn
+       (setq fn (lot give-time fn))
+            (let ((l fn))
+                 (while l (rplaca l (pt-sub give-time (car l))) (nextl l)))
+            fn))
+
+(de switch (ptr1 ptr2 cur-time)
+   (when (neq ptr1 ptr2) 
+         (let ((temp1 (copy-all ptr2)))
+                 (clearcarprop temp1 '|OLD-VERSION)
+	         (putcarprop temp1 '|OLD-VERSION (copy-all ptr1))
+                 (rplacall ptr1 temp1)
+                 (clearcarprop ptr1 '|VERSION-NUM)
+                 (clearcarprop ptr1 '|TIMES)
+                 (put-time ptr1 cur-time)
+                 (put-version-num ptr1 version-num))))
+
+(de save-version (l ;; save1 save2)
+   (when (not (get-version-num l)) 
+          (let ((num (- next-version-num 1)))
+               (while (ge num 0) (put-version-num l num) (decr num)))
+          (put-time l "0"))
+   (setq save1 (copy-all l))
+   (clearcarprop save1 '|OLD-VERSION)
+   (clearcarprop save1 '|VERSION-NUM)
+   (clearcarprop save1 '|TIMES)
+   (setq save2 (copy-all l))
+   (put-old-version save1 save2)
+   (rplacall l (copy-all save1))
+   (let ((cur-time (time)))
+ 	(newl |timeptr cur-time)
+        (put-time l cur-time)
+        (put-version-num l version-num))
+   (if (eq l |fnptr) (putcarprop l '|INIT t)))
+
+
+(de |ed-version (num)
+  (let ((cur-time (time)))
+   (newl |timeptr cur-time)
+   (print "The function has been saved as Version:" version-num)
+   (print "Future work is on Version:" num)
+   (setq version-num num |edptr |fnptr |from '())
+   (ed-version-sub num |fnptr cur-time)
+   (|dpl)))
+
+
+(de ed-version-sub (num fn cur-time)
+   (let ((l fn))
+         (if (atom l) l
+             (switch l (lovn num l) cur-time)
+                 (while l (ed-version-sub num (car l) cur-time) (nextl l)))))
+
+(de lovn (num fn) ;latest-of-version-num ;
+   (if (not (get-old-version fn)) fn
+       (let ((branch nil) (l fn) (found nil))
+                 (while (and l (not found))
+                    (if (memq num (get-version-num l)) 
+                           (setq found t branch l)
+                           (setq l (get-old-version l))))
+                 branch)))
+
+(de pvn (num fn) ; print version num;
+   (let ((l (copy-all fn)))
+        (pvn-sub num l)))
+
+(de version (num) (pvn num |fnptr))
+
+(de pvn-sub (num fn)
+   (if (atom fn) fn
+       (setq fn (lovn num fn))
+            (let ((l fn))
+                 (while l (rplaca l (pvn-sub num (car l))) (nextl l)))
+            fn))
+
+(de |save ()
+   (print "The structure has been saved as Version:" version-num)
+   (setq version-num next-version-num)
+   (incr next-version-num)
+   (print "Future work is on Version:" version-num)
+   (svn |fnptr)(dpl-vers))
+
+(de svn (ptr) ; spread version num downwards;
+   (if (and (atom ptr) ptr) ptr
+       (if (get-old-version ptr) (put-version-num ptr version-num))
+            (let ((l ptr))
+                 (while (listp l) (svn (nextl l))))))
+
+
+(package)
+
+(careful -x-)
+(print "EDIT.vlisp charge")
+

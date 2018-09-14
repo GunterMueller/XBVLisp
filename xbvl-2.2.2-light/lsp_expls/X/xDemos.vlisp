@@ -1,0 +1,48 @@
+;
+; 
+					;
+;(let (home (getenv "HOME"))
+;  (print home)
+;  (let ((f1 (strcat home "/xvlisp/expls/xGetValuess.vlisp"))
+;	(f2 (strcat home "/xvlisp/expls/xSetValuess.vlisp"))
+;	(f3 (strcat home "/xvlisp/expls/index.vlisp"))
+;	(f4 (strcat home "/xvlisp/expls/xpredicats.vlisp")))
+;    (input f1)
+;    (input f2)
+;    (input f3)
+;    (input f4))
+;  )
+
+(de xdemo1()
+    (let (n 0)
+      (repeat 15
+	      (xcrewin (strcat "demo-" n) 5 40 n n 0)
+	      (incr n 3)
+	      )
+      )
+    (let ((n 0)(widgets (trouve-objs 'isShell (oblist))))
+      (repeat 15
+	      (mapc  (cdr widgets) (lambda (x) (move x 100)))
+	      (mapc  (cdr widgets) (lambda (x) (move x -100)))
+	      (print "->" (incr n)))
+      
+      ))
+					;
+(de move (widget dist)
+    (xSetValues widget
+	     "x" "Position" (princ " -> x " (+ dist  (xGetWidget-x  widget)))
+	     "y" "Position" (princ " y- "   (+ dist  (xGetWidget-y widget)))
+	     )
+    )
+
+
+
+(de move1()
+    (let (top-widget (car (xcrewin 'demo-1 7 40 0 0 )))
+      (xSetWidget-y top-widget 0)
+      (xSetWidget-x top-widget 0)
+      (repeat 100
+	      (move top-widget 1)
+	      )
+      top-widget
+      ))

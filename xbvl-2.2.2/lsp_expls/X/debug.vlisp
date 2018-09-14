@@ -1,0 +1,34 @@
+
+;;
+;;
+(de debugXbvlisp()
+    (xCreateXbvlisp "xbVLISP" 5 25  0 0 2)
+    )
+;;
+;;
+(de normalXbvlisp()
+    (xCreateXbvlisp "xbVLISP" 24 89  0 0 2)
+    )
+
+(de orrible-test()
+    (let (n 0)
+      (repeat 1000
+	      (print "quell Orrible Chose d'affichage" "----> " (incr n))
+	      )))
+;;
+(de creeDraw ( name height width)
+    (let (root    (xCreateWidget (strcat "root-" name) "ApplicationShell"))
+      (let (-draw- (xCreateWidget name "Drawxbvl" root
+				  "width"  width
+				  "height" height ))
+	(xRealize root)
+	[root -draw-]
+	))))
+
+
+(de pop-pop ()
+    (let  (pot (xCreateWidget 'pop "TransientShell" (xwinp)))
+      (let (bout (xCreateWidget 'bouton "awCommand" pot))
+	(callback bout (strcat "(print \"Como Lo trata la vida\") (xPopdown " pot " )"))
+	bout)))
+	      

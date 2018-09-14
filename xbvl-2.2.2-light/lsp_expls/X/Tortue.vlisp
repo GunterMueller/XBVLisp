@@ -1,0 +1,61 @@
+;;
+;
+;;
+
+(de essaiTortue()
+    (if (iswidget 'root-Draw-canvas) (xRemoveWidget 'root-Draw-canvas))
+    (let( essai  (xCreateDrawxbvl 'Draw-canvas 400 400))
+      (let (draw (cadr essai))
+	(InsertTortue draw 'tortue  
+		      (/ (xGetValues  essai "width" ) 2)
+		      (/ (xGetValues  essai "height") 2)  "red"      )
+	(InsertTortue draw 'tortue1  100  100  (getNewColor) nil     )
+	(InsertTortue draw 'tortue2  100  150  (getNewColor) nil     )
+	(InsertTortue draw 'tortue3  100  200  (getNewColor) nil     )
+	(InsertTortue draw 'tortue4  100  250  (getNewColor) nil     )
+	(InsertTortue draw 'tortue5  100  300  (getNewColor) nil     )
+	)
+      essai
+      ))
+
+(de InsertTortue( -draw- -tortue- x y color bitmap)
+    (ifn (iswidget -draw- "Drawxbvl") (print "S.V.P. un widget Drawxbvl comme argument")
+	 (xCreateWidget -tortue- "Tortue" -draw-  
+			"x" x "y" y 
+			"bitmap" bitmap
+			"borderWidth" 0
+			"foreground" color
+			))     )
+;;
+;;
+
+(de bougeTortues(k)
+    (let ((n 0) (count 0))
+      (repeat k
+	      (princ (incr count))
+	      (mapcar '(tortue tortue1 tortue2 tortue3 tortue4) 
+		      (lambda (x) (AVANCE x 50 (+ -90 (incr n))))))))
+
+
+;;
+; on fait communiquer Trois tortues par des callbacks .
+;;
+
+(de TestTortues()
+    (setq count 0)
+    (if (iswidget 'root-draw-canvas) (xRemoveWidget 'root-draw-canvas))
+    (xCreateDrawxbvl 'draw-canvas 300 300 )
+    (InsertTortue 'draw-canvas 'tortue01 150 150 "#AA0" "./bitmap/dn") 
+    (InsertTortue 'draw-canvas 'tortue02 150 150 "#A0A" "./bitmap/dnw")
+    (InsertTortue 'draw-canvas 'tortue03 150 150 "#0AA" "./bitmap/ds")
+    (xSetValues tortue01 "pencil" "Off")
+    (xSetValues tortue02 "pencil" "Off")
+    (xSetValues tortue03 "pencil" "Off")
+;    (xUnmanage tortue01)
+;    (xUnmanage tortue02)
+;    (xUnmanage tortue03)
+    (callback tortue01 "(progn (print tortue02  $X $Y ) (AVANCE tortue02 15 30))")   
+    (callback tortue02 "(progn (print tortue03 $X $Y) (AVANCE tortue03 15 -30))")
+    (callback tortue03 "(progn (print tortue01 (incr count) $X $Y) (AVANCE tortue01 15 20))")
+    (AVANCE tortue01 30 0)
+    )

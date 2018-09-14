@@ -1,0 +1,68 @@
+---------------------------------------------------------------
+Liste des fonctions predefines de LLISP, avec breve description
+                                          FB 5/12/90 + 27/11/97
+---------------------------------------------------------------
+FONCTIONS GENERALES
+-------------------
+defun       definition de fonction
+setq        definition de variable
+quote       "ne pas evaluer"  (autre forme que  '  )
+load	    chargement d'un fichier
+exit        sortie du Lisp
+
+ENTREES / SORTIES
+-----------------
+print       affichage
+read        lecture d'une valeur au clavier
+
+STRUCTURES DE CONTROLE
+----------------------
+cond        conditionnelle multiple
+if          conditionnelle simple
+progn       execute des appels en sequence
+
+FONCTIONS SUR LES LISTES
+------------------------
+car         premier d'une liste
+cdr         reste d'une liste
+cons        construction de liste a partir d'une liste et d'un element
+append      concatenation de 2 listes
+length      longueur d'une liste
+assq        recherche dans une liste d'associations
+member      recherche dans une liste
+list        construction de liste a partir de plusieurs elements
+rplaca      modifier la CAR d'une liste
+rplacd      modifier la CDR d'une liste
+
+TESTS
+-----
+numberp     test si nombre
+atom        test si atome
+listp       test si liste
+null        test si = nil
+not         test si = nil  (equivalent a  null )
+eq          test d'egalite
+equal       test d'equivalence
+lt          >
+gt          <
+le          >=
+ge          <=
+
+FONCTIONS MATHEMATIQUES
+-----------------------
+times       *
+plus        +
+difference  -
+quotient    / (division entiere)
+remainder   modulo (reste de la division entiere)
+add1        x+1
+sub1        x-1
+
+GESTION MEMOIRE
+---------------
+oblist      la liste des fonctions predefinies
+gc          nettoie la memoire des doublets (gestion interne)
+dumpat      affiche le contenu de la pile (gestion interne)
+dumpcons    affiche le contenu de la memoire des doublets (gestion interne)
+dumppile    affiche le contenu de la memoire des atomes (gestion interne)
+nbfree      nombre de doublets libres (gestion interne)

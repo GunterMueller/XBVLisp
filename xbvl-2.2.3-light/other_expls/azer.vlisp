@@ -1,0 +1,440 @@
+
+(print "        AZERTYOP   par Patrick Greussay")
+; ------ Une experience de transport de mon AZERTYOP pdp10 -> Vlisp-UnixC
+
+; -------------- ecran
+(setq tfd 8) ; taille fenetre dialogue
+(setq xc 3)  ; ligne courante pour faire plaisir a dial
+(de init ()
+  (status print 2)
+  (setq rmargin 79) (terpri)
+  (home) (cleos)
+  (poscur (1+ tfd) 1) (princh "_" 78) (terpri)
+; L'appel initial;
+  (parterre 23 10 10 40)
+  (home)
+  (azertyop)
+  (setq xc 3) (dial))
+
+(de dial ()
+  (if (< xc tfd) nil (setq xc 1) (home))
+  (if (neq xc 3) nil
+      (while (le xc tfd) (poscur xc 1) (cleol) (incr xc))
+      (setq xc 3) (poscur xc 1))
+  (azercont)
+  (setq xc (+ xc 2))
+  (dial)
+  )
+
+(de rep ()      ; "r"ead-"e"val-"p"rint ;
+  (cleol) (down) (cleol) (up) (setq -it- (read))
+  (setq -it- (eval -it-))
+  (poscur xc 1)
+  (princh "=") (print -it-)
+)
+
+(de beep () ())
+
+(de -f- () (sh "ttv azer.vlisp")(lib azer)))))
+
+(de ttb (x y s)                 ; pour ecrire la chaine en position <x,y>
+  (status print 2)
+  (poscur x y) (princ s)
+  (status print 0)
+  )
+
+; Qu'est-ce que le robot ? C'est
+; - sa position en x et y : xrpos et yrpos
+; - s'il tient une boite ou pas :
+;               withbox = nil
+;               ou
+;               withbox = numero de boite
+
+; ROBOT trace un robot visible (i.e. visible = t)
+;                   ou invisible (i.e. visible = nil)
+; si withnbox non-nil (i.e. s'il tient une boite, elle
+; est tracee ou effacee selon la visibilite du robot
+
+(de robot (x y visible visiblebase)
+  (ttb x (1- y) (if visible "|||" "   "))
+  (ttb (1+ x) (1- y) (if visible "< >" "   "))
+  (if withnbox (box (+ x 2) y withnbox visible visiblebase))
+  )
+
+(de box (x y n visible savebase)
+  (setq y (- y 2))
+  (ttb x y (if visible "-----" "     "))
+  (ttb (+ x 1) y (if visible "|   |" "     "))
+  (ttb (+ x 2) y (if (or visible savebase) "-----" "     "))
+  (ttb (+ x 1) (+ y 2) (if visible n " "))
+  )
+
+; ROBOT peut se deplacer HORIZONTALEMENT par
+;                        (yrmov newy)
+;                     ou VERTICALEMENT par
+;                         (xrmov newx)
+; la vitesse de deplacement est reglee par la valeur
+; de la variable globale rate.
+; Apres deplacement on a xrpos = newx, ou yrpos = newy, selon le cas.
+
+(de yrmov (to ;; dir)
+  (setq dir (if (> (- to yrpos) 0) 1 -1))
+  (while (neq to yrpos)
+         (robot xrpos yrpos nil)        ; invisibler !!
+         (beep) (repeat rate)           ; temporiser
+         (robot xrpos (setq yrpos (+ dir yrpos)) t)
+                                        ; visibler la new pos
+  ))
+
+(de xrmov (to ;; dir)
+  (setq dir (if (> (- to xrpos) 0) 1 -1))
+  ; horrible hack pour bases
+  (if (or (neq dir -1) (null withnbox)) nil
+      (robot xrpos yrpos nil t)
+      (beep) (repeat rate)
+      (robot (decr xrpos) yrpos t))
+  ; end of horrible hack
+  (while (neq to xrpos)
+         (robot xrpos yrpos nil)
+         (beep) (repeat rate)
+         (robot (setq xrpos (+ dir xrpos)) yrpos t)
+  ))
+
+; Ou vit le robot AZERTYOP ? Dans un pays tel que ya
+; un PLAFOND : ligne X = 10
+; reglable quand meme (>= 10) : valeur de la variable globale plafond.
+;
+; un sol xterre ou sont poses les blocs, par defaut ligne x = 23
+; Initialement le robot est quelque part.
+; La fonction parterre initialise tout ca.
+
+(de parterre (xtr plaf initxrob inityrob)
+  (setq xterre xtr plafond plaf xrpos initxrob yrpos inityrob)
+  (setq withnbox nil)           ; au depart il tient rien !
+  (setq boxes nil)              ; au depart ya pas de boites !
+  (setq rate 0)                 ; controle vitesse de deplacement
+  (poscur xterre 1)
+  (princh "-" 79)               ; on trace le sol
+  (terpri)
+  (robot xrpos yrpos t)
+  (initplaces)                  ; initialisation des places libres.
+  )
+
+(de initplaces ()
+  (setq places (append nplaces nil))
+  )
+
+; Les places libres initiales sont encore dans la liste globale nplaces
+; recopiees dans la liste de travail (queue) places
+; places est modifiee par (findplaceterre) et (giveplaceterre n)
+
+(de findplaceterre () (nextl places))
+(de giveplaceterre (n) (setq places (nconc places n)))
+
+(setq nplaces '(3 9 17 27 37 49 61 68 75))
+
+
+
+;	pour faire naitre une boite n sur
+;                                       le sol: TERRE
+;                                       une boite de numero ON
+;       utiliser: (makenewbox ON)
+
+(de makenewbox (n on ;; aux x y)
+  (if (eq on 'terre) (setq x xterre y (findplaceterre))
+                     (setq aux (wherebox on) x (car aux) y (cadr aux)))
+  (setq x (- x 2))
+  (box x y n t)
+  (inboxplace n x y)
+  )
+
+; POUR: que le robot aille prendre la boite n
+; utiliser: (gotakebox n)
+
+(de gotakebox (n ;; aux x y)
+  (setq aux (wherebox n) x (car aux) y (cadr aux))
+  (yrmov y)             ; deplacement horizontal
+  (xrmov (- x 2))       ; descendre prendre boite
+  (setq withnbox n)     ; robot tient a present quelque chose
+  (xrmov plafond)       ; le baron noir remonte avec sa proie
+  (if (= x (- xterre 2)) (giveplaceterre y))
+                        ; remise a jour des places libres si
+                        ; la boite prise etait par terre
+  (outboxplace n x y)   ; remise a jour de la database des
+                        ; boites-et-leurs-coordonnees-x-y
+  )
+
+; POUR: que le robot aille poser la boite qu'il tient
+;       (c'est la valeur de withnbox) sur l'objet ON i.e.
+;                                                       TERRE
+;                                                       ou
+;                                                       boite n
+; utiliser: (goputbox n)
+
+(de goputbox (on ;; aux x y)
+  (if (eq on 'terre) (setq x xterre y (findplaceterre))
+                     (setq aux (wherebox on) x (car aux) y (cadr aux)))
+  (yrmov y)             ; deplacement horizontal
+  (xrmov (- x 4))       ; descendre avec le bebe
+  (inboxplace withnbox (- x 2) y)
+                        ; remise a jour de la database BOXES
+  (setq withnbox nil)   ; il ne tient plus rien
+  (xrmov plafond)       ; il remonte au plafond
+  )
+
+;  La database de (numero-de-boite coord-x coord-y) est dans BOXES
+;  (wherebox n) -> (coord-x coord-y)
+;  (inboxplace n x y) -> colle le 3-uple dans BOXES
+;  (outboxplace n x y) -> delete le 3-uple out of BOXES
+
+(de wherebox (n) (cdr (assoc n boxes)))
+(de inboxplace (n x y) (newl boxes [n x y]))
+(de outboxplace (n x y) (setq boxes (delete [n x y] boxes)))
+
+; ----- azertyop lui-meme
+
+(de azertyop (;; phrase)
+  (print '(AZERTYOP : BJOUR MSIEU))     ; DOIT etre un print
+  (setq word nil daba [['daba]] focus nil #obj nil #rel nil #loc nil)
+  (azercont))
+
+(de azercont ()
+  (poscur xc 1)
+  (if (neq xc 1) nil
+      (cleol) (down) (cleol) (up))
+  (setq phrase (read))
+  (if (equal phrase '(bye))
+      (progn (prinz "RVOIR MSIEU") (tyi) (home) (cleos) (unwind))
+      (or (eval-net (get 'phrase 'net) phrase)
+          (prinz "ZAI RIEN COMPRIS MSIEU")))
+  )
+
+(de eval-net (net phrase) (cond
+  ((null net) nil)
+  ((eval-clause (car net) phrase))
+  (t (eval-net (cdr net) phrase))))
+
+(de eval-clause (clause phrase)
+  (if (null clause) [phrase]
+      (setq lastword word word (car phrase))
+      (if (atom (car clause))
+          (if (eq (nextl clause) word)
+              (eval-clause clause (cdr phrase)))
+          (selectq (caar clause)
+            ($act (eprogn (cdar clause)) (eval-clause (cdr clause) phrase))
+            ($or  (if (member word (cdar clause))
+                      (eval-clause (cdr clause) (cdr phrase))))
+            ($test (if (eval (cadar clause))
+                       (eval-clause (cdr clause) (cdr phrase))))
+            ($call (setq aux (eval-net (get (cadar clause) 'net) phrase))
+                   (if aux (eval-clause (cdr clause) (car aux))))
+            ()))))
+
+(df def-net (l) (put (car l) 'net (cdr l)))
+
+(def-net phrase
+  (voyons ($act (scene)))
+
+  (($call ng) ($act (setq #obj #ng))
+   est ($call lieu) ($act (declarative)))
+
+  (prend ($call ng-le) ($act (setq #obj #ng) (imper-1)))
+
+  (($or met pose) ($call ng-le) ($act (setq #obj #ng))
+   ($call lieu) ($act (imper-2)))
+
+  (pose ($call ng-le) ($act (setq #obj #ng #loc 'terre) (imper-2)))
+
+  (ou est ($call ng-il) ($act (setq #obj #ng) (where-q)))
+
+  (($or de du) ($call ng) ($act (focus-it #ng) (p-oui-msieur)))
+
+  (repete ($test (numbp (setq aux word))) fois
+   ($act (repeat aux
+                 (mapc phrase (lambda (phrase)
+                                (eval-net (get 'phrase 'net) phrase)))))
+   ($act (p-oui-msieu)))
+  )
+
+(def-net ng
+  (($test (numbp word)) ($act (setq #ng lastword)))
+  (le cube ($test (numbp word)) ($act (setq #ng lastword)))
+  )
+
+(def-net lieu
+  (($or par sur) terre ($act (setq #loc 'terre #rel 'sur)))
+  (sur ($act (setq #rel 'sur)) ($call ng-lui) ($act (setq #loc #ng)))
+  (sous ($act (setq #rel 'sous)) ($call ng-lui) ($act (setq #loc #ng)))
+  )
+
+(def-net ng-le
+  (($call ng))
+  (le ($act (solve)))
+  )
+
+(def-net ng-il
+  (($call ng))
+  (il ($act (solve)))
+  )
+
+(def-net ng-lui
+  (($call ng))
+  (lui ($act (solve)))
+  )
+
+; ----- trucs de database
+
+(de present (-p- daba) (cond
+  ((null daba) nil)
+  ((match -p- (nextl daba)))
+  (t (present -p- daba))))
+
+(de match (-p- -d-) (cond
+  ((and (null -p-) (null -d-)) t)
+  ((or (null -p-) (null -d-)) nil)
+  ((atom (car -p-)) (if (eq (nextl -p-) (nextl -d-))
+                        (match -p- -d-)))
+  ((eq (caar -p-) ',)
+   (match [(eval (cadar -p-)) . (cdr -p-)] -d-))
+  ((eq (caar -p-) '!)
+   (if (match (cdr -p-) (cdr -d-))
+       (set (cadar -p-) (car -d-))))))
+
+(dmc "!" () ['! (read)])
+(dmc "," () [', (read)])
+
+(de prinz l
+  (poscur (1+ xc) 1)
+  (status print 0)
+  (print (append '(AZERTYOP :) l))
+  (status print 2))
+
+(de scene ()
+  (mapc daba 'print)
+  (if (present '(!x main) daba) (print "ET JE TIENS" x)))
+
+(de solve ()
+  (setq #ng (nextl focus)))
+
+(de in-daba (x)
+  (newl daba x))
+
+(de out-daba (x)
+  (ouda x daba))
+
+(de ouda (x db)
+  (if (equal x (car db)) (rplacb db (cdr db))
+      (ouda x (cdr db))))
+
+(de p-absurde ()
+  (prinz "C'EST SAUF VOT RESPECT MSIEU ABSURDE"))
+
+(de p-de-qui ()
+  (prinz "DE QUI VOUS CAUSEZ MSIEU ?"))
+
+(de p-yapas (x)
+  (prinz "YA PAS DE" x "MSIEU"))
+
+(de p-oui-msieu ()
+  (prinz "OUI MSIEU COMPRIS MSIEU"))
+
+; ----- trucs semantiques
+
+(de focus-it (x)
+  (newl focus x))
+(de declarative () (cond
+  ((eq #rel 'sous) (p-absurde))
+  ((or (null #obj) (null #loc)) (p-de-qui))
+  ((decl daba))))
+
+(de decl (db) (cond
+  ((null db) (in-daba [#obj 'sur #loc]) (focus-it #obj) (p-oui-msieu)
+             (makenewbox #obj #loc))
+  ((member #obj (nextl db)) (prinz #obj 'existe 'deja 'Msieu))
+  (t (decl db))))
+
+(de imper-1 () (cond
+  ((null #obj) (p-de-qui))
+  ((present '(!x main) daba) (cond
+        ((eq x #obj) (prinz "JELTIEN DEJA MSIEU") (focus-it #obj))
+        (t (prinz "CAISSE QUEJFAI DE" x "MSIEU ?") (focus-it x))))
+  ((present '(!x sur ,#obj) daba)
+   (free #obj [#obj]) (imper-1))
+  ((present '(,#obj sur !x) daba)
+   (out-daba [#obj 'sur x]) (in-daba [#obj 'main])
+   (focus-it #obj) (p-oui-msieu) (gotakebox #obj))
+  (t (focus-it #obj) (p-yapas #obj))))
+
+(de where-q ()
+  (if (null #obj) (p-de-qui)
+      (focus-it #obj)
+      (cond
+        ((present '(,#obj main) daba) (prinz "JELTIEN BIEN MSIEU"))
+        ((present '(,#obj sur !x) daba)
+         (if (eq x 'terre)
+             (prinz "PAR TERRE IL EST MSIEU")
+             (prinz "IL EST SUR" x "MSIEU")))
+        ((present '(!x sur ,#obj) daba)
+         (prinz x "EST SUR LUI MAIS" #obj "EST NULLE PART")
+         (print "YA COMME CA DES OBJETS KISONT NULLE PART"))
+        (t (p-yapas #obj)))))
+
+(de imper-2 () (cond
+  ((or (null #obj) (null #loc)) (p-de-qui))
+  ((eq #obj #loc) (prinz "PERSONNE Y PEU FAIRE UNE CHOSE COMME CA MSIEU"))
+  ((eq #rel 'sous) (p-absurde))
+  ((present '(,#obj main) daba)
+   (if (and (neq #loc 'terre) (present '(!x sur ,#loc) daba))
+       (prinz "JPEUPA MSIEU YA" x "SUR" #loc)
+       (out-daba [#obj 'main]) (in-daba [#obj 'sur #loc])
+       (focus-it #obj) (p-oui-msieu) (goputbox #loc)))
+  ((present '(!x main) daba)
+   (prinz "CAISSE QUE JFAIS DE" x "MSIEU ?") (focus-it x))
+  ((present '(,#obj sur !x) daba)
+   (focus-it #obj)
+   (cond
+     ((eq x #loc) (prinz "IL Y EST DEJA MSIEU"))
+     ((present '(!x sur ,#obj) daba) (free #obj [#loc]) (imper-2))
+     ((and (neq #loc 'terre) (present '(!x sur ,#loc) daba))
+      (free #loc [#obj]) (imper-2))
+     (t (out-daba [#obj 'sur x]) (in-daba [#obj 'sur #loc])
+        (p-oui-msieu) (gotakebox #obj) (goputbox #loc))))
+  (t (p-yapas #obj))))
+
+; ----- trucs de problemes-solvants
+
+(de free (x protect ;; z)
+  (if (present '(!z sur ,x) daba)
+      (progn
+        (setq protect [z x . protect])
+        (free z protect)
+        (out-daba [z 'sur x]) (gotakebox z)
+        (in-daba [z 'sur (setq aux (findplaceany protect))])
+        (goputbox aux)
+        )))
+
+(de findplaceany (protect ;; x y)
+  (let (p boxes)
+    (setq y (caar p))
+    (cond
+      ((null p) 'terre)
+      ((or (present '(!x sur ,y) daba) (member y protect))
+       (self (cdr p)))
+      (t y))))
+
+; ----- auxiliaires d'implementation
+
+(de eprogn (--l--)
+  (while (cdr --l--) (eval (nextl --l--)))
+  (eval (car --l--)))
+
+(print "Pour lancer, faites (init)")
+(de e () (sh "ed azer.vlisp") (lib ))
+
+
+
+
+
+
+
+

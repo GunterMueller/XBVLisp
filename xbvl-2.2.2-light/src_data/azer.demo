@@ -1,0 +1,22 @@
+../bvl <<%
+(lib azer)
+(status toplevel 1)
+
+; Vous etes dans une "demo" de Vlisp.
+; Pour arreter avant la fin appuyez 2 fois sur la touche DELETE.
+s
+
+; On lance le programme.
+(init)
+()
+(le cube 1 est par terre)
+(2 est sur lui)
+(3 est par terre)
+(ou est le cube 2)
+(le cube 4 est par terre)
+(5 est par terre)
+(prend 2)
+(met le sur 5)
+(bye)
+(stop)
+%

@@ -1,0 +1,32 @@
+^Aide en ligne de Zeugma
+^^Interface principale
+^
+Menu-principal
+
+	Cette fenêtre est l'interface principale du système Zeugma,
+	elle permet la création d'une nouvelle représentation analogique
+	(bouton NEW), le chargement d'un fichier Lisp définissant un 
+	programme à étudier, le chargement de fichiers de données spécifiants
+	des représentations analogiques, la sauvegarde des ORS définis dans
+	le système, l'inspection ...
+	
+^
+Nouvelle-représentation
+^
+ORS-Racine
+^
+ORS-Spécification
+^
+Attachements
+^
+Transformations-graphiques
+^^Fonctions et Variables
+^
+Fonction
+^
+Variable
+^
+Fonction-Attachements
+^
+Variable-Attachements
+^^Outils annexes

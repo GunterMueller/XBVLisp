@@ -1,0 +1,55 @@
+;;
+; graphic display of the memory filling 
+;;
+
+(setq --x-- careful careful nil)
+
+(package memory)
+
+(de caddar (x) (cadr (cdar x)))
+
+(setq |ShowMemory t)
+
+(setq xincr 50)
+(de realize-and-init ()
+    (xRealize (xGetSupWidget MemoryWidgets "ApplicationShell"))
+    (xModifyGC MemoryWidgets "mode" 6)
+    (let (vals `((0 "Float" ,(flouses))  (1 "Num" ,(numuses))   (2 "Str" ,(struses)) 
+		 (3 "Atom"  ,(atomuses)) (4 "List" ,(listuses)) (5 "Stk" ,(piluses))))
+      (ifn vals ()
+	   (xDrawString MemoryWidgets (+ 5 (* (caar vals) xincr)) 183 (cadar vals))
+	   (xDrawRectangles MemoryWidgets (+ 2 (* (caar vals) xincr)) 10 (- xincr 4) 160)
+	   (self (cdr vals) xincr))))
+
+(de |update-memory ()
+    (let ((values `((0 flo  ,(flouses))  (1 num ,(numuses))   (2 str ,(struses)) 
+		    (3 atom ,(atomuses)) (4 list ,(listuses)) (5 pile ,(piluses))))
+	  (old-v (get MemoryWidgets 'flo)))
+      (cond
+       ((not values) t)
+       ((not (equal old-v (caddr (car values))))
+	(mapc `(,old-v ,(caddr (car values)))
+	      (lambda (v)
+		(if v
+		    (let (len (/ (* 160 (cdr v)) (+ (car v) (cdr v))))
+		      (xFillRectangles MemoryWidgets 
+				       (+ 3 (* (caar values) xincr))
+				       (+ 10 (- 160 len))
+				       (- xincr 6) len)))))
+	(put MemoryWidgets (cadr (car values)) (caddr (car values)))
+	(self (cdr values) (get MemoryWidgets (cadr (cadr values)))))
+       (t
+	(self (cdr values) (get MemoryWidgets (cadr (cadr values))))))))
+
+(if (boundp 'MemoryWidgets) ()
+  (setq MemoryWidgets  
+	(xCreateWidget '--DW-- "Drawxbvl" (xCreateWidget '--AS-- "ApplicationShell" 
+							 "title" "xbVLisp System Memory" "iconName" "XbVLisp Memory")
+		       "width" 300 "height" 200
+		       "foreground" "#fff" "background" "#000"))
+  (realize-and-init)
+  (|update-memory))
+
+(package)
+
+(setq careful --x--)

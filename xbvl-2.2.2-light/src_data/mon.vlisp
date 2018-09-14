@@ -1,0 +1,64 @@
+(princ "je charge mon.vlisp")
+
+(de changewin (l)
+    (xChangeWin (car l) (cadr l)))
+
+(de m_changewin (w)
+    (xChangeWin w w 1))
+	 
+(de monitor (var ycoord  xcoord quoi quand)
+    (if (listp var)()
+      (let ((temp (xwinp))) 
+	(let ((aux
+	       (car (xcrewin 
+		(gensym var '-win) 
+		3 20
+		(cadr (xGetCursorpos)) (+ (car (xgetcursorpos)) 20)
+		))))
+	  (cond ((and (null quoi)(null quand))
+		 (ival var (cons `(entree
+				   (let ((temp (xwinp)))
+				     (m_changewin ',aux)
+				     (poscur 0 0 )
+				     (princ ,var)(cleol)
+				     (changewin temp)))
+				 (ival var))))
+		((and quoi (null quand))
+		 (ival var (cons `(entree
+				   (let ((temp (xwinp)))
+				     (m_changewin ',aux)
+				     (poscur 0 0)
+				     (princ ,quoi)(cleol)
+				     (changewin temp)))
+				 (ival var))))
+		((and quand (null quoi))
+		 (ival var (cons `(entree
+				   (if (null ,quand)()
+				     (let ((temp (xwinp)))
+				       (m_changewin ',aux)
+				       (poscur 0 0)
+				       (princ ,var)(cleol)
+			(changewin temp))))
+				 (ival var))))
+		(t (ival var (cons `(entree
+				     (if (null ,quand)()
+				       (let ((temp (xwinp)))
+					 (m_changewin ',aux)
+					 (poscur 0 0)
+		        (princ ,quoi)(cleol)
+			(changewin temp))))
+				   (ival var)))))
+	  (changewin temp)
+	  `(,var monitored)))))
+
+(df unmonitor (-x-)
+    (mapc -x- (lambda (-y- -z-)
+		(xRemoveWidget (gensym -y- '-win))
+		(setq -z-
+		      (let ((-z- (ival -y-)))
+			(if (null -z-) ()
+			  (if (eq (caar -z-) 'entree) (self (cdr -z-))
+			    (cons (car -z-)(self (cdr -z-)))))))
+		(if (null -z-) (clrival -y-)(ival -y- -z-)))))
+(print "mon.vlisp charge")
+

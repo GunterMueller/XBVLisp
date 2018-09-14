@@ -1,0 +1,19 @@
+; definitions pour GL
+
+; dessin GLbegin - GLend
+
+(defmacro GLdraw (type n-data . data)
+  `(progn
+     (GLbgn ,type)
+     (GLvertex ,n-data ,@data)
+     (GLend)))
+
+(defmacro GLwin (name width height drive-p)
+  `(unless (iswidget ,name)
+	   (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" ,name "iconName" ,name))
+	     (let (gl-wind (GLwinopen ,name root "width" ,width "height" ,height))
+	       (xRealizeWaiting root)
+	       (if ,drive-p (GLdrive gl-wind))
+	       gl-wind))))
+
+

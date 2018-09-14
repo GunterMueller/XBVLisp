@@ -1,0 +1,239 @@
+; conversion d'une ER en AF ;
+
+(de initNoeuds ()
+    (setq Noeuds '(X Y))
+    (setq CompteurNoeuds 0)
+    (initChaqueNoeud Noeuds)
+    (put (car Noeuds) 'init t)
+    (put (cadr Noeuds) 'term t))
+
+(de initChaqueNoeud (-noeuds-)
+    (if (null -noeuds-) t
+      (put (car -noeuds-) 'init nil)
+      (put (car -noeuds-) 'term nil)
+      (put (car -noeuds-) 'to nil)
+      (put (car -noeuds-) 'callback nil)
+      (if (iswidget (car -noeuds-)) (xRemoveWidget (car -noeuds-)))
+      (initChaqueNoeud (cdr -noeuds-))))
+
+(de explodeIntelligent (uneListe)
+    (cond
+     ((null uneListe) ())
+     ((and (atom uneListe) (not (null (explode uneListe))))
+      (explode uneListe))
+     ((atom uneListe) uneListe)
+     ((listp (car uneListe))
+      (cons 
+	(explodeIntelligent (car uneListe))
+	(explodeIntelligent (cdr uneListe))))
+     ((and (atom (car uneListe))
+	   (not (null (cdr (explode (car uneListe))))))
+      (append (explode (car uneListe)) (explodeIntelligent (cdr uneListe))))
+     (t
+      (cons (car uneListe) (explodeIntelligent (cdr uneListe))))))
+
+(de nouveauNoeud ()
+    (setq CompteurNoeuds (1+ CompteurNoeuds))
+    (setq Noeuds (append Noeuds (gensym 'Noeud- CompteurNoeuds)))
+    (let (nouvN (car (reverse Noeuds)))
+      (if (iswidget nouvN) (xRemoveWidget nouvN))
+      (put nouvN 'x ())
+      (put nouvN 'y ())
+      (put nouvN 'to ())
+      (put nouvN 'callback ())
+      nouvN))
+
+
+(de parcourER (-noeuds-)
+    (if (null -noeuds-) t
+      (if (null (get (car -noeuds-) 'to)) (parcourER (cdr -noeuds-))
+	(let ((unTo (get (car -noeuds-) 'to)) 
+	      (Tofinal ()) 
+	      (nouvNoeud))
+	  (cond
+	   ((null unTo) 
+	    (if (not (null Tofinal)) (put (car -noeuds-) 'to Tofinal))
+	    (parcourER (cdr -noeuds-)))
+	   ((atom (cadar unTo))         ; Fin... de fleche... ;
+	    (self (cdr unTo) (append Tofinal [(car unTo)])))
+	   ((and (listp (cadar unTo))   ; id ;
+		 (null (cdr (cadar unTo))))
+	    (self (append (cdr unTo) [(cons (caar unTo) (car (cadar unTo)))])
+		  Tofinal))
+	   ((eq (cadr (cadar unTo)) '+)       ; + ;
+	    (self (append (cdr unTo)
+			  (append [(cons (caar unTo) [(car (cadar unTo))])]
+				  [(cons (caar unTo) [(cddr (cadar unTo))])]))
+		  Tofinal))
+	   ((eq (cadr (cadar unTo)) '*)
+	    (self (append (cdr unTo) 
+			  (append [(cons (car -noeuds-) [(car (cadar unTo))])]
+				  [(cons (caar unTo) [(cddr (cadar unTo))])]))
+		  Tofinal))
+	   (t
+	    (setq -noeuds- (append -noeuds- (setq nouvNoeud (nouveauNoeud))))
+	    (put nouvNoeud 'to [(cons (caar unTo) [(cdr (cadar unTo))])])
+	    (self (append (cdr unTo) [(cons nouvNoeud [(car (cadar unTo))])])
+		  Tofinal))))
+      )))
+
+(de eraf (ER Noeuds CompteurNoeud)
+    (if (null ER) ()
+      (setq ER (explodeIntelligent ER))
+      (initNoeuds)
+      (put (car Noeuds) 'to [(cons (cadr Noeuds) [ER])])
+      (parcourER Noeuds)	
+      (dessineAF (car Noeuds))))
+
+; Partie de traitement graphique d'une AF ;
+
+(setq callback-function "PrintValue")
+
+(de dessineFleche (fleche wDepart x-vers y-vers)
+    (print wDepart fleche)
+    (put wDepart 'callback (append (get wDepart 'callback) (cdr fleche)))
+    (xAddCallback wDepart "callback" (strcat "(noeuds-callback '" (get wDepart 'callback) " $W)"))
+    (if (not (eq wDepart (car fleche)))
+	(let ((x-depart (+ x (xGetValues wDepart "width"))) 
+	      (y-depart (+ y (/ (xGetValues wDepart "height") 2)))
+	      (nbF (car nbFleche))
+	      (nbTF (car nbTotalFleche)))
+	  (if (iswidget (car fleche)) (progn (setq x-vers (xGetValues (car fleche) "x"))
+					     (setq y-vers (xGetValues (car fleche) "y")))
+	    (setq x-vers (+ x-depart 20))
+	    (setq y-vers (- y-depart (/ (* (/ zoneY nbTF) (- (* nbF 2) (1+ nbTF))) 2)))
+	    (if (< y-vers 0) (setq y-vers 10))
+	    (print "Zone" zoneY "nbF" nbF "nbTF" nbTF) 
+	    (put (car fleche) 'x x-vers)
+	    (put (car fleche) 'y (- y-vers (- y-depart y))))
+;	  (print wDepart "x1" x-depart "y1" y-depart "x2" x-vers "y2" y-vers ":" fleche)   ;
+;	  (readline) ;
+	  (xDrawString uneWidget 
+		       (+ x-depart (/ (- x-vers x-depart) 2) )
+		       (+ y-depart (/ (- y-vers y-depart) 2) )
+		       (if (listp (cdr fleche)) (cadr fleche) (cdr fleche)))
+;          (xDrawLines uneWidget x-vers y-vers (- x-vers 10) y-vers)     ;
+;          (xDrawLines uneWidget x-vers y-vers x-vers (+ y-vers 10))     ;
+	  (xDrawLines uneWidget x-depart y-depart x-vers y-vers))
+      ))
+
+(de nombreFleche (noeud)
+    (let ((nbF '(0 . 0)) (lNoeud (get noeud 'to)))
+      (if (null lNoeud) nbF
+	(if (eq (caar lNoeud) noeud) (self (cons (car nbF) (1+ cdr nbF)) (cdr lNoeud))
+	  (self (cons (1+ (car nbF)) (cdr nbF)) (cdr lNoeud))))))
+
+(de dessineAF (unNoeud Fait)
+    (setq Fait ())
+    (dessineAF1 unNoeud (initERAFWidgets (gensym (length Noeuds) "-Noeuds")) 600 10 400))
+
+(de dessineAF1 (unNoeud uneWidget zoneY x y)
+    (if (null unNoeud) t
+      (cond
+	 ((iswidget unNoeud) 
+	  (setq x (xGetValues unNoeud "x"))
+	  (setq y (xGetValues unNoeud "y")))
+	 ((not (null (get unNoeud 'x)))
+	  (setq x (get unNoeud 'x))
+	  (setq y (get unNoeud 'y))))
+	(if (not (iswidget unNoeud)) 
+	    (xCreateWidget unNoeud "awCommand" uneWidget "x" x "y" y))
+	(let ((unTo (get unNoeud 'to)) (nbTotalFleche (nombreFleche unNoeud)) (nbFleche '(1 . 1)))
+	  (if (null unTo) t
+	    (dessineFleche (car unTo) unNoeud)
+	    (if (not (or (member (caar unTo) Fait)
+			 (eq (caar unTo) unNoeud)))
+		(progn
+		  (setq Fait (append Fait unNoeud))
+		  (dessineAF1 (caar unTo) uneWidget (/ zoneY nbTotalFleche))))
+	    (self (cdr unTo) nbTotalFleche 
+		  (if (eq (caar unTo) unNoeud) (cons (car nbFleche) (1+ (cdr nbFleche)))
+		    (cons (1+ (car nbFleche)) (cdr nbFleche))))
+	    ))))
+
+
+
+; Creation de la representation ;
+
+(de xCreateCom (nom label left-widget)
+   (let (com (xCreateWidget nom "awCommand" -form-
+			     "label" label))
+     (if left-widget
+	 (xSetValues com "horizDistance" (+ (xGetValues left-widget "x") 
+			(+ (xGetValues left-widget "width") 5))))
+     (xSetValues com "left" "ChainLeft" "right" 2 "top" 0 "bottom" 0)
+     com
+     ))
+
+
+(de initERAFWidgets (name)
+    (let (root-name (strcat "root-" name))
+      (if (iswidget root-name) (xRemoveWidget root-name))
+      (setq root (xCreateWidget root-name "ApplicationShell"))
+      (setq -form- (xCreateWidget (strcat name "-Form") "awForm" root))
+      (setq move-widget (xCreateCom (strcat name "-cmd-move") "Move" ()))
+      (setq quit-widget (xCreateCom (strcat name "-cmd-quit") "Quit" move-widget))
+      (setq redraw-widget (xCreateCom (strcat name "-cmd-redraw") "Redraw" quit-widget))
+      (setq valeur-widget (xCreateCom (strcat name "-cmd-value") "Valeur de Noeud" redraw-widget))
+      (setq label-widget  (xCreateWidget (strcat name "-Label") "awLabel" -form-
+					 "label" " " 
+					 "width" 600
+					 "vertDistance" (+ (xGetValues move-widget "y")
+							   (+ (xGetValues move-widget "height") 5))))
+      (xSetValues label-widget "top" 0 "bottom" 0 "right" 2 "left" "ChainLeft")
+      (xAddCallback move-widget "callback" (strcat "(move-widget " label-widget ")"))
+      (xAddCallback quit-widget "callback" (strcat "(quit-widget " root-name ")"))
+      (xAddCallback redraw-widget "callback" (strcat "(redraw-widget " label-widget ")"))
+      (xAddCallback valeur-widget "callback" (strcat "(node-value " label-widget ")"))
+      (setq callback-function (cons "PrintValue" label-widget))
+      (setq -draw-viewport- (xCreateWidget (strcat name "-viewport") "awViewport" -form-
+					   "width" 600
+					   "height" 600
+					   "allowVert" "True"
+					   "allowHoriz" "True"
+					   "top" 0
+					   "left" "ChainLeft"
+					   "vertDistance" (+ (xGetValues label-widget "y")
+							   (+ (xGetValues label-widget "height") 5))))
+      (let (-draw- (xCreateWidget name "Drawxbvl" -draw-viewport-
+				  "width" 2000
+				  "height" 2000))
+	(xRealize root)
+	-draw-)))
+
+(de move-widget (label-widget)
+    (xSetValues label-widget "label" "Choisissez le Noeuds a deplacer")
+    (setq callback-function (cons "Move" label-widget)))
+
+(de quit-widget (root-widget)
+    (xRemoveWidget root-widget))
+
+
+(de redraw-widget (label-widget)
+    (xSetValues label-widget "label" " En cours..."))
+
+(de node-value (label-widget)
+    (xSetValues label-widget "label" "Choisissez le Noeuds")
+    (setq callback-function (cons "PrintValue" label-widget)))
+    
+
+(de noeuds-callback (value noeud)
+    (cond
+     ((not (listp callback-function)) ())
+     ((equal (car callback-function) "PrintValue")
+      (xSetValues (cdr callback-function) "label" value))
+     ((equal (car callback-function) "Move")
+      (xSetValues (cdr callback-function) "label" " ")
+      (setq Moving t)
+      (moveNoeud noeud))
+     ))
+
+
+(de moveNoeud (noeud)
+    (if (or (null noeud)
+	    (null Moving) t
+      (let ((x (xGetValues noeud "x")) 
+	    (y (xGetValues noeud "y")) 
+	    (w (xGetValues noeud "width")) 
+	    (h (xGetValues noeud "height")))
+	))))

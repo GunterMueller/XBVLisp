@@ -1,0 +1,15 @@
+; 
+;  ----------------------------------------------
+;  librerie de fonctions pour manipuler la tortue 
+;  ----------------------------------------------
+; positione la tortue au centre de la fenetre.
+
+(de hometortue ( top win )
+    (if (null (setq poswin (xwdim top win))) nil
+      (let ((width (car poswin)) (height (cadr poswin)))
+	;(princ top win  width height "\n");
+	(postortue top win (/ width 2) (/ height 2) 0)
+	)
+      )
+    )
+

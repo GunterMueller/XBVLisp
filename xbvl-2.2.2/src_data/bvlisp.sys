@@ -1,0 +1,1281 @@
+; %I%, %R%, %B%, %D%,  %T%,  %M%
+(status print 1)
+(package bvlisp.sys)
+(careful nil)
+(setq defun 'de defunf 'df)
+;
+;
+;==================================================================
+;quelques fonctions defun manipulation et creation d'interfaces
+;==================================================================
+;
+; positionne les ressources pour faire le deplasement 
+; d'un widget. Les ressources ne sont pas les memes a positionner
+; dependant defun la classe
+
+(defun xMoveWidget ( -widget- yy xx )
+    (cond (
+	   ((not (iswidget -widget- )) nil)
+	   ((iswidget -widget- "ApplicationShell")
+	    (xSetValues -widget-  "x"  xx "y"  yy ))
+	   ((iswidget (xWidgetParent -widget- ) "awForm" )
+	    (xUnmanage -widget-)
+	    (xSetValues -widget- "horizDistance" xx "vertDistance" yy)
+	    (xManage -widget- ))
+	   (t 
+	    (xUnmanage -widget-)
+	    (xSetValues -widget-  "x" xx "y"  yy ))
+	    (xManage -widget- ))
+	  )
+    )
+
+;
+; la seule precaution qu'on prend est enlever defun l'autorite parental le widget
+; s'il est a l'interieur d'un Widget composite.
+;
+(defun xResizeWidget ( -widget- height width )
+    (cond (
+	   ((not (iswidget -widget- )) nil)
+	   ((iswidget (xWidgetParent -widget- ) "awComposite" )
+	    (xUnmanage -widget-)
+	    (xSetValues -widget-  "width" width "height" height ))
+	   (xManage -widget- ))
+	  (t 
+	   (xSetValues -widget-  "width" width "height" height ))
+	  )
+    )	
+
+;;
+; cree une hierarchie minimale pour un session interactive avec xbVLISP
+;;
+(defun xCreateXbvlisp (w-name nlignes colonnes y x pages)
+    (if (iswidget w-name "Xbvlisp") 
+	w-name
+      (if (not(and (numbp nlignes)(numbp colonnes)(numbp y)(numbp x)(numbp pages)))
+	  (progn (print "Mauvais arguments") nil)
+	(let (new-xBVL (xInitXbvlisp w-name nlignes colonnes y x pages))
+	  (xRealize (car new-xBVL))
+	  (cadr new-xBVL)
+	  )
+	)
+      )
+    )
+
+; fait le travail defun creation defun la hierarchie Xbvlisp ;
+(defun xInitXbvlisp (w-name nlignes colonnes y x pages)
+    (let (root-w (xCreateWidget (strcat w-name "-root") "ApplicationShell" ))
+      (let (bvlisp-win (xCreateWidget w-name "Xbvlisp" root-w
+				      "lignes"        nlignes
+				      "colonnes"      colonnes
+				      "pages"           pages   ))
+	(xSetValues root-w  "geometry"   (strcat "+" x "+" y ))
+	[ root-w bvlisp-win ]
+	)))
+;;
+;    Ramene l'atome contenamt la racine defun la hierarchie du widget passe en
+;    argument. 
+;;
+
+(defun xGetSupWidget(-widget- -class-)
+    (if (iswidget -widget- -class- ) -widget-
+	(if (iswidget -widget-)
+	    (xGetSupWidget (xGetValues -widget- "parent" ) -class-)
+	  nil)))
+;;
+; ramene la hierarchie defun widgets auquel 
+; le appartien le widget passe en argument.
+;;
+
+(defun xGetHierarchie ( -widget- )
+    (if (iswidget -widget- )
+	(xGetSousArbre (xGetSupWidget -widget- "Shell") () )
+      nil ))
+;;
+; recursivement construit une liste defun tous les
+; descendants du widget passe en parametre.
+;;
+
+(defun xGetSousArbre ( -widget- )
+    (let ( -children- (xGetValues -widget- "children"))
+      (if (null -children-) -widget-
+	(cons -widget-  (mapcar -children- 'xGetSousArbre) )
+	)))
+
+
+(setq main-bVLISP (xwinp))
+(defun xTopLevel ()
+    (if (iswidget main-bVLISP "Xbvlisp") main-bVLISP (xwinp)))
+
+;;
+; cree une interface temporaire pour ratrapper des erreur 
+;;
+(setq error-displays t)
+
+(defun initErrorDisplay (name error-type)
+    (let (root (xCreateWidget (strcat name "-root") "ApplicationShell"))
+      (let ((form (xCreateWidget (strcat name "-form") "awForm" root))
+	    (tmp-mess) (tmp-inter) (tmp-break) (tmp-top) (tmp-value) (tmp-phen) 
+	    (x-pos) (y-pos))
+	(setq x-pos 4)
+	(setq y-pos 4)
+	(setq tmp-top (xCreateWidget (strcat name "-top") "awCommand" form
+				     "label" "Niveau Suppérieur" "top" 0 "bottom" 0 "background" "#f00"
+				     "left" "ChainLeft" "right" 2))
+	(setq tmp-break (xCreateWidget (strcat name "-break") "awCommand" form
+				       "label" "Boucle d'inspection" "background" "#33f"
+				       "top" 0 "bottom" 0 "left" "ChainLeft" "right" 2
+				       "horizDistance" (incr x-pos (+ 5 (xGetValues tmp-top "width")))))
+	(setq tmp-aide (xCreateWidget (strcat name "-aide") "awCommand" form
+				       "label" "Aide" "background" "#fff"
+				       "top" 0 "bottom" 0 "left" "ChainLeft" "right" 2
+				     "horizDistance" (incr x-pos (+ 5 (xGetValues tmp-break "width")))))
+	(setq tmp-value (xCreateWidget (strcat name "-value") "awCommand" form
+				       "label" "Valeur" "background" "#0F0"
+				       "top" 0 "bottom" 0 "left" "ChainLeft" "right" 2
+				       "horizDistance" (incr x-pos (+ 5 (xGetValues tmp-aide "width")))))
+	(if (eq error-type 'func) 
+	    (progn
+	      (setq tmp-phen (xCreateWidget (strcat name "-phenarete") "awCommand" form
+					    "label" "Proposition" "background" "#FF0"
+					    "top" 0 "bottom" 0 "left" "ChainLeft" "right" 2
+					    "horizDistance" (incr x-pos 
+								  (+ 5 (xGetValues tmp-value "width")))))
+	      (setq tmp-func (xCreateWidget (strcat name "-func") "awCommand" form
+					    "label" "Remplacer la fonction"  "background" "#0FF"
+					    "top" 0 "bottom" 0 "left" "ChainLeft" "right" 2
+					    "horizDistance" (incr x-pos 
+								  (+ 5 (xGetValues tmp-phen "width")))))))
+	(setq tmp-mess (xCreateWidget (strcat name "-message") "awLabel" form 
+				      "left" "chainLeft" "top" 0 "bottom" 0 "font" "9x15"
+      "label" "                                                                                "
+				      "vertDistance" (incr y-pos (+ 5 (xGetValues tmp-break "height")))))
+	(setq tmp-inter (xCreateWidget (strcat name "-interaction") "Xbvlisp" form
+				       "lignes" 15 "colonnes" 80 "pages" 10
+				       "vertDistance" (incr y-pos (+ 5 (xGetValues tmp-mess "height")))
+				       "left" "ChainLeft" "top" 0 "font" "9x15"))
+	[root tmp-mess tmp-inter tmp-aide tmp-break tmp-top tmp-value 
+	 (and (eq error-type 'func) tmp-phen) (and (eq error-type 'func) tmp-func)])))
+				       
+
+
+(defun getErrCommand (lst_wdg ret)
+   (setq ret nil) 
+   (while (null ret)
+	(cond
+  	   ((xCheckEvent (4 lst_wdg) "ButtonPress") (aide nil nil (strcat |VLISPDIR "error-help"))) ; aide
+	   ((xCheckEvent (5 lst_wdg) "ButtonPress") (setq ret "i")) ; break
+	   ((xCheckEvent (6 lst_wdg) "ButtonPress") (setq ret "-")) ; toplevel
+	   ((xCheckEvent (7 lst_wdg) "ButtonPress") (setq ret "v")) ; value
+	   ((xCheckEvent (8 lst_wdg) "ButtonPress") (setq ret "p")) ; phenarete
+	   ((xCheckEvent (9 lst_wdg) "ButtonPress") (setq ret "f"))))
+   ret) ; fonction
+
+
+(defun xcreeDisplay (top display-top error-type)
+    (cond
+     ((not (iswidget top)) nil)
+     ((iswidget display-top "Xbvlisp") [(xGetRootWidget display-top) display-top])
+     (t
+      (let ((cursor (xGetCursorpos top))
+	    (_display (initErrorDisplay display-top error-type)))
+	(let((xbvl-top      (car _display))
+	     (display_width (xGetValues (cadr _display) "width"  "Int"))
+	     (display_haut  (xGetValues (cadr _display) "height" "Int"))
+	     (root-xbvl (car _display))
+	     (cursorx (car cursor))
+	     (cursory (cadr cursor)))
+					;calculer la postion defun la nouvelle interface
+	  (if (> (+ cursory display_haut) HEIGHT)
+	      (setq posy (- cursory  (+ display_haut 40) ))
+	    (setq posy (+ cursory 10)))
+	  (if (> (+ cursorx display_width) WIDTH)
+	      (setq posx (- WIDTH display_width))
+	    (setq posx cursorx))
+	  (xSetValues xbvl-top ; la racine defun la hierarchie ;
+		      "title"     "Erreur Xbvlisp"
+		      "iconName"  "!!***NE PAS ICONIFIER CETTE FENETRE, RATTRAPEZ L'ERREUR QUI L'A GENEREE***!!"
+		      "geometry" (strcat "+" posx "+" posy ))
+	  (xRealize xbvl-top)
+	  (setq error-displays (cons xbvl-top error-displays))
+	  _display)))))
+      
+
+;----------------------------------------------------;
+; pour pouvoir utiliser les deux types d'interface   ;
+;----------------------------------------------------;
+
+(defun changewin (w) (xChangeWin  w 0) )
+;;
+(defun delwin (w)(xRemoveWidget (xWidgetParent w)))
+
+;;
+
+(print "loading bvlisp.sys")
+
+(de fopen (file) (eval `(open ,file)))
+
+(de fexist (file)
+    (let (x (fopen file))
+      (ifn x nil (close x) t)))
+
+(dm fdelete (file)
+    `(sh (strcat "rm " ,file)))
+
+(defun mapc (-l- -f-) ; le mapc le plus simple ;
+    (if (null -l-) nil
+      (-f- (nextl -l-))
+      (mapc -l- -f-)))
+
+(defun mapcar (-l- -f-) (and -l- [(-f- (nextl -l-)) . (mapcar -l- -f-)]))
+
+(defun mapct (-l- -f- -x-) ; le mapcar arborescente ;
+    (and -l- 
+	 (progn (setq -x- (-f- (nextl -l-)))
+		(if -x- [-x- . (mapct -l- -f-)] (mapct -l- -f-)))))
+
+; --- une definition raisonnable defun defmacro
+
+(dm |defmacro (call)
+  `(dm ,(cadr call) (call)
+	(letdicq ,(caddr call) (cdr call)
+		  (rplacb call (progn ,@(cdddr call))))))
+
+
+(dm |crossfile (call)
+	(eval `(lib ,(strcat VLISPDIR "prtt")))
+	call)
+
+(dm |prettyfile (call)
+	(eval `(lib ,(strcat VLISPDIR "prtt")))
+	call)
+; en developpement
+(dm |steptr (call)
+        (eval `(lib ,(strcat VLISPDIR "stepper"))) 
+        call)
+
+(dm |prettyf (call)
+	(eval `(lib ,(strcat VLISPDIR "prtt")))
+	call)
+
+(dm |::= (call)
+	(eval `(lib ,(strcat VLISPDIR "record")))
+	call)
+
+(dm |record-type (call)
+	(eval `(lib ,(strcat VLISPDIR "record")))
+	call)
+
+(dm |match (call)
+	(eval `(lib ,(strcat VLISPDIR "match")))
+	call)
+
+(dm |crossf (call)
+	(eval `(lib ,(strcat VLISPDIR "prtt")))
+	call)
+
+; en developpement pour l'interface X
+
+(setq |aide '|xaide)
+
+(dm |xaide (call)
+	(eval `(lib ,(strcat VLISPDIR "xfile")))
+	call)
+
+(dm |xInclude (call)
+	(eval `(lib ,(strcat VLISPDIR "xfile")))
+	call)
+
+(dm |trace (call)
+	(eval `(lib ,(strcat VLISPDIR "trace")))
+	call)
+(dm |pretty (call)
+	(eval `(lib ,(strcat VLISPDIR "pretty")))
+	call)
+
+(dm |monitor (call)
+	(eval `(lib ,(strcat VLISPDIR "mon")))
+	call)
+
+(dm |allpretty (call)
+	(eval `(lib ,(strcat VLISPDIR "pretty")))
+	call)
+
+(dm |ef (call)
+	(eval `(lib ,(strcat VLISPDIR "eff")))
+	call)
+
+(dm |edit (call)
+	(eval `(lib ,(strcat VLISPDIR "EDIT")))
+	call)
+
+(dm |editl (call)
+	(eval `(lib ,(strcat VLISPDIR "EDIT")))
+	call)
+
+(dm |GLdrive (call)
+    (ifn OPENGL nil
+        (eval `(include ,(strcat VLISPDIR "GL-drive")))
+        call))
+
+(dm |Methode-Menu (call)
+	(eval `(include ,(strcat VLISPDIR "X-Menus")))
+	call)
+
+(dm |Do-Selection-Menu (call)
+	(eval `(lib ,(strcat VLISPDIR "X-Menus")))
+	call)
+
+(dm |do (call) ; defun quoi faire un do pingouin ;
+ (rplacb call
+  `((lambda ,(mapcar (cadr call) 'car)
+	     (if ,(caar (cddr call)) (progn ,@(cdar (cddr call)))
+		,@(cdddr call)
+		  (self ,@(mapcar (cadr call) 'caddr))))
+     ,@(mapcar (cadr call) 'cadr))))
+
+; --- defun quoi faire des prog et des go et des return
+;     ya des cas ou c'est utile
+
+(defunf prog (-call- ;; -ovals- -res- -etiq- -list-) ; pour des prog et des goto ;
+	  (setq -ovals- (mapcar (car -call-) 'car) -list- (cdr -call-))
+	  (escape return
+		  (unwind-protect
+		      (while t
+			(escape -prog-
+				(mapc -list- (lambda (--x--) (and (listp --x--) (eval --x--))))
+				(return)
+				)
+			(setq -list- (member -etiq- -call-)))
+		    (mapc (car -call-) (lambda (--x--) (set --x-- (nextl -ovals-))))
+		    )
+		  )
+	  )
+    
+(defunf go (etiq) ; le goto lisp ; (-prog- (setq -etiq- (car etiq))))
+	
+(defun |parb (l)(setq ARBRE l lactive [[2 (car l)]])(parb1 l 0))))
+
+(defun %prinar (l)  ; pour l'impression des arbres ; (status print 2)
+	(setq ARBRE l)
+	(outpos 2)
+	(setq lactive [[2 (car l)]])
+	(%prina l 2 2 -10)(outpos 1)(status print 0))
+
+(defun %mpc (lis) ; pour l'impression des arbres ; (let ((x (%mpc1 lis)))
+	(if (null x)()[(cons tb x)])))
+
+(defun %mpc1 (lis) ; pour l'impression des arbres ; 
+   (if (null lis) () (if (atom (car lis))
+	(cons (car lis) (%mpc1 (cdr lis))) (%mpc1 (cdr lis)))))
+
+(defun %enl (at) ; pour l'impression des arbres ; (if (null lactive)()
+	(let ((x (delete at (car lactive))))
+		(setq lactive (if (= (length x) 1)(cdr lactive)
+			(cons x (cdr lactive)))))))
+
+(defun %prina (l tb pi compt bool c) ; pour l'impression des arbres ; 
+  (let ((pi (escape ex(%outpot tb pi (getthem)))))
+	(prin1 (car l))
+	(%enl (car l)) ; doit enlever dans la premiere sousliste;
+	(if (listp (cadr l))(setq lactive (append (%mpc (cadr l)) lactive)))
+	(cond
+	 ((null (cdr l))(if bool (1+ c) (terpri)(outpos 2) ))
+	 ((atom (cadr l))
+		(if bool ()(terpri)(outpos 2))
+		(%prina (cdr l) tb 2 compt bool (1+ c)))
+	 (t (%prina (cadr l)(+ tb 12) (+ pi (plength (car l)))
+			(+ compt 12) bool c)
+	    (if (cddr l)(%prina (cddr l) tb 2 compt bool c))))))
+
+(defun parb1 (l c tb)
+   (%enl (car l))
+   (if (listp (cadr l))(setq lactive (append (%mpc (cadr l)) lactive)))
+   (cond ((null (cdr l)) (1+ c))
+	((atom (cadr l))(parb1 (cdr l)(1+ c) ))
+	(t (parb1 (cadr l)(if (cddr l)(parb1 (cddr l) c) c)
+)))))))))))
+
+(defun getthem (l) ; pour l'impression des arbres ; (mapcar lactive 'car))
+
+(defun %outpot (ps pi x) ; pour l'impression des arbres ; 
+	(if (> ps pi)(cond
+	((zerop (rem (- pi 2) 12))
+	   (if (memq  pi x)
+		(if (ge pi compt)(princh "\\")(princh "|" 1))
+		(if (< pi compt)(princh " ")(princh "_" 1)))
+	   (%outpot ps (1+ pi) x))
+	((< pi compt)(princh " " 1)(%outpot ps (1+ pi) x))
+	(t (princh "_" 1)(%outpot ps (1+ pi) x))))
+(ex pi)))
+
+(defun %vardefun (globalvar localvar) ; description des variables ;
+	(terpri)
+	(ifn globalvar ()
+		(print "variables globales : ")
+		(%vard1 globalvar 'globalvar)
+		(terpri)
+		(print "variables globales modifiees : ")
+		(%vard1 globalvar 'incr)
+		(terpri))
+	(ifn localvar ()
+		(print "variables locales : ")
+		(%vard1 localvar 'localvar)))
+
+(defun %vard1 (li ind -a- -b-) ; pour la description des variables ;
+   (mapc li
+	(lambda (x)
+	  (setq -a- (%find (ival x) ind))
+	  (ifn -a- ()
+		  (setq -b- t)
+		  (prin1 x)
+		  (outpos 10)
+		  (prin1 "dans")
+		  (mapc -a- 'prin1)
+		  (terpri))
+	))
+    (if -b- () (print "aucune"))))))
+
+
+;(defun %find (x ind i) 
+;	(if x (if (eq (caar x) ind)(if i (car x)(cdar x))(%find (cdr x) ind i))))))
+(|defmacro %find (x ind i) ; ca serche dans les ival ;
+  (if i `(assq ,ind ,x) `(cdr (assq ,ind ,x))))
+
+(defunf %index (y) ; c'est pour les arbres ;
+	(setq |flis ())
+	(if y ()(setq y all_functions))
+	(mapc (if (eq (car y) '-%-) -%- y)
+		(lambda (x)
+		   (terpri)
+		   (%prinar (cons x (cons (%suprev 
+			(|%indexx x (%find (ival x) 4)))))
+))))
+
+(defunf %a (y) ; l'impression des arbres ;
+   (mapc (if y y all_functions)
+	(lambda (x)(eval ['%index x]) ;(terpri))))
+))))
+
+(defunf %i (-%- -x- -y-) ; la construction des index ;
+	(if -%- (progn
+		   (setq -x- (mapcar -%- (lambda (x)
+			(%find (ival x) 1))))
+		   (setq -y- (mapcar -%- (lambda (x)
+			(%find (ival x) 0))))
+		   (setq -x- (flat -x-) -y- (flat -y-))) 
+		(setq -%- all_functions -x- globalvar -y- localvar))
+	(%index -%-)
+	(%vardefun -x- -y-))
+
+(defun flat (x) ; comme son nom indique: ca applati une liste ; (cond
+	((null x) ())
+	((atom (car x))(cons (car x)(flat (cdr x))))
+	(t (append (flat (car x))(flat (cdr x)))))))))
+
+(defun |%indexx (x %exp %arb) ; et encore pour les arbres ;
+	(setq |flis (cons x |flis))
+	(cond
+		((null %exp) %arb)
+	 	((memq (car %exp) |flis)
+			(|%indexx x (cdr %exp)(cons (car %exp) %arb)))
+		((setq aux (|%indexx (car %exp)(%find (ival (car %exp)) 4)))
+			(|%indexx x (cdr %exp)
+			   (append (list aux (car %exp)) %arb)))
+		(t (|%indexx x (cdr %exp)(cons (car %exp) %arb)))))
+))))))))
+
+(defun %suprev (l) ; ca inverse un arbre ; 
+	(if (atom l) l (append (%suprev (cdr l))(list (%suprev (car l)))))))
+
+(defunf %descr (x) ; pour avoir une petite description ;
+  (if x ()(setq x (append (%union localvar globalvar) all_functions)))
+  (mapc x '%desc))))
+
+(defun %desc (x aux) ; auxiliaire pour %descr ;
+  (setq aux (ival x))
+  (if (or (%find aux 'localvar t)(%find aux 'globalvar t))(%desca x))
+  (if (or (%find aux 3) 
+	  (%find aux 4)
+	  (%find aux 2)
+	  (%find aux 1)
+	  (%find aux 0))
+	(%descf x))))))
+
+(defun %descf (x aux aux1)  ; auxiliaire pour %descr ;
+	(terpri)
+	(outpos 20)
+	(print "----------" x "----------")
+	(terpri)
+	(if (setq aux (%find (ival x) 201))
+	    (print "type = " (car aux) "(type utilisateur)")
+	(print "type = " 
+	    (selectq (ftyp x)
+		(7 "EXPR")(8 "FEXPR")(9 "MACRO")(10 "ESCAPE")(11 "MACOUT")
+	(() "inconnu (soit escape, soit fonction indefinie, soit variable)"))))
+;	(if (setq aux (%find (ival x) 10))
+;		(print "        post-recursive"))
+	(if (setq aux (%find (ival x) 0))
+		(progn (prin1 "variables locales = ")
+		       (mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 1))
+		(progn (prin1 "variables globales = ")
+		       (mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 2))
+		(progn (prin1 "variables globales modifiees = ")
+			(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 4))
+		(progn (prin1 "utilise = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 3))
+		(progn (prin1 "utilisee par = ")(mapc aux 'prin1)(terpri)))
+	(terpri)))))))
+
+(defun %desca (x aux) ; pour la doc des variables ;
+	(terpri)
+	(outpos 20)
+	(print "----------" x "----------")
+	(terpri)
+	(if (setq aux (%find (ival x) 'globalvar))
+		(progn (prin1 "est globale dans = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 'incr))
+		(progn (prin1 "et modifiee dans = ")(mapc aux 'prin1)(terpri)))
+	(if (setq aux (%find (ival x) 'localvar))
+		(progn (prin1 "est locale dans = ")(mapc aux 'prin1)(terpri)))
+	(terpri))))))
+	
+(defun %union (x y) ; que fait donc cette fonction ? ;
+	(if (null x) y (%union (cdr x)(if (memq (car x) y) y
+		(cons (car x) y)))))
+
+(defun %ubv (nom var -x- -y-) ; ah, les erreurs variable indef ;
+	(print nom var -x- -y-)
+    (let (-window- (xTopLevel))
+      (let (err_display (xcreeDisplay -window- '_err-display 'var))
+	(changewin (caddr err_display))(xDisable)
+	(let ((**x** (%ubv1 nom var err_display -x- -y-)))
+	  (changewin -window- ) (xEnable)
+	  (xRemoveWidget (car err_display))
+	  (setq error-displays (cdr error-displays))
+	  (ifn (equal **x** 'fini) **x**
+		(ifn error-displays (unwind)))))))
+
+(defun %ubv1 (nom  var err_display -x- -y-)
+     ; auxiliaire defun %ubv : undefined variable ;
+    (escape ++fini++
+	    ; impression du message d'erreur ;
+	    (setq -y- (caddr (cdddr (frame 6))))
+	    (let (message-d-erreur 
+		  (strcat "Variable indefinie : " var
+			  (ifn -y- "" 
+			       (strcat " dans " 
+				       (if (neq 'lambda (car -y-)) (car -y-) 
+					 (cons (car -y-)(cadr -y-)))))))
+	      (xSetValues (cadr err_display) "label" message-d-erreur))
+	    (setq -x- (getErrCommand err_display))
+	    (if (and -y- (atom (car -y-))(equal -x- "p"))
+		(progn
+		  (|phenaretes [(selectq (ftyp (caadr (cdddr (frame 5))))
+				(7 'de)(8 'df)(9 'dm))
+			(caadr (cdddr (frame 100))) .  (fval (caaddr (cdddr (frame 6))))])
+		  (print "si vous voulez gardez cette version proposee, tapez 'g' :")
+		  (if (equal (itoa (tyo (tyi-or-print))) "g") 
+		      (progn (eval PROPOSITION) (print "c'est fait") (++fini++ 'fini))
+		    (setq -x- (getErrCommand err_display)))))
+
+	     (when (equal -x- "i")
+		(print "terminez l'inspection en tapant 'fin' !!!!")		
+		(break fin)
+                (print "Boucle d'inspection terminee")
+		(setq -x- (getErrCommand err_display)))
+
+             (cond ((equal -x- "e")
+	            (if -y-
+		     (progn 
+                       (if (neq 'lambda (car -y-)) (eval ['|edit (car -y-)])
+		           (editl (cadr -y-)))
+	                'fini)
+	               (print "y'a rien a editer!")()))
+	           ((equal -x- "-") 'fini)
+	           ((equal -x- "v")
+			(princ "donnez une valeur pour" var ":\n")
+			(set var (eval (read))))
+		   (t (princ "donnez une valeur :\n") (eval (read))))))
+
+(enable error-ubv '%ubv)
+
+(defun %ubt (nom . call)
+  (let (aux (cadr (frame 2)))
+    (print (strcat "Erreur de typage ou division par 0 : " call
+		   (if aux (strcat " dans " (if (neq 'lambda (car aux)) (car aux) 
+					      (cons (car aux)(cadr aux))))
+		     ""))))
+  (unwind))
+
+
+(enable error-type '%ubt)
+(setq error-type t)   ; met en place la vérification de type et de division par 0
+
+(defun %ubf (nom  ftn args form dans -x- -y-)
+   ; ah, les erreurs undefined function ;
+    (let (-window- (xTopLevel))
+      (let (err_display (xcreeDisplay -window- '_err-display 'func))
+	(changewin (caddr err_display))
+	(let (message-d-erreur 
+	      (strcat "Fonction Indefinie : " ftn " avec " args
+		      (ifn dans "" (strcat " dans " dans))))
+	      (xSetValues (cadr err_display) "label" message-d-erreur))
+	(let ((**x** (%ubf1 nom ftn args form t err_display)))
+	  (changewin -window- ) 
+	  (xRemoveWidget (car err_display))
+	  (setq error-displays (cdr error-displays))
+	  (ifn (equal **x** 'fini) **x**
+	       (ifn error-displays (unwind) 'print))))))
+
+(defun %self (nom  ftn args form  dans -x- -y-)
+    ; handler pour l'erreur self ;
+    (let (-window- (xTopLevel)) 
+      (let (err_display (xcreeDisplay -window- '_err-display 'func))
+	(changewin (caddr err_display))
+	(xSetValues (cadr err_display) "label" (strcat "self Hors Fonction : "  ftn args))
+	(let ((**x** (%ubf1 nom ftn args form nil err_display)))
+	  (changewin -window-) 
+	  (xRemoveWidget (car err_display))
+	  (setq error-displays (cdr error-displays))
+	  (if (equal **x** 'fini) (ifn error-displays (unwind) 'print) **x**)))))
+
+(defun %ubf1 (nom ftn args form -x- err_display -y-)
+   ; aux pour handler erreur self et erreur undef function ;
+    (escape ++fini++
+	(setq -x- (getErrCommand err_display))
+	(when (and dans (atom dans)(neq dans 'toplevel)(equal -x- "p"))
+		(|phenaretes [
+			(selectq (ftyp dans)
+				(7 'de)(8 'df)(9 'dm))
+			dans . (fval dans)])
+		(print "si vous voulez gardez cette version proposee, tapez 'g' :")
+		(if (equal (itoa (tyo (tyi-or-print))) "g")
+		    (progn (eval PROPOSITION) (print "c'est fait")(++fini++ 'fini))
+		  (setq -x- (getErrCommand err_display))))
+	(while (equal  -x- "i")
+		(print "terminez l'inspection en tapant 'fin' !!!!")
+		(break fin)
+                (print "Boucle d'inspection terminee")
+		(setq -x- (getErrCommand err_display)))
+	(cond ((equal -x- "-")(++fini++ 'fini))
+	      ((and dans (equal -x- "e"))
+		(if (equal dans 'toplevel)(progn (print "y'a rien a editer") nil)
+                   (if (atom dans)(eval ['edit dans])(editl dans)))
+			(++fini++ 'fini))
+	      ((equal -x- "v") 
+		(princ "maintenant donnez la valeur retournée\npar la fonction indéfinie :\n")
+		(setq -x- (eval (read)))
+		(setq -y- (gensym))
+		(eval ['defun -y- () [quote -x-]]) -y-)
+	      ((equal -x- "f")
+		(princ "maintenant donnez la fonction :\n")
+		(if (equal (car form) ftn) 
+		    (rplaca form (setq -x- (read)))
+		    (if (eq (car (cadr form)) 'apply)
+			(progn (setq -x- (read))
+			       (if (eq (car (cadr (cadr form))) 'quote)
+				   (rplaca (cdr (cadr (cadr form))) -x-)
+				   (rplaca (cdr (cadr form)) -x-)))
+			(setq -x- (read))
+			(print "je ne peux pas modifie votre fonction")))
+		-x-)
+	      (t 
+		(princ "maintenant donnez la fonction :\n")
+		(read)))))
+
+(enable error-ubf '%ubf)
+(enable self '%self)
+
+(defunf ind (x)
+   ; permet defun definir des types utilisateurs pour la doc ;
+   (let ((ftn (car x))(type (cadr x))(z (ival (car x))))
+	(let ((y (%find z 200 t)))
+	     (if y (rplacd y [type]) 
+		(ival ftn (cons [200 type](ival ftn)))))))
+
+
+(defun example (x  y) ; pour les attaches exemple ;
+   (if (listp y)(put x 'example y)(if (eq y t)()(exit (get x 'example))))
+   (let ((z (ival x)))
+	(if (null z)(ival x (cons  '(100 t) (ival x)))
+	   (if (eq (caar z) 100)
+		(rplacd (car z) [t])(self (cdr z)))))
+    x))))))))
+
+(defun enleve-entree (ftn at) ; enleve la fonction ftn des activites d'entree ;
+	(put at 'entree (%enleve ftn (get at 'entree))))
+
+(defun enleve-sortie (ftn at); enleve la fonction ftn des activites defun sortie ;
+	(put at 'sortie (%enleve ftn (get at 'sortie))))
+
+(defun %enleve (ftn -l-) ; aux pour enleve-entree et enleve-sortie ;
+	(if (null -l-)()
+	    (if (eq (caar -l-) ftn)(cdr -l-)
+		(cons (car -l-)(%enleve ftn (cdr -l-))))))
+
+(defunf unassert-e (at) ; pour temporairement enlever des assertions d'entree ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst 'as-en-dummy  'assert-ent (get at 'entree)))))
+    at)
+
+(defunf unassert-s (at) ; pour temporairement enlever des assertions defun sortie ;
+    (mapc at (lambda (at)
+	(put at 'sortie (subst 'as-so-dummy  'assert-sor (get at 'sortie)))
+	(put at 'entree (subst '%%aux-dummy '%%aux (get at 'entree)))))
+    at)
+
+(defun as-so-dummy ()())
+(defun %%aux-dummy ()())
+(defun as-en-dummy ()())
+
+(defunf reassert-e (at) ; pour reactiver des activites d'entree ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst 'assert-ent 'as-en-dummy (get at 'entree)))))
+at)
+
+(defunf reassert-s (at) ; pour reactiver des activites defun sortie ;
+    (mapc at (lambda (at)
+	(put at 'entree (subst '%%aux '%%aux-dummy (get at 'entree)))
+	(put at 'sortie (subst 'assert-sor 'as-so-dummy (get at 'sortie)))))
+    at)
+
+(setq pile () )
+(defun push (-x-)(setq %pile (cons -x- %pile)))
+(defun pop ()(nextl %pile)))
+
+(defun test-entree (x . y)
+	(putcar x y)(putcar x 'entree))
+
+(defun test-sortie (x . y)
+	(putcar x y)(putcar x 'sortie))
+
+(defun assert-ent (ftn -x-)
+	(if (eval -x-)()
+	    (terpri)
+	    (print "l'assertion d'entree de" ftn ":")
+	    (outpos (+ lmargin 10))(print -x-)
+	    (print "n'est pas verifiee pour l'appel :")
+	    (outpos (+ lmargin 10))
+	    (print (cons ftn (mapcar (car (fval ftn))
+			(lambda (y)(eval y)))))
+	    (terpri)))))))
+
+(defun assert-entree (ftn -x-)
+	(put ftn 'entree (append (get ftn 'entree)
+				[['assert-ent [quote ftn][quote -x-]]])))
+
+(defun %%aux (ftn) 
+	(if (car (%find (ival ftn) 10))
+		(put ftn 'ASSERT_P (if (null (get ftn 'ASSERT_P)) 1 
+				(1+ (get ftn 'ASSERT_P)))))
+	(mapc (reverse (car (fval ftn)))	
+			(lambda (-x-)(push (eval -x-)))))
+
+(defun assert-sor (ftn -x- ind)
+	(if (eval -x-)
+		(if ind ()(mapc (car (fval ftn))(lambda (x)(pop)))
+		     (if (car (%find (ival ftn) 10))
+			(put ftn 'ASSERT_P (if (zerop (get ftn 'ASSERT_P)) 0
+				(1- (get ftn 'ASSERT_P))))))
+	    (outpos lmargin)
+	    (print "l'assertion defun sortie de" ftn ":")
+	    (outpos (+ lmargin 10))(print -x-)
+	    (print "n'est pas verfiee pour l'appel :")
+	    (outpos (+ lmargin 10))
+	    (if (null ind)
+	        (prin1 (cons ftn (mapcar (car (fval ftn)) (lambda (x)(pop)))))
+		(prin1 (cons ftn (mapcar (car (fval ftn))(lambda (x)(eval x))))))
+	    (print "="  sortie)
+	    (if (and (null ind)(car (%find (ival ftn) 10)))
+		(put ftn 'ASSERT_P (if (zerop (get ftn 'ASSERT_P)) 0
+				(1- (get ftn 'ASSERT_P)))))
+	    (terpri))
+	(if (and (null ind) (car (%find (ival ftn) 10)))
+		(let ((%%x%% (get ftn 'ASSERT_P))
+		      (%%y%% (mapcar (car (fval ftn))(lambda (x) (eval x)))))
+			(while (ge %%x%% 0)
+			  (mapc (car(fval ftn))(lambda (-x-)(set -x- (pop))))
+			  (assert-sor ftn -x- t)
+			  (setq %%x%% (1- %%x%%)))
+			  (put ftn 'ASSERT_P 0)					(1- (get ftn 'ASSERT_P)))))
+))
+)
+
+(defun assert-sortie (ftn -x-) ; pour coller des assertions defun sortie ;
+	(put ftn 'entree (append (get ftn 'entree)
+		[['%%aux [quote ftn]]]))
+	(put ftn 'sortie (cons ['assert-sor [quote ftn][quote -x-]]
+				(get ftn 'sortie))))
+
+
+(defun entree (ftn -x-) ; pour coller des assertions d'entree ;
+   (put ftn 'entree (cons -x- (get ftn 'entree))))
+
+(defun sortie (ftn -x-)
+   (put ftn 'sortie (cons -x- (get ftn 'sortie))))
+
+(defun all ()(setq -all- t))
+(defun not-all () (setq -all- nil))
+
+
+(defun trans (x) (nconc (cons "(" (alltrans x)) ")"))
+
+(defun alltrans (x)
+  (cond
+      ((equal x "")())
+    (t (cons (strcar x)(alltrans (strcdr x))))))
+;
+; d'ici on ajout defun l'environnement
+;
+
+(dmc |^ ()(implode(trans (readlin))))
+
+
+
+(defun existe-qqc (x)
+ (let ((y (oblist))(z))
+   (while y (if (strincp x (car y)) (newl z (nextl y)) (nextl y))) z))
+
+
+(defun tyi-or-print ()
+     (let ((tyi-or-print (tyi)))
+	(ifn (equal tyi-or-print 27) tyi-or-print
+	  (let ((tyi-or-print (tyi)))
+	    (ifn (equal tyi-or-print 80) tyi-or-print (save-screen)(tyi))))))
+		
+(defun first-call (x n)
+  (let ((y (frame 5000)))
+     (while (neq (caar y) 'first-call)(nextl y))
+     (nextl y)
+     (and (eq (caar y) x) (lc1 n (cdr y)))))
+
+(defun lc1 (n pil)
+   (if (null pil) (eq n 1) 
+       (if (eq (caar pil) x) 
+	  (if (eq n 1) ()
+		(lc1 (1- n) (cdr pil))))))
+
+(defunf chemin-entree (x)
+   ; test si <pile> = ft1->ftn2->ftn3 (mais pour les assertions ;  
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin-entree)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+	    (if (get (car x) '%%remprop) ()
+		(sortie (car x) `(%%remprop ',(car x)))
+		(put (car x) '%%remprop t)
+		(chemin1 x (cdr x) (cdr y))))))
+
+(defunf chemin-sortie (x) 
+   ; test si <pile> = ft1->ftn2->ftn3 (mais pour les assertions ;
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin-sortie)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+		(chemin1 x (cdr x) (cdr y))))))
+
+(defunf chemin (x) ; test si <pile> = ft1->ftn2->ftn3 ;
+   (let ((y (frame 5000))(x (reverse x)))
+	(while (neq (caar y) 'chemin)(nextl y))(nextl y)
+	(if (eq (caar y) (car x))
+		(chemin1 x (cdr x) (cdr y))))))
+
+(defun %%remprop (ftn)
+   (remprop ftn '%%remprop)
+   (enleve-sortie '%%remprop ftn))
+
+(defun chemin1 (z y pil)
+  (if (null y) t
+   (if (null pil) ()
+      (if (eq (caar pil)(car y)) (chemin1 y (cdr y)(cdr pil))
+        (if (eq (caar pil) (car z)) 
+	   (if (equal z x) () (chemin1 z y (cdr pil))))))))
+
+(defunf |getdoc (---+x+---)
+   (mapc ---+x+---
+      (lambda (---+y+---)
+         ((lambda (---+z+---)
+            ((lambda (---+u+---)
+               (print ---+y+--- (if ---+u+---
+                     ---+u+---
+                     "raison inconnu"))) 
+	   (get (getcar ---+z+---) '|COM))) 
+      (fval ---+y+---)))))
+
+(not-all)
+(package)
+(setq defun 'de)
+(let (-window- (xwinp))
+  (xscroll -window- 0 7)
+  (poscur -window- 0 0) 
+  )
+(setq DefaultBVLPort 5010)
+(setq INET "INET")
+(setq STREAM "STREAM")
+(setq TCP "TCP") 
+
+(defun readFromNet ()
+    (let ((aSocket (SOcreate "INET" "STREAM" "TCP")))
+      (if aSocket
+	  (progn
+	    (print "Creating read Socket")
+	    (if (SOconnect aSocket "ANY" DefaultBVLPort)
+		(progn 
+	    	  (print "Listening on read Socket")
+		  (SOlisten aSocket 1)
+		  (let (travail (SOread aSocket))
+		    (progn
+		      (SOclose aSocket)
+		      (print "Executing request")
+		      (eval travail))))
+	      (SOclose aSocket))))))
+
+(defun executeOnNet (aHostName command)
+    (let ((aSocket (SOcreate "INET" "STREAM" "TCP"))
+	  (aCommand `(let ((sock (SOcreate "INET" "STREAM" "TCP")))
+		       (if (SOconnect sock ,(SOhostname) (+ DefaultBVLPort 1))
+			   (progn
+			     (print "Writting")
+			     (SOwrite sock (list 'setq 'x (list quote ,command)))
+			     (SOclose sock))))))
+      (if aSocket 
+	  (if (SOconnect aSocket aHostName DefaultBVLPort)
+	      (let ((rSocket (SOcreate "INET" "STREAM" "TCP")))
+		(if rSocket
+		    (progn
+		      (print "Creating reply socket")
+		      (if (SOconnect rSocket "ANY" (1+ DefaultBVLPort))
+			  (progn 
+			    (print "Listening")
+			    (SOlisten rSocket 1)
+			    (print "Writting")
+			    (SOwrite aSocket aCommand)
+			    (SOclose aSocket)
+			    (print "Evaluating")
+			    (eval (SOread rSocket))))
+		      (SOclose rSocket))))
+	    (SOclose aSocket)))
+      x))
+
+(defun deOnNet (aHostName func-name)
+  (let (aSocket (SOcreate "INET" "STREAM" "TCP"))
+    (if aSocket 
+	(progn 
+	  (if (SOconnect aSocket aHostName DefaultBVLPort) (SOwrite aSocket func-name))
+	  (SOclose aSocket)))))
+
+; listing des fonts defun Hershey accessibles
+
+(defun GLlistfont ()
+    (sh "ls -C /usr/local/lib/hershey")
+    t)
+; des widgets utiles... DP
+
+(defmacro xGetParentTitle (widget)
+  `(xGetValues (xGetSupWidget ,widget "ApplicationShell") "title"))
+
+; definitions du garbage collector ;
+(setq GC_COPY 3
+      GC_OR   7
+      GC_XOR  6
+      GC_SET  15)
+
+; effacement defun l'ecran suivant le type du widget ;
+(defun clear-screen (widget)
+    (ifn (iswidget widget) (setq widget 'main-bVLISP))
+    (poscur widget 0 0)
+    (let ((old-for (xGetValues widget "foreground"))
+	  (old-bac (xGetValues widget "background")))
+      (xSetValues widget "foreground" 0)
+      (if (iswidget widget "Text") (cleos widget)
+	(xFillRectangles widget 0 0 (xGetValues widget "width") (xGetValues "height")))
+      (xSetValues widget "foreground" old-for)))
+
+; recuperation du placement horizontal d'un widget ;
+(defun xGetHoriz (widget)
+    (ifn (iswidget widget) 4
+	 (+ (if (= (xGetValues widget "x") 0) 4 (xGetValues widget "x"))
+	    (+ 5 (xGetValues widget "width")))))
+
+; recuperation du placement vertical d'un widget ;
+(defun xGetVert (widget)
+    (ifn (iswidget widget) 4
+	 (+ (if (= (xGetValues widget "y") 0) 4 (xGetValues widget "y"))
+	    (+ 5 (xGetValues widget "height")))))
+
+;
+; creation d'un widget defun type awCommand 
+; les arguments sont :
+;    root : parent
+;    nom  : nom du nouveau widget 
+;    left-widget : widget a gauche du nouveau
+;    top-widget  : widget au dessus du nouveau
+;    command     : callback associe avec le nouveau widget
+;
+(defun xCreateCom (root nom left-widget top-widget command)
+   (let (com (xCreateWidget (gensym) "awCommand" root
+			     "label" nom))
+     (if left-widget
+	 (xSetValues com "horizDistance" (xGetHoriz left-widget)
+		     "x" (xGetHoriz left-widget)))
+     (if top-widget
+	 (xSetValues com "vertDistance" (xGetVert top-widget)
+		     "y" (xGetVert top-widget)))
+     (xSetValues com "left" "ChainLeft" "right" 2 "top" 0 "bottom" 0)
+     (if command
+	 (xAddCallback com "callback" command))
+     com
+     ))
+
+;
+; creation d'un widget defun type label 
+; les arguments sont :
+;    root : parent du nouveau
+;    label : label d'initialisation
+;    left-widget : widget a gauche du nouveau
+;    top-widget  : widget au dessus du nouveau
+;    is_right    : redimensionnement a droite ?
+;    is_left     : redimensionnement a gauche ?
+;
+(defun xCreateLabel (root label width left-widget vert-widget is_right is_left)
+   (let (com (xCreateWidget (gensym) "awLabel" root
+			    "top" 0 "bottom" 0
+			    "label" label))
+     (ifn is_right (xSetValues com "right" 2))
+     (ifn is_left  (xSetValues com "left" "ChainLeft"))
+     (if width
+	 (xSetValues com "width" width))
+     (if left-widget
+	 (xSetValues com "horizDistance" (xGetHoriz left-widget)
+		     "x" (xGetHoriz left-widget))
+	(xSetValues com "horizDistance" 4))
+     (if vert-widget
+	 (xSetValues com "vertDistance" (xGetVert vert-widget)
+		     "y" (xGetVert vert-widget)))
+     com
+     ))
+
+;
+; craation d'un widget avec les donnees suivantes :
+;    type : type du widget
+;    name : nom
+;    pixmap : fichier bitmap lie a  l'icone du nouveau widget
+;    scroll-vert, scroll-horiz : scroll bars ??
+;    values : valeur supplementaires sous la forme (("type1" . val1) ( . ) ..) 
+;    is_realized : lancement defun xRealize ??
+;
+(defun xCreate (type name pixmap lenght width scroll-vert scroll-horiz values is_realize)
+    (let (root (xCreateWidget (gensym) "ApplicationShell" "title" name "iconName" name))
+      (if pixmap (xSetValues root "iconPixmap" pixmap))
+      (let (view (xCreateWidget (gensym) "awViewport" root
+				"allowVert" (if scroll-vert "True" "False")
+				"allowHoriz" (if scroll-horiz "True" "False")
+				"height" lenght
+				"width" width))
+	(let (ret (xCreateWidget (gensym) type view "width" width "height" lenght))
+	  (mapc values
+		(lambda (x) 
+		  (xSetValues ret (car x) (cadr x))))
+	  (if is_realize (xRealize root))
+	  ret))))
+
+;
+; Creation d'un widget list avec donnees...
+;
+; Arguments : title list defaultColumns [font] [width|100] [height|100] [allowHoriz]
+;
+(defun xCreateList (title list dcol font w h ah)
+    (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" title "iconName" title))
+	(let (vp (xCreateWidget '--AV-- "awViewport" root "allowVert" "True"
+				"allowHoriz" (if ah "True" "False")
+				"width" (if w w 100)
+				"height" (if h h 100)))
+	  (let (lst (xCreateWidget '--AL-- "awList" vp "list" list "columnSpacing" 1
+				   "defaultColumns" dcol
+				   "forceColumns" (if dcol "True" "False")))
+	    (if font (xSetValues lst "font" font))
+	    (xRealize root)
+	    lst)))))
+;
+; Creation d'un widget text d'edition/affichage
+;
+; Arguments: nom pere label editable [x y width height scrollH scrollV])
+;
+(defun xCreateText (nom pere label editable x y w h)
+    (let (tmp-src (xCreateWidget '--ASRC-- "awAsciiSrc" (xGetSupWidget pere "ApplicationShell") "type" "string"))
+      (let (tmp-txt (xCreateWidget nom "awAsciiText" pere "textSource" tmp-src))
+	(xSetValues tmp-txt "string" label)
+	(if editable (xSetValues tmp-txt "editType" "append"))
+	(if (or x y) (xSetValues tmp-txt "x" x "y" y))
+	(if (or w h) (xSetValues tmp-txt "width" w "heigth" h))
+	tmp-txt)))
+	
+
+;
+; Modification defun resources d'un widget avec Unrealize + Realize
+;
+(defmacro xModify (widget prop value)
+  `(ifn (iswidget ,widget) ()
+	(let (root (xGetSupWidget ,widget "ApplicationShell"))
+          (xUnrealize root)
+	  (xSetValues  root ,prop ,value)
+	  (xSetValues ,widget ,prop ,value)
+	  (xRealizeWaiting root)
+	  t)))
+
+;
+; destruction d'un widget par la destruction defun son parent
+;
+(defmacro xRemove (widget)
+  `(xRemoveWidget (xGetSupWidget ,widget "ApplicationShell")))
+
+;
+; realisation d'un widget avec attente defun la realisation effective
+;
+(defmacro xRealizeWaiting (widget)
+  `(progn
+     (xRealize ,widget)
+     (while (not (xCheckEvent ,widget "MapNotify")))))
+
+; modification du label
+(defmacro xSetLabel (w l)
+  `(xSetValues ,w "label" (strcat ,l)))
+
+; modification defun la couleur d'un ou d'une liste defun widget
+(defun xsetColor (wl color what)
+    (mapc (if (atom wl) `(,wl) wl)
+	  (lambda (w)
+	    (xSetValues w (if what what "background") color))))
+
+;
+; creation d'un element dans un popup
+;
+(defun xCreatePopupCommand (popup name command)
+    (let (-command- (xCreateWidget (gensym) "awCommand" popup "label" name))
+      (xAddCallback -command- "callback" (lstrcat command))
+      (if (iswidget popup "awForm")
+	(let (y (xGetVert (cadr (reverse (xGetValues popup "children")))))
+	  (xSetValues -command- 
+		      "vertDistance" y "y" y)))
+      -command-))
+
+;
+; Remplissage d'un popup
+;  command : commandefun liee avec les elements du popup
+;  values  : liste d'elements : ( "Label" ("Commande" . Argument) ...)
+;  set-fonts : font a utiliser pour les elements du popup
+;
+(defun FillPopup (popup command values set-fonts pkg)
+    (break)
+    (let ((form (xCreateWidget (gensym) "awForm" popup "background" 2))
+	  (currents values)
+	  (tmp ()))
+      (ifn currents form
+	   (if (stringp (car currents))
+	       (setq tmp-com (xCreateWidget (gensym) "awLabel" form
+					    "label" (car currents)
+					    "foreground" 0 "background" 1))
+	     (setq tmp-com (xCreateWidget (gensym) "awCommand" form
+					  "label" (caar currents)))
+	     (xAddCallback tmp-com "callback" 
+			   (strcat "(" (if pkg (strcat pkg "|" command) command)
+				   " '" tmp-com 
+				   " '" (if pkg (strcat pkg "|" (cdar currents)) (cdar currents)) ")")))
+	   (if set-fonts (xSetValues tmp-com "font" set-fonts))
+	   (if tmp (xSetValues tmp-com "vertDistance" (xGetVert tmp) "y" (xGetVert tmp)))
+	   (self form (cdr currents) tmp-com))))
+
+
+;
+; Realisation d'un popup a la position defun la souris
+;
+(defun xPopupAtPointer (popup mode)
+    (let (-pospointer- (xGetPosPointer))
+      (xSetValues popup "x" (- (car -pospointer-) 10)
+		  "y" (- (cadr -pospointer-) 10)))
+    (xPopup popup mode)
+    popup)
+;
+; Creation d'une boite defun dialogue
+;   x,y    = position defun la boite
+;   label  = label defun la boite defun dialogue
+;   value  = valeur initiale
+;   expr   = expression a evaluer lors defun la selection defun OK ou Cancelm
+;            la valeur retournee sera presente dans la variable xDialogValue
+;
+(defun xCreateDialogBox (label value expr) 
+    (let (root (xCreateWidget '--AW-- "ApplicationShell" "title" label))
+      (let (tmp (xCreateWidget '--DB-- "awDialog" root "label" label "value" (strcat value)))
+	(let ((cmd-ok (xCreateWidget '--CW-- "awCommand" tmp "label" "Ok"))
+	      (cmd-cl (xCreateWidget '--CW-- "awCommand" tmp "label" "Cancel")))
+	  (setq xDialogBoxConfirm expr)
+	  (xAddCallback cmd-ok "callback" (strcat "(xDialogBoxConfirm t   '" tmp ")"))
+	  (xAddCallback cmd-cl "callback" (strcat "(xDialogBoxConfirm nil '" tmp ")"))
+	  (xRealize root)))))
+
+(defun xDialogBoxConfirm (is-ok dwidget)
+    (let (xDialogValue (if is-ok (xGetValues dwidget "value")))
+      (xRemoveWidget (xGetValues dwidget "parent"))
+      (if is-ok (eval xDialogBoxConfirm))))
+
+(defun xGetDialogValue (wdialog)
+    (implodefun (explodefun (xGetValues wdialog "value"))))
+
+; Pour utiliser le son...
+
+; Attention : machine dependant
+
+(de play (file is-bg type)
+    (ifn type (setq type (implode (nth (1+ (length (member "." (reverse (explode file))))) (explode file)))))
+    (let ((term (strcat " > /dev/null " (if is-bg "&" " ")))
+	  (cmd (cond
+		((eq type 'aiff) "playaiff ")
+		((eq type 'aifc) "playaifc ")
+		((eq type 'au)   "sfplay ")
+		(t (print "Unknown sound type" type) nil))))
+      (when cmd (sh (strcat cmd file term)) t)))
+
+; changement du look de l'interface
+(cond 
+ ((equal (getenv "XBVLINTERFACE") "c") t)
+ ((null (getenv "XBVLINTERFACE"))
+  (setq root-xbvl 'xbvl)
+					; detruit la awForm sous 'xbvl
+  (xRemoveWidget 'xbvl-form) 
+  (let ((fw (xCreateWidget 'xbvl-form "awForm" 'xbvl "background" "#88a"))
+	(tmp))
+    (xAddCallback (setq tmp (xCreateWidget 'ac1 "awCommand" fw "label" "Charge un fichier Lisp" ; "fromHoriz" tmp
+					   "borderColor" "#88a" "background" "#88a" "foreground" "green"
+					   "font" "a14" "shadowWidth" 2 
+					   "left" "ChainLeft" "right" 2 "bottom" 0 "top" 0))
+		  "callback" "(xInclude)")
+    (xAddCallback (setq tmp (xCreateWidget 'ac1 "awCommand" fw "label" "Fenêtre GL" "fromHoriz" tmp
+					   "borderColor" "#88a" "background" "#88a" "foreground" "yellow" 
+					   "font" "a14" "shadowWidth" 2
+					   "left" "ChainLeft"  "right" 2 "bottom" 0 "top" 0))
+		  "callback" "(creeGLwin)")
+    (xAddCallback (setq tmp (xCreateWidget 'ac1 "awCommand" fw "label" "Aide par sections" "fromHoriz" tmp
+					   "borderColor" "#88a" "background" "#88a" "foreground" "blue" 
+					   "font" "a14" "shadowWidth" 2
+					   "left" "ChainLeft"  "right" 2 "bottom" 0 "top" 0))
+		  "callback" "(xaide)")
+    (xAddCallback (setq tmp (xCreateWidget 'ac1 "awCommand" fw "label" "Sortie de Xbvl" "fromHoriz" tmp
+					   "borderColor" "#88a" "background" "#88a" "foreground" "red" 
+					   "font" "a14" "shadowWidth" 2
+					   "left" "ChainLeft"  "right" 2 "bottom" 0 "top" 0))
+		  "callback" "(stop)")
+    (setq tmp (xCreateWidget 'main-bVLISP "Xbvlisp" fw "fromVert" tmp "left" "ChainLeft" "top" 0))
+    (xChangeWin tmp)))
+ (t (eval `(lib ,(getenv "XBVLINTERFACE")))))
+
+; création d'une fenêtre GL
+(de creeGLwin ()
+    (let (root (xCreateWidget 'a "ApplicationShell" "title" "Fenêtre GL"))
+      (setq GLwin (GLwinopen 'gl root "width" 200 "height" 200))
+      (xRealizeWaiting root)
+      (GLdrive GLwin))
+    (print "Atome de la nouvelle fenêtre GL dans GLwin :" GLwin))
+
+; --- l'annonce standard
+(print "bvlisp UNIX Portable pour vous servir...")

@@ -1,0 +1,122 @@
+; package d'analyse d'une fonction ;
+; ;
+; les criteres d'analyse sont (place dans la i-val de la fonction) : ;
+;   En analyse statique du corps de la subr : ;
+; --------+------------------------------------------------------------------------------ ;
+; i-val   |  description                                                                  ;
+; --------+------------------------------------------------------------------------------ ;
+; length  | la longeure du code                                                           ;
+; lambda  | le nombre de lambda                                                           ;
+; loop    | boucle interne                                                                ;
+; icond   | conditions sans branchement externe                                           ;
+; econd   | conditions avec branchement externe                                           ;
+; nmacro  | nombres de macro                                                              ;
+; macro   | noms des macros                                                               ;
+; term    | la detection de recursion terminale                                           ;
+;         | l'influance / usage des variables : placement dans la ival des variables d'un ;
+;	  |			                element contenant le nom de la fonction   ;
+;	  |dans les variables		        et de son utilisation dans celle-ci :     ;
+;	  |				        t = externe, nil = interne                ;
+; vtype   | types des arguments : dans la i-val d'une liste de type detecte correspondant ;
+;         |                       a chaque variable                                       ;
+; vval    | detection des limites pour les valeurs des arguments                          ;
+; ftype   | type de la valeur retournee                                                   ;
+;         | denombrement du nombre d'appel a des fonctions avec distinction entre :       ;
+; flisp   |  - les routines de base lisp                                                  ;
+; fuser   |  - les fonctions utilisateur (all_functions)                                  ;
+; flocal  |  - les fonctions descendantes                                                 ;
+; --------+------------------------------------------------------------------------------ ;
+
+; (setq --x-- careful careful nil) ;
+
+; (package analyse) ;
+
+(de del-ival (v elem)
+    (let ((old-ival (ival v))
+	  (new-ival ()))
+      (cond
+       ((null old-ival) (ival v (reverse new-ival)))
+       ((eq (caar old-ival) elem) (self (cdr old-ival) new-ival))
+       (t
+	(self (cdr old-ival) (cons (car old-ival) new-ival))))))
+	
+	  
+(de add-ival (v value)
+    (del-ival v (if (atom value) value (car value)))
+    (ival v (cons value (ival v))))
+
+(de get-calls (f test-call)   
+    (let ((ex-l (cdr (fval f))) 
+	  (all ()))
+      (break g)
+     (cond
+      ((or (null ex-l) (atom ex-l)) all)
+      ((atom (car ex-l)) (self (cdr ex-l) all))
+      ((and  (atom (caar ex-l)) 
+	     (test-call (caar ex-l) f))
+       (append (self (car ex-l) ()) (self (cdr ex-l) (cons (car ex-l) all))))
+      (t
+       (append (self (car ex-l) ()) (self (cdr ex-l) all))))))
+
+(de is-local-call (f-call f)   (member f-call (%find (ival f) 4)))
+
+(de is-user-call (f-call f)    (member f-call all_functions))
+
+(de is-typed-call (f-call f)   
+    (oper type (ftyp f-call)))
+
+(de get-local-calls (f) 
+    (get-calls f 'is-local-call))
+
+(de get-user-calls (f) 
+    (get-calls f 'is-user-call))
+
+(de get-typed-calls (f type oper)
+    (get-calls f 'is-typed-call))
+
+(de count-member (f m)
+    (let ((body (member m (flat (cdr (fval f)))))
+	  (num 0))
+      (if (null body) num
+	(self (member m (cdr body)) (1+ num)))))
+
+(de count-calls (f) 
+  (length (get-typed-calls f 0 '>)))
+
+(de count-typed-calls (f t-call oper)
+    (length (get-typed-calls f t-call oper)))
+
+(de f-nlocal (f)
+  (length (get-local-calls f)))
+
+(de f-nuser (f) 
+  (length (get-user-calls f)))
+
+(de f-nlisp (f)
+  (- (count-calls f) (f-nuser f)))
+
+(de f-nmacro (f)
+    (count-typed-calls f 9 '=))
+
+(de f-length (f) (length (flat (fval f))))
+
+(de f-nlambda (f) (count-member f 'lambda))
+
+(de f-nloop (f)
+  (+ (count-member f 'while) 
+      (+ (count-member f 'let)
+	 (if ;(is-iterative f); nil 1 0))))
+
+(de f-analyse (f)
+    (ifn (member f all_functions) ()
+	 (add-ival f (cons 'length (cons (f-length f) ())))
+	 (add-ival f (cons 'lambda (cons (f-nlambda f) ())))
+	 (add-ival f (cons 'loop   (cons (f-nloop f) ())))
+	 (add-ival f (cons 'nmacro (cons (f-nmacro f) ())))
+	 (add-ival f (cons 'flisp  (cons (f-nlisp f) ())))
+	 (add-ival f (cons 'flocal (cons (f-nlocal f) ())))
+	 (add-ival f (cons 'fuser  (cons (f-nuser f) ())))))
+
+; (package) ;
+
+; (setq careful --x--) ;

@@ -1,0 +1,121 @@
+; %I%, %R%, %B%, %D%,  %T%,  %M%
+;	simplifions:
+; VERSION DE TRACE AVEC DES WIDGETS Xbvlisp.
+;
+
+(princ "je charge traceW.vlisp")
+
+
+(setq COLS 80) ; max cols. a afficher ;
+(let ((-x- careful))
+  (xDisable)
+  (careful nil)
+  (df traceprint (-x-) (nomacout)(eval (cons 'internalprint -x-))(macout))
+  (df trace (-x-)
+      (let ((-window- (xwinp))(nlig 15) (ycoord 4))
+	(if (iswidget '-Trace-Window- ) ()
+	  (setq nlig 
+		(if (or (numbp (car -x-))(and (null (fval (car -x-)))
+					      (boundp (car -x-))
+					      (numbp (eval (car -x-)))))
+		    (eval (nextl -x-)) 12))
+	  (setq ycoord
+		(if (or (numbp (car -x-))(and (null (fval (car -x-)))
+					      (boundp (car -x-))
+					      (numbp (eval (car -x-)))))
+		    (eval (nextl -x-)) 0))
+	  ; creation du Widget de trace;
+	  (xCreateXbvlisp  '-Trace-Window- nlig COLS ycoord 5 10)
+	  ))
+      (mapc -x- (lambda (y)
+		  (if (or (numbp y)(listp y))() 
+		    (enleve-entree '%trac y)
+		    (enleve-sortie '%trac y)
+		    (put y 'trace-count 0)
+		    (put y 'trace-pos 0)
+		    (put y 'entree 
+			 (cons
+			  `(%trac (let ((-window- (xwinp))(-lmarg lmargin)
+					(lmarg (get ',y 'trace-pos)))
+				    (outpos ;position du debut d'affichage;
+				     (setq lmargin 
+					   (if (< lmarg (- COLS 30)) 
+					       lmarg (- lmarg 
+							(- COLS 30)))));a modifier;
+				    (put ',y 'trace-pos lmarg)
+				    (let ((-x- (get (quote ,y) 'TRACE))
+					  (-z- (car (%find (ival (quote ,y)) 10))))
+				      (put (quote ,y) 'TRACE
+					   (if (null -z-)(cons nil -x-)
+					     (if (null (car -x-))(cons 1 (cdr -x-))
+					       (cons (1+ (car -x-))(cdr -x-)))))
+				      (put ',y 'trace-count (1+ (get ',y 'trace-count)))
+				      (xChangeWin -Trace-Window- 1)
+				      (traceprint (get ',y 'trace-count) '"--->" 
+						  (cons (quote ,y)
+							(mapcar (car (fval (quote ,y)))
+								(lambda (-z-)(eval -z-)) )))
+					;(xflush)
+				      (setq lmarg (+ lmarg 3))
+				      (put ',y 'trace-pos lmarg)
+				      (setq lmargin -lmarg)
+				      (xChangeWin -window- 1)
+				      )))
+			  (get y 'entree)))
+		    (put y 'sortie
+			 (append (get y 'sortie)
+				 `((%trac 
+				    (let ((-window- (xwinp))(lmarg (get ',y 'trace-pos))
+					  (-lmarg lmargin))
+				      (xChangeWin -Trace-Window- 1)
+				      (setq lmarg (- lmarg 3))
+				      (let ((-x- (get (quote ,y) 'TRACE))
+					    (-z- (car (%find (ival (quote ,y)) 10))))
+					(if -z- (let ((-z- (car -x-)) 
+						      (trace-count (get ',y 'trace-count)))
+						  (setq lmarg (- lmarg (* -z- 3)))
+						  (outpos ;position du debut d'affichage;
+						   (setq lmargin 
+							 (if (> lmarg (- COLS 30)) 
+							     (- lmarg (- COLS 30)) 
+							   lmarg)))
+						  (put ',y 'trace-pos lmarg)
+						  (setq trace-count (- trace-count -z-))
+						  (put ',y 'trace-count (1- trace-count))
+						  (prin1 trace-count)
+						  (prin1 "<") 
+						  (princh "-" 
+							  (if (> (* (1+ -z-) 3)  (- COLS 30))
+							      (- (* (1+ -z-) 3)
+								 (- COLS 30))
+							    (* (1+ -z-) 3)))
+						  (traceprint (quote ,y) sortie))
+					  (outpos 
+					   (setq lmargin
+						 (if (> lmarg (- COLS 30)) 
+						     (- lmarg (- COLS 30)) 
+						   lmarg)))
+					  (put ',y 'trace-pos lmarg)
+					  (traceprint 
+					   (get ',y 'trace-count)
+					   "<---" (quote ,y) sortie)
+					  (put ',y 'trace-count (1- (get ',y 'trace-count))))
+					(setq lmargin -lmarg)
+					(put (quote ,y) 'TRACE (cdr -x-)))
+				      (xChangeWin -window- 1)))))))))
+      (xEnable)
+      -x-)
+  
+  (setq %trac 'progn)
+  
+  (df untrace (x)
+      (mapc x (lambda (y)(enleve-entree '%trac y)
+		(put y 'trace-count 0)
+		(put y 'trace-pos 0)
+		(enleve-sortie '%trac y)))
+      x)
+  
+  (careful -x-)
+  )
+
+(print "traceW.vlisp charge")

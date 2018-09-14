@@ -1,0 +1,665 @@
+;	$Id: GL-drive.vlisp,v 1.5 1995/12/20 13:21:57 damien Exp damien $	
+;;
+; Pilotage d'une fenetre GL par la souris (Translation, Rotation, Scaling)
+; D.P. 12/93
+;;
+;
+; Resource globale : Active-GL-Window : contien la fenetre actuellement conduite par Sdrive (et active pour GL)
+;
+;
+(package GLD)
+(setq defun 'de defvar 'setq)
+
+(defvar Sdrive-Window (gensym))
+
+
+					; ********************** ;
+					; Definition des widgets ;
+					; ********************** ;
+;
+;
+; Control de la fenetre ...
+; Parametre :
+;
+;    glWindow      = atome descripteur de la fenetre GL
+;
+(defun |GLdrive (glWindow)
+  (setq crfl |careful)
+  (careful nil)
+  (cond
+   ((null glWindow) nil)
+   ((get glWindow 'speed-value) (SetSdrive glWindow))		; deja geree par GLdrive : changement pour glWindow
+   (t
+    (put glWindow 'trans '(0 0 0))
+    (put glWindow 'rot '(0 0 0))
+    (put glWindow 'scale FixSize)
+    (put glWindow 'proj 'ortho)
+    (if (get Sdrive-Window 'up) t
+      (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" "GL Drive" "iconName" "GL Drive"))
+	(put Sdrive-Window 'speed-value 1)
+	(let (form (xCreateWidget '--BW-- "awBox" root "width" 230 "height" 263 "background" "#494"))
+	  (NewW 'object "awLabel" "                    " "background" "#F5F")
+	  (xCreateWidget '--AL-- "awLabel" form "label" "   Btn1 | Btn2 | Btn3   \n   Auto | Set  | Step   ")
+	  (NewCW 'rotate-x+ "rotate-x+")    (NewCW 'rotate-x- "rotate-x-")
+	  (NewCW 'rotate-y+ "rotate-y+")    (NewCW 'rotate-y- "rotate-y-")
+	  (NewCW 'rotate-z+ "rotate-z+")    (NewCW 'rotate-z- "rotate-z-")
+	  (NewCW 'right     "right") 	      (NewCW 'left      "left")
+	  (NewCW 'up        "up")	      (NewCW 'down      "down")
+	  (NewCW 'front     "front")	      (NewCW 'deep      "deep")
+	  (NewCW 'zoom-in   "zoom-in")      (NewCW 'zoom-out  "zoom-out")
+	  (xAddCallback (xCreateWidget '--CW-- "awCommand" form "bitmap" (mkbmp "zoom-") "background" "#888" "foreground" "#000")
+			"callback" (strcat "(GLD|UnZoom (get 'GLD|" Sdrive-Window " 'GLD|driven))"))
+	  (NewW 'drive-stop "awCommand" "Stop" "background" "font" "a14" "#888" "foreground" "#000") 
+	  (NewW 'speed "awLabel" "1")    	      
+	  (NewCBK "Vitesse +" "IncrementSpeed" "1") (NewCBK "Vitesse -" "IncrementSpeed" "-1") 
+	  (NewCBK "Réinit" "reinit-sdrive" " ")    
+	  (xAddCallback (xCreateWidget '--CW-- "awCommand" form "label" "Ortho" "font" "a14" "background" "#888" "foreground" "#000")
+			"callback" (strcat "(GLD|sdrive-projection '" glWindow " $W)"))
+          (NewCBK "Status GL" "GL-Status-Window" " ")
+          (NewCBK "Détruit GL" "Kill-GL-Window" " ")
+          (NewCBK "Image TIFF" "Dump-GL-Window" " ")
+          (xAddCallback (xCreateWidget '--CW-- "awCommand" form "label" "Aide"  "background" "#888" "font" "a14" "foreground" "#000")
+                        "callback" "(GLD|help)")
+	  (MkClbk 'rotate-x+ 'rot (strcat "\"x\" (get 'GLD|" Sdrive-Window " 'GLD|speed-value)"))
+	  (MkClbk 'rotate-x- 'rot (strcat " \"x\" (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value))"))
+	  (MkClbk 'rotate-y+ 'rot (strcat " \"y\" (get 'GLD|" Sdrive-Window " 'GLD|speed-value)"))
+	  (MkClbk 'rotate-y- 'rot (strcat " \"y\" (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value))"))
+	  (MkClbk 'rotate-z+ 'rot (strcat " \"z\" (get 'GLD|" Sdrive-Window " 'GLD|speed-value)"))
+	  (MkClbk 'rotate-z- 'rot (strcat " \"z\" (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value))"))
+	  (MkClbk 'right     'trans (strcat " (get 'GLD|" Sdrive-Window " 'GLD|speed-value) 0 0"))
+	  (MkClbk 'left      'trans (strcat " (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value)) 0 0"))
+	  (MkClbk 'up        'trans (strcat " 0 (get 'GLD|" Sdrive-Window " 'GLD|speed-value) 0"))
+	  (MkClbk 'down      'trans (strcat " 0 (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value)) 0"))
+	  (MkClbk 'front     'trans (strcat " 0 0 (get 'GLD|" Sdrive-Window " 'GLD|speed-value)"))
+	  (MkClbk 'deep      'trans (strcat " 0 0 (- (get 'GLD|" Sdrive-Window " 'GLD|speed-value))"))
+	  (MkClbk 'zoom-in   'scale " ") (MkClbk 'zoom-out  'scale " t")
+
+	  (MkBtn2 'rotate-x+ 'rot)       (MkBtn2 'rotate-x- 'rot)      (MkBtn2 'rotate-y+ 'rot)
+	  (MkBtn2 'rotate-y- 'rot)       (MkBtn2 'rotate-z+ 'rot)      (MkBtn2 'rotate-z- 'rot)
+	  (MkBtn2 'right 'trans)         (MkBtn2 'left 'trans)         (MkBtn2 'up 'trans)
+	  (MkBtn2 'down 'trans)          (MkBtn2 'front 'trans)        (MkBtn2 'deep 'trans)
+	  (MkBtn2 'zoom-in 'scale)       (MkBtn2 'zoom-out 'scale)
+
+	  (MkBtn3 'rotate-x+ 'rot 1 1)   (MkBtn3 'rotate-x- 'rot 1 -1) (MkBtn3 'rotate-y+ 'rot 2 1)
+	  (MkBtn3 'rotate-y- 'rot 2 -1)  (MkBtn3 'rotate-z+ 'rot 3  1) (MkBtn3 'rotate-z- 'rot 3 -1)
+	  (MkBtn3 'right 'trans 1 1)     (MkBtn3 'left 'trans 1 -1)    (MkBtn3 'up 'trans 2 1)
+	  (MkBtn3 'down 'trans  2 -1)    (MkBtn3 'front 'trans 3 -1)   (MkBtn3 'deep 'trans 3 1)
+	  (MkBtn3 'zoom-in 'scale 1 -1)  (MkBtn3 'zoom-out 'scale 1 1)
+	  (xRealize root)
+	  (put Sdrive-Window 'dialog (Screate-dialog)))))
+    (xSetValues (get Sdrive-Window 'object) "label" (|xGetParentTitle glWindow))
+    (xOverride (xGetSupWidget glWindow "ApplicationShell") "<Enter>" (strcat "(GLD|SetSdrive '|" glWindow ")"))
+    (GLcallback "MotionNotify"   "(GLD|DriveMouseMotion '$W $B $X $Y)")
+    (GLcallback "ButtonPress"    "(GLD|DriveButtonPress '$W $G)")
+    (GLcallback "ButtonRelease"  "(GLD|DriveButtonRelease '$W $G $B $X $Y)")
+    (put Sdrive-Window 'driven glWindow)
+    (setq |Active-GL-Window glWindow)))
+  (careful crfl))
+
+(defun help ()
+  (aide nil nil (strcat |VLISPDIR "GL-Drive-Help")))
+
+(defun SetSdrive (win) 
+  (GLwinset win)
+  (put Sdrive-Window 'driven win)
+  (setq |Active-GL-Window win)
+  (xSetValues (get Sdrive-Window 'object) "label" (|xGetParentTitle win)))
+
+
+(defun Screate-dialog ()
+    (let (root (xCreateWidget '--AS-- "ApplicationShell"))
+      (let (bx (xCreateWidget '--BX-- "awBox" root))
+	(put root 1 (xCreateWidget '--AD-- "awDialog" bx))
+	(put root 2 (xCreateWidget '--AD-- "awDialog" bx))
+	(put root 3 (xCreateWidget '--AD-- "awDialog" bx))
+	(put root 'conf (xCreateWidget '--AC-- "awCommand" bx "label" "OK" "background" "#888" "foreground" "#000"))
+	(xAddCallback (xCreateWidget '--AC-- "awCommand" bx "label" "Cancel" "background" "#888" "foreground" "#000")
+		      "callback" (strcat "(GLD|Cancel-Dialog '" root ")")))
+      
+      root))
+
+; Dump de la fenetre dans un fichier tiff
+(defun Dump-GL-Window ()
+  (ifn (get Sdrive-Window 'driven) nil
+       (GLdump (strcat "I" (get Sdrive-Window 'driven) ".tif")
+	       (xGetValues (get Sdrive-Window 'driven) "width")
+	       (xGetValues (get Sdrive-Window 'driven) "height"))
+       (print "Window dumped into" (strcat "I" (get Sdrive-Window 'driven) ".tif")))) 
+
+; Destruction de la fenetre GL
+(defun Kill-GL-Window ()
+    (ifn (get Sdrive-Window 'driven) nil
+	 (xRemove (get Sdrive-Window 'driven))
+	 (put Sdrive-Window 'driven nil)
+	 (xSetValues (get Sdrive-Window 'object) "label" "        ")))
+
+
+					; ********************** ;
+					; Conduite de la fenetre ;
+					; ********************** ;
+
+; transformations
+;
+; Switch des transformations
+;
+(defun Transform (op win v0 v1 v2)
+  (SetSdrive win)
+  (let ((r-data) (r-obj))
+    (setq r-data (get win op))
+    (let (new-Trans  (cond
+		      ((eq op 'rot) (Rotate v0 v1))
+		      ((eq op 'trans) (Translate v0 v1 v2))
+		      ((eq op 'scale) (Scale v0))))
+      (if new-Trans (eval new-Trans)))))
+
+					; ********************************** ;
+					; Lancement de la boucle d'execution ;
+					; ********************************** ;
+
+(defun Translate (dx dy dz)
+    (let ((s-fact (get win 'scale)) (x) (y) (z) (ax) (ay) (az))
+      
+      (setq ax (car (get win 'p-add)))
+      (setq ay (cadr (get win 'p-add)))
+      (setq az (caddr (get win 'p-add)))
+      (ifn r-data (setq r-data '(0 0 0)))
+      (setq x (car r-data))     (setq y (cadr r-data))   (setq z (caddr r-data))
+
+      (TransformLoop '(progn (setq r-data `(,x ,y ,z)) (put win 'trans r-data))
+		     '(progn (incr x dx) (incr y dy) (incr z dz)
+			     (GLimtranslate (+ x ax) (+ y ay) (+ z az))))))
+
+(defun Rotate (o qua)
+    (let (dir)
+
+      (setq dir (if (equal o "x") 1 (if (equal o "y") 2 3)))
+      (ifn r-data (setq r-data '(0 0 0)))
+
+      (let (rot (car (nth dir r-data)))
+	(TransformLoop '(progn (set (nth dir r-data) rot) (put win 'rot r-data))
+		       '(progn (incr rot qua) (GLimrotate rot o))))))
+
+(defun Scale (zooming)
+    (ifn r-data (setq r-data FixSize))
+    (let ((z-incr (* (get Sdrive-Window 'speed-value) (if zooming 1 -1)))
+	  (s-value r-data))
+
+      (TransformLoop '(progn (setq r-data s-value) (put win 'scale r-data))
+		     '(progn (setq s-value (+ s-value z-incr)) (GLimscale s-value s-value s-value FixSize)))))
+
+					; ****************** ;
+					; Boucle d'execution ;
+					; ****************** ;
+
+(defun TransformLoop (op-end op-loop run) 
+  (setq rotate-x+ (get Sdrive-Window 'rotate-x+) rotate-x- (get Sdrive-Window 'rotate-x-) rotate-y+ (get Sdrive-Window 'rotate-y+)
+	rotate-y- (get Sdrive-Window 'rotate-y-) rotate-z+ (get Sdrive-Window 'rotate-z+) rotate-z- (get Sdrive-Window 'rotate-z-)
+	right     (get Sdrive-Window 'right   )  left      (get Sdrive-Window 'left    )  up        (get Sdrive-Window 'up      )
+	down      (get Sdrive-Window 'down    )  front     (get Sdrive-Window 'front   )  deep      (get Sdrive-Window 'deep    )
+	zoom-in   (get Sdrive-Window 'zoom-in )  zoom-out  (get Sdrive-Window 'zoom-out)  stop      (get Sdrive-Window 'drive-stop)
+	speed     (get Sdrive-Window 'speed-value) 
+	trans nil
+	run t)
+  (while run
+    (setq run nil)
+    (cond
+     ((xCheckEvent rotate-x+ "ButtonPress") (setq trans `(Transform 'rot ,win "x" ,speed)))
+     ((xCheckEvent rotate-x- "ButtonPress") (setq trans `(Transform 'rot ,win "x" ,(- speed))))
+     ((xCheckEvent rotate-y+ "ButtonPress") (setq trans `(Transform 'rot ,win "y" ,speed)))
+     ((xCheckEvent rotate-y- "ButtonPress") (setq trans `(Transform 'rot ,win "y" ,(- speed))))
+     ((xCheckEvent rotate-z+ "ButtonPress") (setq trans `(Transform 'rot ,win "z" ,speed)))
+     ((xCheckEvent rotate-z- "ButtonPress") (setq trans `(Transform 'rot ,win "z" ,(- speed))))
+     ((xCheckEvent right "ButtonPress")     (setq trans `(Transform 'trans ,win ,speed 0 0)))
+     ((xCheckEvent left "ButtonPress")      (setq trans `(Transform 'trans ,win ,(- speed) 0 0)))
+     ((xCheckEvent up "ButtonPress")        (setq trans `(Transform 'trans ,win 0 ,speed 0)))
+     ((xCheckEvent down "ButtonPress")      (setq trans `(Transform 'trans ,win 0 ,(- speed) 0)))
+     ((xCheckEvent front "ButtonPress")     (setq trans `(Transform 'trans ,win 0 0 ,speed)))
+     ((xCheckEvent deep "ButtonPress")      (setq trans `(Transform 'trans ,win 0 0 ,(- speed))))
+     ((xCheckEvent zoom-in "ButtonPress")   (setq trans `(Transform 'scale ,win)))
+     ((xCheckEvent zoom-out "ButtonPress")  (setq trans `(Transform 'scale ,win t)))
+     ((xCheckEvent stop "ButtonPress"))
+     (t
+      (setq run t)
+      (eval op-loop))))
+
+  (eval op-end)
+  trans)
+;
+; Changement de la Vitesse
+;     
+(defun IncrementSpeed (win i)
+  (let (n-s (+ i (get Sdrive-Window 'speed-value)))
+    (put Sdrive-Window 'speed-value n-s)
+    (xSetValues (get Sdrive-Window 'speed) "label" (strcat n-s)))
+  t)
+
+					; ************************** ;
+					; Incrementation des valeurs ;
+					; ************************** ;
+
+(defun IncrValue (what win n mult)
+  (SetSdrive win)
+  (let (r-data)
+    (setq r-data (get win what))
+    (ifn r-data (setq r-data '(0 0 0)))
+    (let ((v1) (v2) (v3))
+      (if (numbp r-data) (setq v-1 (+ (* mult (get Sdrive-Window 'speed-value)) r-data))
+	(rplaca (nth n r-data) (+ (* mult (get Sdrive-Window 'speed-value)) (car (nth n r-data))))
+	(setq v-1 (car r-data)
+	      v-2 (cadr r-data)
+	      v-3 (caddr r-data)))
+      (cond ((eq what 'trans) (SetDialogTrans))
+	    ((eq what 'rot)   (SetDialogRot))
+	    ((eq what 'scale) (SetDialogScale))))))
+
+					; ************************** ;
+					; Saisie directe des valeurs ;
+					; ************************** ;
+
+(defun SetValue (what win)
+  (SetSdrive win)
+  (let (root-dialog (get Sdrive-Window 'dialog))
+    (print win root-dialog)
+    (let ((d-1 (get root-dialog 1)) (d-2 (get root-dialog 2)) (d-3 (get root-dialog 3)) (r-data))
+      (setq r-data (get win what))
+      (cond
+       ((eq what 'rot) (SetRotation))
+       ((eq what 'trans) (SetTranslation))
+       ((eq what 'scale) (SetScale))))))
+
+(|defmacro SetLabels (l1 l2 l3 v1 v2 v3)
+  `(progn
+     (xSetValues d-1 "label" " " "icon" (mkbmp ,l1) "value" (strcat ,v1))
+     (xSetValues d-2 "label" " " "icon" (mkbmp ,l2) "value" (strcat ,v2))
+     (xSetValues d-3 "label" " " "icon" (mkbmp ,l3) "value" (strcat ,v3))))
+
+(defun SetTranslation ()
+  (ifn r-data (setq r-data '(0 0 0)))
+  (SetLabels "right" "up" "front" (car r-data) (cadr r-data) (caddr r-data))
+  (xAddCallback (get root-dialog 'conf) "callback" 
+		(strcat "(GLD|Confirm-Dialog 'GLD|" root-dialog 
+			" 'GLD|trans (get 'GLD|" Sdrive-Window " 'GLD|driven))"))
+  (xRealize root-dialog))
+
+(defun SetRotation ()
+  (ifn r-data (setq r-data '(0 0 0)))
+  (SetLabels "rotate-x+" "rotate-y+" "rotate-z+" (car r-data) (cadr r-data) (caddr r-data))
+  (xAddCallback (get root-dialog 'conf) "callback" 
+		(strcat "(GLD|Confirm-Dialog 'GLD|" root-dialog 
+			" 'GLD|rot (get 'GLD|" Sdrive-Window " 'GLD|driven))"))
+  (xRealize root-dialog))
+
+(defun SetScale ()
+  (ifn r-data (setq r-data FixSize))
+  (SetLabels "zoom-in" "zoom-in" "zoom-in" r-data r-data r-data)
+  (xAddCallback (get root-dialog 'conf) "callback" 
+		(strcat "(GLD|Confirm-Dialog 'GLD|" root-dialog 
+			" 'GLD|scale (get 'GLD|" Sdrive-Window " 'GLD|driven))"))
+  (xRealize root-dialog))
+
+; retour des dialoges
+(defun Cancel-Dialog (root)
+    (xUnrealize root))
+
+(defun Confirm-Dialog (root what win)
+    (xUnrealize root)
+    (let ((r-data) (v-1) (v-2) (v-3))
+      (setq v-1 (implode (explode (xGetValues (get root 1) "value"))))
+      (setq v-2 (implode (explode (xGetValues (get root 2) "value"))))
+      (setq v-3 (implode (explode (xGetValues (get root 3) "value"))))
+      (setq r-data (get win what))
+      (cond ((eq what 'trans) (SetDialogTrans))
+	    ((eq what 'rot)   (SetDialogRot))
+	    ((eq what 'scale) (SetDialogScale)))))
+
+(defun SetDialogTrans ()
+    (let ((tx (+ v-1 (car (get win 'p-add))))
+	  (ty (+ v-2 (cadr (get win 'p-add))))
+	  (tz (+ v-3 (caddr (get win 'p-add)))))
+      (put win 'trans `(,tx ,ty ,tz))
+      (GLimtranslate tx ty tz)))
+
+(defun SetDialogRot ()
+    (mapc `((,v-1 "X") (,v-2 "Y") (,v-3 "Z"))  (lambda (x) (GLimrotate (car x) (cadr x))))
+    (put win 'rot `(,v-1 ,v-2 ,v-3)))
+
+(defun SetDialogScale ()
+    (put win 'scale v-1)
+    (GLimscale v-1 v-1 v-1 FixSize))
+
+					; **************************************************** ;
+					; Zoom dirige par le bouton 4 (de droite) de la souris ;
+					; **************************************************** ;
+
+(setq MotionDrawingList nil
+      MotionOrig-X nil
+      MotionOrig-Y nil
+      MotionOrig-Root nil
+      InMotionZoom nil)
+
+(defun MouseInitZoom (win x y)
+  (cond
+   (InMotionZoom
+    (GLnewlist MotionDrawingList)
+    (GLcolor 3 150 150 150)
+    (GLpushmatrix)
+    (GLloadidmatrix)
+    (GLbgn "GL_LINE_LOOP")
+    (GLvertex 3 MotionOrig-X MotionOrig-Y 0  x MotionOrig-Y 0  x y 0  MotionOrig-X y 0)
+    (GLend)
+    (GLpopmatrix)
+    (GLendlist))
+   (t
+    (setq MotionDrawingList (GLgenlist)
+	  MotionOrig-Root (GLrootlist)
+	  MotionOrig-X x
+	  MotionOrig-Y y
+	  InMotionZoom t)
+    (let (new-root (GLnewlist))
+      (GLcalllist MotionOrig-Root)
+      (GLcalllist MotionDrawingList)
+      (GLendlist)
+      (GLrootlist new-root)))))
+
+(defun MouseSetZoom (win x y)
+  (ifn InMotionZoom nil
+       (setq InMotionZoom nil)
+       (GLdellist (GLrootlist MotionOrig-Root))
+       (GLdellist MotionDrawingList)
+       (let ((dx (abs (- x MotionOrig-X)))
+	     (dy (abs (- y MotionOrig-Y)))
+	     (tot (xGetValues win "width"))
+	     (sf 0))
+	 (if (< dx dy) (setq dx dy tot (xGetValues win "height")))
+	 (setq sf (/ (* tot 1.0) dx))
+	 (let ((t-data (get win 'trans))
+	       (r-data (get win 'rot))
+	       (s-data (get win 'scale))
+	       (move))
+	   (put win 'z-stack (cons (cons (1 t-data) (cons (2 t-data) (cons (3 t-data) nil)))
+				   (cons s-data (get win 'z-stack))))
+	   ; translation
+	   (setq move (GLgetXYZ (if (< x MotionOrig-X) x MotionOrig-X) (if (< y MotionOrig-Y) y MotionOrig-Y) 0
+				(- (1 r-data)) (- (2 r-data)) (- (3 r-data))
+				FixSize FixSize FixSize s-data))
+	   (rplaca t-data (- (car t-data) (1 move)))
+	   (rplaca (cdr t-data) (- (cadr t-data) (2 move)))
+	   (rplaca (cddr t-data) (- (caddr t-data) (3 move)))
+	   (GLimtranslate (1 t-data) (2 t-data) (3 t-data))
+	   ; scale
+	   (put win 'scale (* (setq sf (* (/ s-data (* FixSize 1.0)) sf)) FixSize))
+	   (GLimscale sf sf sf)))))
+
+(defun UnZoom (win)
+  (ifn (get win 'z-stack) nil
+       (let ((t-d (car (get win 'z-stack)))
+	     (s-d (cadr (get win 'z-stack))))
+	 (put win 'z-stack (cddr (get win 'z-stack)))
+	 (GLimtranslate (1 t-d) (2 t-d) (3 t-d))
+	 (put win 'trans t-d)
+	 (GLimscale (/ s-d (* FixSize 1.0)) (/ s-d (* FixSize 1.0)) (/ s-d (* FixSize 1.0)))
+	 (put win 'scale s-d))))
+
+					; ******************** ;
+					; Gestion de la souris ;
+					; ******************** ;
+
+(defun DriveButtonPress (win obj) 
+    (SetSdrive win)
+    (setq ButtonPress t
+	  ObjectPress obj))
+
+;
+; Gestion de la selection dans une fenetre :
+; Selection simple = selection de la fenetre
+; Programmation des action: (fonction = ButtonPress<n> ou n est le numero du bouton)
+;
+
+(defun DriveButtonRelease (win obj b x y)
+    (SetSdrive win)
+    (if (or (not ButtonPress) FromMotion) (setq FromMotion nil)
+      (setq ButtonPress nil)
+      (setq y (- (xGetValues win "height") y))
+      (SetSdrive win)
+      (cond
+       ((and (= b 1) (boundp '|ButtonPress1)) (|ButtonPress1 win obj x y)) 
+       ((and (= b 2) (boundp '|ButtonPress2)) (|ButtonPress2 win obj x y))
+       ((and (= b 3) (boundp '|ButtonPress3)) (|ButtonPress3 win obj x y)) 
+       ((and (= b 4) (boundp '|ButtonPress4)) (|ButtonPress4 win obj x y))
+       ((and (= b 5) (boundp '|ButtonPress5)) (|ButtonPress5 win obj x y))
+       ((and (= b 6) (boundp '|ButtonPress6)) (|ButtonPress6 win obj x y))
+       ((and (= b 7) (boundp '|ButtonPress7)) (|ButtonPress7 win obj x y)) 
+       ((= b 4) (MouseSetZoom win x y))
+       (t (print win obj b x y) nil))))
+		
+;
+; Gestion du deplacement par la souris
+;
+(defun DriveMouseMotion (win b x y)
+    (SetSdrive win)
+    (setq y (- (xGetValues win "height") y))
+    (cond
+     ((and (= b 1) (boundp '|ButtonMotion1)) (|ButtonMotion1 win ObjectPress x y))
+     ((and (= b 2) (boundp '|ButtonMotion2)) (|ButtonMotion2 win ObjectPress x y))
+     ((and (= b 3) (boundp '|ButtonMotion3)) (|ButtonMotion3 win ObjectPress x y))
+     ((and (= b 4) (boundp '|ButtonMotion4)) (|ButtonMotion4 win ObjectPress x y))
+     ((and (= b 5) (boundp '|ButtonMotion5)) (|ButtonMotion5 win ObjectPress x y))
+     ((and (= b 6) (boundp '|ButtonMotion6)) (|ButtonMotion6 win ObjectPress x y))
+     ((and (= b 7) (boundp '|ButtonMotion7)) (|ButtonMotion7 win ObjectPress x y)) 
+     ((= b 1) (setq FromMotion t) (MouseTranslate win x y))
+     ((= b 4) (MouseInitZoom win x y))))
+
+; Deplacement en cas de Motion
+
+(defun MouseTranslate (win x y)
+  (SetSdrive win)
+  (let ((t-data (get win 'trans))
+	(r-data (get win 'rot))
+	(s-data (get win 'scale))
+	(move))
+    (setq move (GLgetXYZ x y 0 (- (1 r-data)) (- (2 r-data)) (- (3 r-data))
+			 FixSize FixSize FixSize s-data))
+    (rplaca t-data (1 move))
+    (rplaca (cdr t-data) (2 move))
+    (rplaca (cddr t-data) (3 move))
+    (GLimtranslate (1 t-data) (2 t-data) (3 t-data))))
+
+
+					; ************************* ;
+					; Changement de Projections ;
+					; ************************* ;
+
+(defun sdrive-projection (win wid)
+    (let (t-data (get win 'trans))
+      (cond
+       ((eq (get win 'proj) 'ortho)	; passage en perspective
+	(xSetValues wid "label" "Persp")
+;	(if (listp (fval  '|GLdrivePerspective)) (put win 'p-add (|GLdrivePerspective t-data))
+	  (put win 'p-add `(,(- (/ (xGetValues win "width") 2)) ,(- (/ (xGetValues win "width") 2)) -261))
+	  (GLperspective 900 250 100000)
+  	  (GLimtranslate (- (car t-data) (/ (xGetValues win "width") 2))
+			 (- (cadr t-data) (/ (xGetValues win "height") 2))
+			 (- (cddr t-data) 270))
+;)
+	(put win 'proj 'persp))
+      ((eq (get win 'proj) 'persp)	; passage en orthogonal
+       (xSetValues wid "label" "Ortho")
+       (GLortho 0 (xGetValues win "width") 0 (xGetValues win "height") -32000 32000)
+       (GLimtranslate (car t-data) (cadr t-data) 0)
+       (set (cddr t-data) 0)
+       (remprop win 'p-add)
+       (put win 'proj 'ortho)))))
+     
+					; **************** ;
+					; Reinitialisation
+					; **************** ;
+(defun reinit-sdrive (win)
+    (SetSdrive win)
+    (put Sdrive-Window 'speed-value 1)
+    (xSetValues (get Sdrive-Window 'speed) "label" "1")
+    (set-vals (get win 'trans) 0 0 0)
+    (set-vals (get win 'rot) 0 0 0)
+    (put win 'scale FixSize)
+    (GLimrotate 0 "X")
+    (GLimrotate 0 "Y")
+    (GLimrotate 0 "Z")
+    (if (get win 'p-add) 
+	(GLimtranslate (+ 0 (car (get win 'p-add))) (+ 0 (cadr (get win 'p-add))) (+ 0 (caddr (get win 'p-add))))
+      (GLimtranslate 0 0 0))
+    (GLimscale 1 1 1))
+
+
+					; ****************************************** ;
+					; Control des variables de status de OPEN GL ;
+					; ****************************************** ;
+
+(de xCreateDialogBox (label value expr) 
+    (let (root (xCreateWidget '--AW-- "ApplicationShell" "title" label))
+      (let (tmp (xCreateWidget '--DB-- "awDialog" root "label" label "value" (strcat value)))
+	(let ((cmd-ok (xCreateWidget '--CW-- "awCommand" tmp "label" "Ok" "background" "#888" "foreground" "#000"))
+	      (cmd-cl (xCreateWidget '--CW-- "awCommand" tmp "label" "Cancel" "background" "#888" "foreground" "#000")))
+	  (setq xDialogBoxConfirm expr)
+	  (xAddCallback cmd-ok "callback" (strcat "(GLD|xDialogBoxConfirm t   'GLD|" tmp ")"))
+	  (xAddCallback cmd-cl "callback" (strcat "(GLD|xDialogBoxConfirm nil 'GLD|" tmp ")"))
+	  (xRealize root)))))
+
+(de xDialogBoxConfirm (is-ok dwidget)
+    (let (xDialogValue (if is-ok (xGetValues dwidget "value")))
+      (|xRemove dwidget)
+      (if is-ok (eval xDialogBoxConfirm))))
+
+(de xGetDialogValue (wdialog)
+    (implode (explode (xGetValues wdialog "value"))))
+
+;
+; Variables de Status 
+; 
+(GLenable "GL_DEPTH_TEST")
+(GLenable "GL_DITHER")
+(GLenable "GL_BLEND")
+
+(defvar GL-Status-Menu '("Variables de Fonctionnement de OpenGL"
+			 ("Polymode    " . (GLD|polymode    . GLD|Set-Polymode))
+			 ("Z-Buffering " . (GLD|depth       . GLD|Toggle-Status-Value))
+			 ("Dither      " . (GLD|dither      . GLD|Toggle-Status-Value))
+			 ("Transparence" . (GLD|blend       . GLD|Toggle-Status-Value))
+			 ("Tran. Source" . (GLD|blend-src   . GLD|Set-Blend))
+			 ("Tran. Dest. " . (GLD|blend-dst   . GLD|Set-Blend))
+			 ("Quitter"      . (()              . GLD|Kill-Status-Menu))))
+
+;
+; Initialisation
+;
+(defun GL-Status-Window ()
+  (ifn (boundp '|Methode-Menu) (eval `(include ,(strcat VLISPDIR "X-Menus.vlisp"))))
+  (if (|Menu-Present Sdrive-Window 'Status-Menu) t
+      (put Sdrive-Window 'polymode "GL_FILL")
+      (put Sdrive-Window 'depth (GLisenable "GL_DEPTH_TEST"))
+      (put Sdrive-Window 'dither (GLisenable "GL_DITHER"))
+      (put Sdrive-Window 'blend  (GLisenable "GL_BLEND"))
+      (GLblend "GL_SRC_ALPHA" "GL_ONE_MINUS_SRC_ALPHA")
+      (put Sdrive-Window 'blend-src "GL_SRC_ALPHA")
+      (put Sdrive-Window 'blend-dst "GL_ONE_MINUS_SRC_ALPHA")
+      (|Methode-Menu Sdrive-Window nil 4 4 GL-Status-Menu GLD 
+                     "background" "#888" "foreground" "#000" "font" "a14"))))))
+  
+;
+; Terminaison
+;
+(defun Kill-Status-Menu (obj w) (|Remove-All-Methode-Menu obj) (|xRemove w))
+;
+; changement d'un status
+;
+(defun Toggle-Status-Value (obj field lw w x y)
+  (let (what (cond ((eq field 'depth) "GL_DEPTH_TEST")
+		   ((eq field 'dither) "GL_DITHER")
+		   ((eq field 'blend) "GL_BLEND")))
+    (if (get obj field) (GLdisable what) (GLenable what))
+    (put obj field (not (get obj field)))
+    (xSetValues lw "label" (strcat (or (and (get obj field) "Oui") "Non")))))
+;
+; Polymode
+;
+(defun Set-Polymode (obj field lw x y)
+  (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" "Mode de dessin des polygones" "iconName" "Blend"))
+    (let (vp (xCreateWidget '--AV-- "awViewport" root "allowVert" "True" "allowHoriz" "True"
+			    "width" 100 "height" 100))
+      (let (lst (xCreateWidget '--AL-- "awList" vp 
+			       "list"  '("GL_FILL" "GL_LINE" "GL_POINT")
+			       "defaultColumns" 1 "forceColumns" "True"))
+	(xAddCallback lst "callback" (strcat "(GLD|Set-Polymode-Value '" root " '$O '" obj " '" field " '" lw ")"))
+	(xRealize root)))))
+
+(defun Set-Polymode-Value (rwdg val obj field lw)
+  (xRemoveWidget root)
+  (put obj field (strcat val))
+  (GLpolymode (get obj field))
+  (xSetValues lw "label" val))
+;
+; Modification des valeurs des fonctions de blend
+; 
+
+(defun Set-Blend (obj field lw w x y)
+  (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" "Fonctions de Blend" "iconName" "Blend"))
+    (let (vp (xCreateWidget '--AV-- "awViewport" root "allowVert" "True" "allowHoriz" "True"
+			    "width" 100 "height" 100))
+      (let (lst (xCreateWidget '--AL-- "awList" vp 
+			       "list"  '("GL_ZERO" "GL_ONE" 
+					 "GL_DST_COLOR" "GL_SRC_COLOR"
+					 "GL_SRC_ALPHA" "GL_DST_ALPHA"
+					 "GL_ONE_MINUS_SRC_COLOR" "GL_ONE_MINUS_DST_COLOR"
+					 "GL_ONE_MINUS_SRC_ALPHA" "GL_ONE_MINUS_DST_ALPHA"
+					 "GL_SRC_ALPHA_SATURATE")
+			       "defaultColumns" 1 "forceColumns" "True"))
+	(xAddCallback lst "callback" (strcat "(GLD|Set-Blend-Value '" root " '$O '" obj " '" field " '" lw ")"))
+	(xRealize root)))))
+
+(defun Set-Blend-Value (w val obj field lw)
+  (xRemoveWidget w)
+  (put obj field (strcat val))
+  (GLblend (get obj 'blend-src) (get obj 'blend-dst))
+  (xSetValues lw "label" val))
+
+
+
+					; ************************************************************ ;
+					; Definition des macros (precedement dans des fichiers separes ;
+					; ************************************************************ ;
+
+(defvar FixSize 100)     ; nombre de decimale pour les virgules fixes 
+(defvar FromMotion nil)  
+(defvar bitmap-dir (strcat VLISPDIR "bitmap/"))
+
+(defvar |default-font   "a14")
+
+(|defmacro mkbmp (n) `(strcat ,bitmap-dir ,n))
+
+(|defmacro MkClbk (field trans args)
+  `(xAddCallback (get ',Sdrive-Window ,field) 
+    "callback" (strcat "(GLD|Transform 'GLD|" ,trans " (get 'GLD|" ',Sdrive-Window " 'GLD|driven) " ,args ")")))
+
+(|defmacro MkBtn2 (field trans)
+  `(xAugment (get ',Sdrive-Window ,field) 
+    "<Btn2Down>" (strcat "(GLD|SetValue 'GLD|" ,trans " (get 'GLD|" ',Sdrive-Window " 'GLD|driven))")))
+
+(|defmacro MkBtn3 (field trans n mult)
+  `(xAugment (get ',Sdrive-Window ,field) 
+    "<Btn3Down>" (strcat "(GLD|IncrValue 'GLD|" ,trans " (get 'GLD|" ',Sdrive-Window " 'GLD|driven) " ,n " " ,mult ")")))
+
+(|defmacro NewCW (name bmp)
+  `(put ',Sdrive-Window ,name (xCreateWidget '--CW-- "awCommand" form "bitmap" (mkbmp ,bmp) 
+                                                     "font" "a14" "background" "#888" "foreground" "#000")))
+
+(|defmacro NewCBK (label func args)
+  `(xAddCallback (xCreateWidget '--CW-- "awCommand" form "font" "a14" "label" ,label "background" "#888" "foreground" "#000")
+		 "callback" (strcat "(GLD|" ,func " (get 'GLD|" ',Sdrive-Window " 'GLD|driven) " ,args ")")))
+  
+(de NewW (obj type label . w-values)
+  (put Sdrive-Window obj (eval `(xCreateWidget '--W-- type form ;"font" "a14"; "label" label ,@w-values))))
+
+(|defmacro set-vals (v v1 v2 v3) 
+  `(progn
+    (set ,v ,v1) (set (cdr ,v) ,v2) (set (cddr ,v) ,v3)))
+
+(package)
+

@@ -1,0 +1,84 @@
+# Makefile.in --- Xbvlisp
+# Copyright (C) 1997
+#   Damien Ploix <damien@ai.univ-paris8.fr>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+########################################################################
+
+CC= @CC@
+CFLAGS = @HAVE_INDEX@ @CFLAGS@ @SYS_CFLAGS@
+LDFLAGS =
+
+########################################################################
+
+SHELL = /bin/sh
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+localdir = @prefix@
+LISPLIBDIR = $(localdir)/lib/xbvlisp
+BITMAPLIB  = $(localdir)/lib/xbvlisp/bitmap
+
+BVLISP_SOURCE_FILE=bvlisp.sys
+BVLISP_LISP_LIB_SOURCE_FILES= *.vlisp
+
+INST_FILES = $(BVLISP_SOURCE_FILE) $(BVLISP_LIB_SOURCE_FILES) aidvlisp.* GL-Drive-Help.*
+
+AIDE_OPENGL = @OPEN_GL@
+
+all: traaide aide
+
+aide: traaide
+	$(CC) $(CFLAGS) -o aide aidbvlisp.c
+	cat aidvl?.txt > aidvlisp.dat
+	if test -n "${AIDE_OPENGL}" ; then \
+	    cat aidvl-gl.txt >> aidvlisp.dat ; \
+	    cp  GL-Drive-Help.txt GL-Drive-Help.dat ; \
+	    ./traaide f GL-Drive-Help ; \
+	fi
+	cat aidvl-so.txt >> aidvlisp.dat
+	./traaide f aidvlisp
+
+doc:  traaide
+	./traaide l L f aidvlisp
+	latex aidvlisp
+	latex aidvlisp
+	makeindex aidvlisp.idx
+	latex aidvlisp
+	dvips -o aidvlisp.ps aidvlisp.dvi
+
+lisp_names.h: ../src_lisp/init.c
+	grep "mkat(\"" ../src_lisp/init.c | sed -e s/.*mkat\(// | sed -e s/\".*\",.*/\"\1\",/ | sed -e s/\^\",/\",\",/ > src_atoms_tmp
+	sed -e s/\"pour\",/\"*pour*\",/ < src_atoms_tmp | sort > src_atoms
+	echo \#define NUM_LISP_NAMES `wc -l < src_atoms` > lisp_names.h
+	echo static char *lisp_names\[NUM_LISP_NAMES+1\] = \{ >> lisp_names.h
+	cat src_atoms >> lisp_names.h
+	echo "NULL };" >> lisp_names.h
+	rm -f src_atoms*
+
+traaide: traaide.c lisp_names.h
+	$(CC) $(CFLAGS) -o traaide traaide.c
+
+install:
+	$(INSTALL_DATA) bitmap/* $(BITMAPLIB)
+	$(INSTALL_DATA) *.vlisp  $(LISPLIBDIR)
+	$(INSTALL_DATA) *dat     $(LISPLIBDIR)
+	$(INSTALL_DATA) *sec     $(LISPLIBDIR)
+	$(INSTALL_DATA) *sys     $(LISPLIBDIR)
+

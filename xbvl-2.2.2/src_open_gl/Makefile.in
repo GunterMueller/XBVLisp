@@ -1,0 +1,83 @@
+# Makefile.in --- Xbvlisp
+# Copyright (C) 1997
+#   Damien Ploix <damien@ai.univ-paris8.fr>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+########################################################################
+
+CFLAGS = @CFLAGS@
+LDFLAGS =
+
+########################################################################
+
+SHELL = /bin/sh
+CC = @CC@
+CPP = @CPP@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+srcincdir = $(top_srcdir)/include 
+locallibdir = @prefix@
+FONTLIB = $(locallibdir)/lib/xbvlisp/fonts
+
+VPATH = @srcdir@
+
+HFLAGS = @CPPFLAGS@ -DFONTLIB=\"$(FONTLIB)\"
+LFLAGS = @CPPFLAGS@
+CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/include
+DEFS = @DEFS@ @OPEN_GL@ @TIFF_DEF@ @MODIFIEDMESA@
+SYS_CFLAGS = @SYS_CFLAGS@
+
+X_CFLAGS = @X_CFLAGS@ @XAW_DIR@ @X_USE_LATIN1@ @HAVE_XRBFD@
+
+ALL_CFLAGS = $(DEFS) $(SYS_CFLAGS) $(X_CFLAGS) $(CFLAGS) @MODIFIEDMESA@
+
+HSRC =  htext.c check.c halloc.c fhtext.c
+HOBJS = ../src_hershey/htext.o ../src_hershey/check.o ../src_hershey/halloc.o ../src_hershey/fhtext.o
+
+TSRC  = font.c     image.c    tk.c
+TOBJS = libtk/font.o     libtk/image.o    libtk/tk.o 
+
+ASRC  = aux.c     font.c    image.c   shapes.c teapot.c  vect3d.c  xform.c 
+AOBJS = libaux/aux.o     libaux/font.o    libaux/image.o   libaux/shapes.o  \
+	libaux/teapot.o  libaux/vect3d.o  libaux/xform.o 
+
+OBJS =  glFonts.o   glLib.o     glMemory.o  gluFuncs.o \
+	glFuncs.o   glLights.o  glWidget.o  glImages.o \
+	glTexture.o mesaListes.o
+
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -c $<
+
+all: xbvl-opengl.a
+
+$(HOBJS) : 
+	(cd ../src_hershey ; $(MAKE) all)
+
+$(TOBJS) : 
+	(cd libtk ; $(MAKE) all)
+
+$(AOBJS) : 
+	(cd libaux ; $(MAKE) all)
+
+
+xbvl-opengl.a: $(OBJS) $(TOBJS) $(AOBJS) $(HOBJS)
+	ar $(ARFLAGS) $@ $(OBJS) $(TOBJS) $(AOBJS) $(HOBJS)
+#	-$(RANLIB) $@
+
+clean:
+	rm -f *~ *.o libtk/*.o libaux/*.o *.a

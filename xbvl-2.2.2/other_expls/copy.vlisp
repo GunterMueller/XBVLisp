@@ -1,0 +1,140 @@
+
+; Variantes de la fonction COPY, du point de vue du parcours
+
+(de c1-1 (l)(cond
+	((null l) nil)    
+	(t (cons (* (car l) 6) (c1 (cdr l)))))) 
+
+(de c1-2 (l)(cond
+	((atom l) nil)    
+	(t (cons (* (car l)(car l)) (c1 (cdr l)))))) 
+
+(de c1-3 (l)(cond
+	((null l) nil)    
+	(l (cons (+ (car l)(car l)) (c1 (cdr l)))))) 
+
+(de c1-4 (l)(cond
+	((atom l) nil)    
+	(l (cons (+ 4 (car l)) (c1 (cdr l)))))) 
+
+(de c1-5 (l) (cond
+	((null l) nil)
+	((cons (* (car l)(car l)(car l)) (c1-a (cdr l))))))
+
+(de c1-6 (l)(cond
+	((atom l) nil)    
+	((cons (+ (car l)(car l)) (c1 (cdr l)))))) 
+
+(de c1-7 (l) (cond
+	((null l) nil)
+	((listp l)(cons (* 7(car l)) (c1-a (cdr l))))))
+
+(de c1-8 (l)(cond
+	((atom l) nil)    
+	((listp l)(cons (+ (car l) 2) (c1 (cdr l)))))) 
+
+(de c2 (l)(cond
+	(l (cons (list (* (car l)(car l))) (c2 (cdr l))))
+	)) 
+
+(de c2-1 (l) (cond
+	((listp l) (cons (* (car l)(car l)) (c2-a (cdr l))))
+	))
+
+(de c2-2 (l)(cond
+	(l (cons (* (car l)(car l)) (c2 (cdr l))))
+	(t nil)	
+	)) 
+
+(de c2-3 (l) (cond
+	((listp l) (cons (* (car l)(car l)) (c2-a (cdr l))))
+	(t nil)     
+	))
+
+(de c2-4 (l)(cond
+	(l (cons (* (car l)(car l)) (c2 (cdr l))))
+	(nil)	
+	)) 
+
+(de c2-5 (l) (cond
+	((listp l) (cons (* (car l)(car l)) (c2-a (cdr l))))
+	(nil)     
+	))
+
+(de c2-6 (l)(cond
+	(l (cons (* (car l)(car l)) (c2 (cdr l))))
+	((null l) nil)	
+	)) 
+
+(de c2-7 (l) (cond
+	((listp l) (cons (* (car l)(car l)) (c2-a (cdr l))))
+	((null l) nil)   
+	))
+
+(de c2-8 (l)(cond
+	(l (cons (* (car l)(car l)) (c2 (cdr l))))
+	((atom l) nil)	
+	)) 
+
+(de c2-9 (l) (cond
+	((listp l) (cons (* (car l)(car l)) (c2-a (cdr l))))
+	((atom l) nil)  
+	))    
+     
+(de r1 (l) (cond
+	((null l) nil)
+	(t (cons (* 3 (car l)) (r1 (cdr l))) )))
+
+(de r2 (l) (cond
+	((null l) nil)
+	(t (append (list (list (car l))) (r2 (cdr l))) )))
+
+(de r3 (l) (cond
+	((null l) nil)
+	(t (nconc (list (+ (car l)(car l))) (r3 (cdr l))) )))
+
+(de r1-1 (l) (cond
+	((null l) l)
+	(t (cons (* 5 (car l) 2)(r1 (cdr l))) )))
+
+(de r2-1 (l) (cond
+	((null l) l)
+	(t (append (list (car l)) (r2 (cdr l))) )))
+
+(de r3-1 (l) (cond
+	((null l) l)
+	(t (nconc (list (car l)) (r3 (cdr l))) )))  
+
+(de r7 (l) (cond
+	((null l) nil)
+	(t (append (r7 (cdr l)) (list (car l))) )))
+
+(de r8 (l) (cond
+	((null l) nil)
+	(t (nconc (r8 (cdr l)) (list (car l))) )))
+
+(de r5 (l a) (cond
+	((null l) a)
+	(t (r5 (cdr l) (append a (list (list (car l)(car l))))) )))
+
+(de r6 (l a) (cond
+	((null l) a)
+	(t (r6 (cdr l) (nconc a (list (+ 6 (car l))))) )))
+
+(de r9 (l a) (cond
+	((null l) a)
+	(t (r9 (cdr l) (cons (car l) a)) )))
+
+(de r10 (l a) (cond
+	((null l) a)
+	(t (r10 (cdr l) (append (list (car l)) a)) )))
+
+(de r11 (l a) (cond
+	((null l) a)
+	(t (r11 (cdr l) (nconc (list (car l)) a)) )))
+
+(de r12 (l a) (cond
+	((null l) a)
+	(t (r12 (cdr l) (push (car l) a)) )))
+
+; FIN

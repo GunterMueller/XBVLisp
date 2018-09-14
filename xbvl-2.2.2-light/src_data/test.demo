@@ -1,0 +1,197 @@
+../bvl <<//
+
+s
+; Vous etes dans une "demo" de bvlisp.
+; Pour arreter avant la fin appuyez 2 fois sur la touche DELETE.
+; prenez votre temps, ca durera longtemps!
+
+; chaque fois la machine affiche '(tyi)' tapez un caractere quelconque
+; pour continuer. Voici le premier:
+
+(tyi)
+
+; d'abord on charge tous les fichiers qui peuvent etre interessant
+(lib vcg)
+
+; ensuite un petit stepper
+;(lib stepper)
+
+; naturellement le pretty printeur
+;(lib pretty)
+
+; et la trace
+;(lib trace)
+(careful t)
+
+; voila c'est tout
+
+
+; d'abord definissons une petite fonction simple qui enleve les occurences
+; d'un element donne ds une liste, c'est naturellement la fonction 'delete'
+
+(de dele (ele l)
+(xondc
+(null l)())(
+((equal (car l) ele) ; tail-recursive ; (dele ele (cdr l))) ; ok 
+(t (cons (car l) ; recursive ; (dele ele (cdr l)))) ))
+
+; vous avez vu le line-editor? Pour savoir ce que vous pouvez faire avec
+; le line-editor, il suffit de consulter la doc on-line, ca se fait 
+; simplement en tappant un point d'interrogation, et de donner ensuite 
+; l'objet dont vous voulez avoir des renseignements. Allons-y
+
+(tyi)
+? line-editor
+
+
+  (tyi)
+; naturellement, normalement le defilement s'arrete en bas de l'ecran,
+; ici, en lisant continuellement des caracteres ca ne peut pas marcher.
+; a present, voyageons juste a travers les menus standard
+
+ ; c'est un ^w^w, mais y'a pas d'echo
+ (tyi)
+
+ (tyi)
+
+; vu?
+; d'ailleurs, je suis un peu inquiete de la variable 'l' : est-ce que je
+; l'utilise quelquepart ailleurs deja? regardons
+? l
+   (tyi)
+; la documentation on-line existe naturellement aussi pour les fonctions
+; standard. Savez-vous encore ce que fait la fonction equal? regardons
+? equal
+
+   (tyi)
+; nous n'avons pas une specification formel pour la fonction dele, par 
+; contre
+; nous avons quelques exemples de son fonctionnement, c'est une sorte de
+; specification informelle. Pourquoi pas faire connaitre ces specifications
+; informelles au systeme. Les voici:
+
+(example 'dele '(
+((dele 'a '(a b a c)) (b c))
+((dele '(a b) '((a b) 1 2 (a b) 3)) (1 2))))
+
+; ici nous avons visiblement une erreur dans la specification. Normalement
+; nous supposons que l'erreur est dans l'ecriture de la fonction. Mais, qui
+; sait? Des qu'on introduit des specifications, des assertions etc, on
+; risque d'avoir des erreurs aussi dans ces annotations supplementaires.
+
+ (tyi)
+; a present, testons le programme sur deux appels, d'abord
+
+(dele 'do '(do re do ? dele 
+re mi fa))
+ (tyi)
+; vous avez vu? 
+; 1) je peux demander la documentation de n'importe quel endroit.
+;    ce que j'ai tape etait d'abord :
+;		(dele 'do '(do re do ? dele 
+;    et ensuite, apres que la machine avait re-displaye la partie deja
+;    tape, j'ai continue en tappant
+;		re mi fa))
+; 2) le systeme cherche d'abord a savoir si les exemples sont
+;    en concordance avec la fonction! 
+ (tyi)
+; Faisons a present un deuxieme test:
+
+(dele '(do re) '((do re) do re mi (do re)))
+
+; le systeme verifie les exemples naturellement qu'apres chaque modification
+; de la fonction, entre des modifications, une seule verification suffit.
+
+; d'ailleur, regardons donc une trace de l'execution de cette fonction:
+; mais pour avoir de la place, on ira dans une fenetre plus petit
+(changewin 'aa)
+(trace dele)
+
+; prete?
+ (tyi)
+(dele 'hein '(eh hein oui hein ca marche))
+
+; la trace reflete visiblement le comportement EXACTE de l'interprete!
+(untrace dele)
+ (tyi)
+  
+(changewin)
+; je peux egalement accompagner la fonction par des assertions d'entree
+; ou de sortie, qui seront tester a chaque appel de cette fonction.
+
+(assert-entree 'dele '(listp l))
+(assert-sortie 'dele '(listp sortie))
+
+; ces deux assertions ne font que verifier que la valeur de 'l' soit
+; une liste, et que la sortie soit une liste. Naturellement, je pourrais
+; mettre des assertions aussi compliquees que je veux. La variable 
+; 'sortie' est une variable du systeme, contenant a chaque instant la
+; valeur retournee d'une fonction.
+; a present, testons donc encore une fois la fonction 'dele'
+
+(tyi)
+(dele 'a '(a b a c a d))
+(careful)
+(dele 'a '(a b a c a d))
+(tyi)
+; Naturellement, tous ces activites supplementaires a l'execution normale
+; des fonctions ne marche que sous mode 'careful'. Pour s'y mettre, la
+; commande
+(careful t)
+; est suffisante. 
+; regardons encore une fois la fonction 'dele'
+
+(pretty dele)
+
+(tyi)
+; vous voyez? bvlisp garde les commentaires. D'ailleurs, ce n'est qu'un
+; cas particulier de la possibilite en bvlisp, d'attacher a n'importe
+; quel point a l'interieur du programme des choses supplementaires. C'est
+; la base du systeme de version-management.
+
+(tyi)
+; Essayons notre programme de generateur des conditions de verifications
+; en tracons l'execution.
+; On lance le programme de trace video
+(changewin 'aa)
+;                  					A T T E N T I O N
+
+; il faut que vous tapez, une fois la machine affiche 'commande:',
+; un point (.), ensuite, quand la machine demande si vous voulez une trace,
+; repondez 'y' 
+; quand vous etes pres, tapez un caractere quelconque
+(tyi)
+(steptr vc)
+(vc)
+(procedure fact (n)(r)
+(if (n = 0)(setq r 1)
+(fact (n - 1) r)(setq r (n * r))))
+(n >= 0)	;			               A T T E N T I O N
+; ensuite, quand la machine vous demande a nouveau une trace,
+; tapez un caractere quelconque different de 'y' 
+; (sinon, ca prend vraiment trop de temps....
+(r = fact(n))
+()
+; vous avez vu : chaque sous-systeme a son propre menu. D'ailleurs vous
+; pouvez construire aisement des menus a vous avec la commande 'menu'
+(menu "				voila un menu bien inutile")
+
+ (tyi) 
+        
+ 
+
+
+(end-step t)
+
+(changewin)
+
+; voulez-vous encore une fois voir l'arbre de vc? le voici:
+
+(%a vc)
+
+; voila, c'est tout pour l'instant
+    
+(stop)
+
+
+//

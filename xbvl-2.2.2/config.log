@@ -1,0 +1,32 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:557: checking host system type
+configure:588: checking for a BSD compatible install
+configure:638: checking whether ln -s works
+configure:661: checking for ranlib
+configure:691: checking for gcc
+configure:768: checking whether the C compiler (gcc  ) works
+configure:782: gcc -o conftest    conftest.c  1>&5
+configure:802: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:807: checking whether we are using GNU C
+configure:831: checking whether gcc accepts -g
+configure:860: checking how to run the C preprocessor
+configure:1017: checking for X
+configure:1331: checking for dnet_ntoa in -ldnet
+configure:1372: checking for dnet_ntoa in -ldnet_stub
+configure:1420: checking for gethostbyname
+configure:1518: checking for connect
+configure:1610: checking for remove
+configure:1702: checking for shmat
+configure:1803: checking for IceConnectionNumber in -lICE
+configure:1862: checking for XawInitializeWidgetSet in -lXaw3d
+configure:1906: checking for XReadBitmapFileData in -lXmu
+configure:2044: checking for TIFFClose in -ltiff
+configure:2092: checking for dirname
+configure:2142: checking for index
+configure:2195: checking for perror
+configure:2244: checking for getprotobyname
+configure:2293: checking for ANSI C header files
+configure:2397: checking for working const
+configure:2472: checking for inline

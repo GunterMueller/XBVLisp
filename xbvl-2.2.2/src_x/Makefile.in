@@ -1,0 +1,72 @@
+# Makefile.in --- Xbvlisp
+# Copyright (C) 1997
+#   Damien Ploix <damien@ai.univ-paris8.fr>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+########################################################################
+
+CFLAGS = @CFLAGS@
+LDFLAGS =
+
+########################################################################
+
+SHELL = /bin/sh
+CC = @CC@
+CPP = @CPP@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+srcincdir = $(top_srcdir)/include 
+localdir = @prefix@
+
+destdir = $(localdir)/bin
+
+INSTALL = @INSTALL@
+
+VPATH = @srcdir@
+
+CPPFLAGS = @CPPFLAGS@ -I$(top_srcdir)/include 
+DEFS = @DEFS@ @HAVE_DIRNAME@ @HAVE_INDEX@
+SYS_CFLAGS = @SYS_CFLAGS@
+SYS_LDFLAGS = @SYS_LDFLAGS@ 
+
+# XAW_LIBS = @XAW_LIB@ 
+
+X_CFLAGS = @X_CFLAGS@ @XAW_DIR@ @X_USE_LATIN1@
+INIT_CFLAGS = $(DEFS) $(SYS_CFLAGS) $(X_CFLAGS) -w -O
+ALL_CFLAGS = $(DEFS) $(SYS_CFLAGS) $(X_CFLAGS) $(CFLAGS)
+ALL_LDFLAGS = $(SYS_LDFLAGS) $(LDFLAGS)
+
+OBJS = 	BrTree.o Convert.o Drawxbvl.o ObjAtome.o \
+	ObjInit.o Tortue.o XbvlActn.o XbvlVideo.o Xbvlisp.o XtToLISP.o \
+	crewin.o cursor.o \
+	xActions.o xBitmap.o xCalbks.o xCrObjet.o xDraw.o \
+	xEvent.o xGetRes.o xTranslation.o xWdgFncs.o xaide.o \
+	xcrewin.o xgetargs.o xgetch.o xgetvals.o xinit.o xkill.o \
+	xmenu.o xpointer.o xsetvals.o xsrc.o xvter.o xwst.o 
+
+.SUFFIXES: .c .o
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -c $<
+
+all: xbvl-x.a
+
+xbvl-x.a: $(OBJS)
+	ar $(ARFLAGS) $@ $(OBJS)
+
+clean:
+	rm -f *.o *.a *~

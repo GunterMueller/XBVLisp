@@ -1,0 +1,208 @@
+# configure.in --- Xbvlisp : Vlisp sous X11 avec utilisation de Mesa/OpenGL
+# Copyright (C) 1997 by
+#   Damien Ploix (damien@ai.univ-paris8.fr)
+# Update: Valvassori Moïse <moise@valvassori.org>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: configure.in,v 1.2 2004/11/01 09:44:22 djedi Exp $
+#
+########################################################################
+AC_INIT([src_lisp/main.c])dnl
+AM_INIT_AUTOMAKE(xbvl, 2.2.3-light)
+dnl AM_CONFIG_HEADER(config.h)
+AC_CANONICAL_HOST
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_RANLIB
+ARFLAGS="ruv"
+AC_PROG_CC
+test "$CC" = "gcc" && SYS_CFLAGS="$SYS_CFLAGS -pipe"
+AC_PROG_CPP
+# Checking systems
+case "$host" in
+  *-hp-hpux*)
+    SYS_CFLAGS="$SYS_CFLAGS -D_HPUX_SOURCE"
+    test "$CC" = "gcc" || SYS_CFLAGS="$SYS_CFLAGS +O2 +Oall +Onolimit -Aa"
+    ;;
+  mips-sgi-irix4*)
+    test "$CC" = "gcc" || SYS_CFLAGS="$SYS_CFLAGS -float"
+    ARFLAGS="rcv"
+    ;;
+  mips-sgi-irix5*)
+    test "$CC" = "gcc" || \
+      SYS_CFLAGS="$SYS_CFLAGS -ansi -prototypes -float"
+    ARFLAGS="rcv"
+    ;;
+  mips-sgi-irix6*)
+    test "$CC" = "gcc" || \
+      SYS_CFLAGS="$SYS_CFLAGS -64 -ansi -prototypes"
+    ARFLAGS="rcv"
+    ;;
+  *-linux*)
+    if test "$CC" = "gcc" ; then
+      SYS_CFLAGS="$SYS_CFLAGS -DSHM" 
+      SYS_LDFLAGS="$SYS_LDFLAGS "
+    fi
+    ;;
+  *-netbsd*)
+    ARFLAGS="rcv"
+    ;;
+  alpha-dec-osf*)
+    test "$CC" = "gcc" || SYS_CFLAGS="$SYS_CFLAGS -std1 -DSHM"
+    ;;
+  sparc-sun-solaris2*)
+    test "$CC" = "gcc" || SYS_CFLAGS="$SYS_CFLAGS -Xa"
+    ;;
+  *-ultrix*)
+    test "$CC" = "gcc" || SYS_CFLAGS="$SYS_CFLAGS -Dconst=/**/"
+    ARFLAGS="rusv"
+    ;;
+esac
+AC_SUBST([ARFLAGS])dnl
+AC_SUBST([SYS_CFLAGS])dnl
+AC_SUBST([SYS_LDFLAGS])dnl
+
+# Checking Architecture
+case "$host" in
+  i?86-*)
+#    if test "$CC" = "gcc"; then
+#       SYS_CFLAGS="$SYS_CFLAGS -m486"
+#    fi
+    DATA_TYPE="int"
+    ;;
+  alpha-*)
+    SYS_CFLAGS="$SYS_CFLAGS -DINT64"
+    DATA_TYPE="long"
+    ;;
+  *)
+    DATA_TYPE="int"
+    ;;
+esac
+AC_SUBST(DATA_TYPE)
+
+dnl Check Emacs Lisp Dir
+AM_PATH_LISPDIR
+
+# AC_ARG_WITH(MESA,
+#             [  --with-MESA=MESA_DIRECTORY  force using modified MESA lib],
+# 	    echo "************** n'oubliez pas de faire make mesa avant de compiler Xbvl *************"
+#             XBVLOPENGL="../src_open_gl/xbvl-opengl.a"
+#             GL_LIB="-lMesaGLw -lMesaGL -lMesaGLU"
+# 	    OPEN_GL="-DMESA_GL=1"
+# 	    MESADIR="$with_MESA"
+# 	    MODIFIEDMESA="-DMODIFIEDMESA")dnl
+# AC_SUBST([MESADIR])
+AC_SUBST([MODIFIEDMESA])
+
+AC_ARG_ENABLE(debug,
+  [  --enable-debug          compile in mode debug (-g)],
+  [CFLAGS="-g"],
+  [CFLAGS="-O3"])dnl
+AC_SUBST([CFLAGS])
+AC_ARG_ENABLE(pure-ascii,
+  [  --enable-pure-ascii          use only pure Ascii (no latin 1)],
+  [X_USE_LATIN1=""],
+  [X_USE_LATIN1="-DX_USE_LATIN1"])dnl
+AC_SUBST([X_USE_LATIN1])
+AC_ARG_ENABLE(no-floating,
+  [  --enable-no-floating         dont allow manipulation of float values in Xbvl],
+  [NO_VFLO="-DNO_VFLO"],[])dnl
+AC_SUBST([NO_VFLO])
+
+AC_PATH_XTRA
+dnl if test -z "$x_libraries"; then
+dnl   if test -n "`ls /usr/lib/libX11.* 2>/dev/null`"; then
+dnl      x_libraries="/usr/lib"
+dnl   fi
+dnl fi
+# if test -n "$MESADIR" ; then
+#   CFLAGS="$CFLAGS -I$MESADIR/include"
+#   SYS_CFLAGS="$SYS_CFLAGS -I$MESADIR/include"
+#   LDFLAGS="$LDFLAGS -L$MESADIR/lib"
+#   SYS_LDFLAGS="$SYS_LDFLAGS -L$MESADIR/lib"
+# fi
+if test -n "$x_libraries"; then
+  ac_save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -L$x_libraries"
+# Test if we have here Xaw or Xaw3d
+  AC_CHECK_LIB(Xaw3d, XawInitializeWidgetSet, 
+		      [XAW_LIB="-lXaw3d" XAW_DIR="-DXAW3D"],
+#		      [XAW_LIB="-lXaw"],
+			  AC_CHECK_LIB(Xaw, XawInitializeWidgetSet, 
+			      [XAW_LIB="-lXaw"],
+			      AC_MSG_ERROR(Librairie Xaw non trouvée),
+			      [-lX11]),
+		      [-lX11])
+  AC_SUBST([XAW_LIB])
+  AC_SUBST([XAW_DIR])
+# Test if we have XReadBitmapFileData function
+  # AC_CHECK_LIB(Xmu, XReadBitmapFileData, [HAVE_XRBFD="-DHAVE_XRBFD"],
+  # 					 [HAVE_XRBFD="-DDONT_HAVE_XRBFD"],
+  # 					 [-lXext -lXt -lX11])
+AC_SUBST([HAVE_XRBFD])
+	
+# # Test if we have Open GL, Mesa GL or none
+#   if test -z "$MESADIR"; then
+#     AC_CHECK_LIB(GL, glClear, XBVLOPENGL="../src_open_gl/xbvl-opengl.a"
+#   			    GL_LIB="-lGLw -lGL -lGLU" 
+# 			    OPEN_GL="-DOPEN_GL=1")
+
+#    if test -z "$OPEN_GL" ; then
+#      LDFLAGS="$ac_save_LDFLAGS -lm -L$x_libraries -lMesaGL -lMesaGLU -lX11 -lXext"
+#      AC_CHECK_LIB(MesaGL, glClear, XBVLOPENGL="../src_open_gl/xbvl-opengl.a"
+# 				  GL_LIB="-lMesaGLw -lMesaGL -lMesaGLU"
+# 			          OPEN_GL="-DMESA_GL=1")
+#      LDFLAGS="$LDFLAGS -L$x_libraries"
+#     fi
+#   fi
+# # Test if we have libtiff
+# # Only in case of MesaGL as OpenGL render is direct and not thru X
+#   if test -n "$OPEN_GL" ; then
+#     AC_CHECK_LIB(tiff, TIFFClose, TIFF_LIB="-ltiff" TIFF_DEF="-DHAVE_LIBTIFF")
+#   fi
+  LDFLAGS="$ac_save_LDFLAGS"
+fi
+
+CFLAGS="$CFLAGS $SYS_CFLAGS"
+
+AC_SUBST([TIFF_LIB])
+AC_SUBST([TIFF_DEF])
+# AC_SUBST([XBVLOPENGL])
+# AC_SUBST([OPEN_GL])
+# AC_SUBST([GL_LIB])
+AC_CHECK_FUNC(dirname, HAVE_DIRNAME="-DHAVE_DIRNAME")
+AC_SUBST([HAVE_DIRNAME])
+# need to test index because of Solaris...
+AC_CHECK_FUNC(index, HAVE_DIRNAME="-DHAVE_INDEX")
+AC_SUBST([HAVE_INDEX])
+# Wondering if an Unix exists without sockets (comes from BSB 4.2...)
+# AC_CHECK_FUNC(socket, HAVE_SOCKET="-DSOCKETS")
+# AC_SUBST([HAVE_SOCKET])
+# checks particuliers à src_lisp/sofons.c
+AC_CHECK_FUNC(perror, HAVE_ERRNO="-DERRNO")
+AC_SUBST([HAVE_ERRNO])
+AC_CHECK_FUNC(getprotobyname, HAVE_PROTOENT="-DGETPROTENT")
+AC_SUBST([HAVE_PROTOENT])
+AC_HEADER_STDC
+AC_C_CONST
+AC_C_INLINE
+AC_OUTPUT([Makefile include/Makefile src_lisp/Makefile src_x/Makefile include/vlisp_files.h 
+src_data/Makefile lsp_expls/Makefile lsp_expls/X/Makefile other_expls/Makefile])
+
+ #  
+ # 	   src_open_gl/Makefile src_open_gl/libtk/Makefile src_open_gl/libaux/Makefile src_mesa/Makefile
+ # 	   src_hershey/Makefile
+ # 	   ])dnl

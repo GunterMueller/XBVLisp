@@ -1,0 +1,14 @@
+; Definition des correspondances Irix GL -> Open GL
+
+(if OPENGL
+    (setq LINE        "GL_LINE_STRIP"
+	  CLOSEDLINE  "GL_LINE_LOOP"
+	  POLYGON     "GL_POLYGON"
+	  TRIANGLES   "GL_TRIANGLES"
+	  POINT       "GL_POINTS")
+  (setq LINE        "line"
+	CLOSEDLINE  "closedline"
+	POLYGON     "polygon"
+	TRIANGLES   "tmesh"
+	POINT       "qstrip"))
+	  

@@ -1,0 +1,59 @@
+; -------- le micro-editeur "ef" ----------
+
+(df mv (l ;; x)
+  (while l (setq x (nextl l))
+           (setq ** (if (numbp x) (nth x **) (car **))))
+  (p 1))
+
+(de sprint (n l)        ; pour imprimer l'expression l sur n niveaux
+  (print (if (or (atom l) (= n 0)) l (sprc l 0 n))))
+
+(de sprc (l n1 n2) (cond
+  ((null l) nil)
+  ((> n1 n2) '*)
+  ((atom l) l)
+  ([(sprc (nextl l) (1+ n1) n2) . (sprc l n1 n2)])))
+
+(de find (l a p) (cond          ; pour aider fk et fp
+  ((atom l) nil)
+  ((and a (equal (car l) a)) l)
+  ((and p (filter (car l) p)) l)
+  ((or (find (nextl l) a p) (find l a p)))))
+
+(de filter (d p) (cond
+  ((eq p '?))                   ; Ex. d'un tel filtre : (cond . ?)
+  ((null p) (null d))
+  ((atom (car p))
+   (if (or (eq (car p) '?) (eq (car p) (car d)))
+       (filter (cdr d) (cdr p))))
+  ((filter (nextl d) (nextl p)) (filter d p))))
+
+(df ef (f) (setq ** (fval (car f))) (p 1))      ; L'editeur lui-meme
+
+(de p(n) (sprint n **) '*)
+
+(df il (e)                      ; (il e1 e2 ... eN)
+  (nconc ** e)
+  (p 1))
+
+(df i (l)
+  (nconc l (cons (car **) (cdr **)))
+  (rplacb ** l)
+  (p 1))
+
+(df fp (f)
+  (setq ** (find ** nil (car f)))
+  (p 1))
+
+(df fk (a ;; x)
+  (setq x (find ** (car a) nil))
+  (if x (setq ** x)
+        (print "pas trouve"))
+  (p 1))
+
+(de d (n)
+  (repeat n (rplacb ** (cdr **)))
+  (p 1))
+
+(df dl (;; x)
+  (setq x **) (while (cddr x) (nextl x)) (rplacd x) (p 1))

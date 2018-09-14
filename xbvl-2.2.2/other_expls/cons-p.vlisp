@@ -1,0 +1,130 @@
+;	cons-print
+;		Pour voir les doublets (quand c'est possible)
+
+
+(de append-n l
+  (let ((l l))
+    (if (null (cdr l)) l (append (car l) (self (cdr l))))))
+
+(de cursorpos (x y)
+      (poscur x y))
+
+(de cons-print (sexp)
+  (status print 2)
+  (home) (cleos)
+  (setq right-margin 1)
+  (dot-print sexp)
+  (cons-print-loop sexp 3 1)
+  (status print 0)
+  (poscur 22 1)
+  t)
+
+(de cons-print-loop (sexp xpos ypos)
+  (cond ((atom sexp)
+	 (print-in-place sexp xpos (+ 2 ypos)))
+
+        ((and (real-atom (cdr sexp)) (atom (car sexp)))
+         (print-cons-cell xpos ypos)
+         (print-in-place (car sexp) (+ 4 xpos) (+ 2 ypos))
+	 (print-in-place-list
+          [(+ 1 xpos) (+ ypos 6) "!"
+	   (+ 2 xpos) (+ ypos 6) "!"
+	   (+ 3 xpos) (+ ypos 6) "v"])
+         (print-in-place (cdr sexp) (+ 4 xpos) (+ 6 ypos)))
+
+        ((real-atom (cdr sexp))
+         (print-cons-cell xpos ypos)
+         (cons-print-loop (car sexp) (+ 4 xpos) ypos)
+         (print-in-place-list (list (1+ xpos)(+ 7 ypos) "-+->"))
+         (print-in-place (cdr sexp) (+ 1 xpos) (+ 12 ypos)))
+
+        ((eq (car sexp) (cdr sexp))
+         (print-cons-cell xpos ypos)
+         (print-in-place-list
+          [(+ 1 xpos)(+ ypos 6) "!"
+           (+ 2 xpos)(+ ypos 6) "!"
+           (+ 3 xpos)(+ ypos 6) "v"])
+         (cons-print-loop (car sexp) (+ xpos 4) ypos))
+
+        ((eq (car sexp)(cadr sexp))
+         (print-cons-cell xpos ypos)
+         (print-in-place "!" (+ xpos 3) (+ ypos 2))
+         (print-in-place "!" (+ xpos 4) (+ ypos 2))
+         (print-in-place-list [(+ xpos 5) (+ ypos 2) "+------->"])
+         (print-in-place-list [(+ xpos 1) (+ ypos 7) "-+->"])
+         (print-cons-cell xpos (+ 11 ypos))
+         (cons-print-loop (car sexp) (+ xpos 4) (+ ypos 11))
+         (if (cddr sexp)
+             (let ((newy (print-arrow (+ 1 xpos) (+ ypos 18))))
+               (cons-print-loop (cddr sexp) xpos newy))
+             (print-in-place "/" (+ xpos 1) (+ ypos 17))))
+
+        ((null (cdr sexp))
+         (print-cons-cell xpos ypos)
+         (cons-print-loop (car sexp) (+ xpos 4) ypos)
+         (print-in-place "/" (+ 1 xpos) (+ 6 ypos)))
+
+        (t
+         (if (and (listp (car sexp))(in? (car sexp) (cdr sexp)))
+             (b-error "Mutation inconnue --- non dessinable\n"
+                      sexp))
+         (print-cons-cell xpos ypos)
+         (cons-print-loop (car sexp) (+ 4 xpos) ypos)		
+         (let ((newy (print-arrow (+ 1 xpos) (+ ypos 7))))
+           (cons-print-loop (cdr sexp) xpos newy)))))
+
+(de print-in-place (string x y)
+    (poscur x y) (princ string))
+
+(de print-in-place-list (lst)
+  (cond ((null lst) t)
+        (t (print-in-place (caddr lst) (car lst) (cadr lst))
+              (print-in-place-list (cdddr lst)))))
+
+(de print-arrow (x y)
+  (print-in-place-list (list x y "-+-"))
+  (print-arrow-1 x (+ y 3)))
+
+(de print-arrow-1 (x y)
+  (cond ((> y right-margin)
+         (print-in-place ">" x y)
+         (1+ y))
+        (t (print-in-place-list [x y "-----------"])
+              (print-arrow-1 x (+ 11 y)))))
+
+(de print-cons-cell (x y)
+  (setq right-margin (+ y 9))
+  (print-in-place-list
+   [x       y "+---+---+"
+    (1+ x)  y "!   !   !"
+    (+ x 2) y "+---+---+"
+    (+ 1 x) (+ y 2) "!"
+    (+ 2 x) (+ y 2) "!"
+    (+ 3 x) (+ y 2) "v"]))
+
+
+(de real-atom (exp)
+  (and (atom exp)
+       (not (null exp))))
+
+(de in? (exp big-exp)
+  (cond ((eq exp big-exp) t)
+        ((null big-exp) nil)
+        ((listp (car big-exp))
+         (or (in? exp (car big-exp))
+             (in? exp (cdr big-exp))))
+        (t (in? exp (cdr big-exp)))))
+
+(de b-error (arg1 arg2)
+  (poscur 22 1) (print arg1 arg2) (status print 0) (error))
+
+
+(de dot-print (sexp)
+  (cond ((atom sexp) (princ sexp))
+        (t (princ "(")
+              (dot-print (car sexp))
+              (princ " . ")
+              (dot-print (cdr sexp))
+              (princ ")"))))
+
+(print "Faites (cons-print LA-LISTE)")

@@ -1,0 +1,107 @@
+1998-05-21  Damien Ploix  <damien@ai.univ-paris8.fr>
+
+	* xfile.vlisp : ajout de la possibilité d'effectuer une recherche
+	sur un mot précis dans l'aide.
+		
+	* eval.c : ajout de la possiblité de récupérer un élément précis
+	de la pile par (frame) : si un "t" est donné en second argument
+	il ne sera retourné que l'élément du rang demandé.
+	
+	* ind.c : correction d'un bug de parcours de l'i-val au moment de
+	la lecture en mode careful (clr2).
+	
+	* aide.c : ( peut-être ) le dernier bug de l'adaptation 32/64 bit :
+	il y avais des incohérences de types entre src_data/traaide.c et 
+	src_lisp/aide.c ( int / Int )...
+
+1998-03-31  Damien Ploix  <damien@ai.univ-paris8.fr>
+
+	* xbvl.2 : nouvelle version de xbvl. Ce changement de version est du au
+	portage de Xbvl sur Alpha 64bits... En effet, les compilateurs pour 64b
+	considèrent que le sizeof(int) doit toujours être à 4 alors que la taille
+	des adresse passe elle à 8..... Création d'un type Int pour Xbvl dont la
+	taille varie selon la machine ( on cherchera toujours à avoir 
+	sizeof(Int)==sizeof(Int*)). Ceci m'a également amené à résoudre tous les
+	warnings de compilation de Xbvl ( qui étaient presque plus vieux que moi ;)
+	Autre ajout de cette version : la license GPL ( avec l'accord de hw ).
+
+	* xbvlisp.sys : ajout de la création d'une interface à Xbvl écrite en Lisp.
+	Cette interface est maintenant installée par défaut pour Xbvl, pour
+	utiliser l'interface C il faut utiliser la variable d'environnement 
+	XBVLINTERFACE ( voir l'aide en ligne ).
+	
+1998-02-24  Damien Ploix  <damien@ai.univ-paris8.fr>
+
+	* xbvl.1.a.patch: patch de Xbvl pour qu'il traite comme tel des
+	atomes ou des chaines lors de leur utilisation dans les opérations
+	numériques ( suivant une remarque de Gilles Bernard ) :
+	précédemment, toute autre entitée que des petits nombres était
+	considérée comme bignum ou flotant et la valeur prise en compte
+	était celle présente à l'adresse pointée par cette
+	entitée. Maintenant, c'est l'entitée elle même qui est retournée.
+
+1997-12-22  Damien Ploix  <damien@ai.univ-paris8.fr>
+
+	*  (Enfin....): implémentation de la détection automatique des
+	erreurs de typage ( par ex. (car 10)) ou de division par 0. Ai pour
+	cela utilisé le dernier champ unused de la structure atome pour y
+	placer un flag de type d'erreur à detecter sur les
+	primitives. Ce mode ( peu gourmand en temps de calcul ) est
+	invalidable par l'affectation à 'undef de l'atome "error-type" (
+	il est activé par défaut dans bvlisp.sys ).
+
+1997-11-25  Francoise Balmas et Harald Wertz <fb@ai.univ-paris8.fr>
+
+	* list.c : Decouverte d'un très beau bug : assq et nmemq faisait un
+	  accès au car des listes sans utiliser car mais par addresse 
+	  ce qui ne marche pas dans le cas de la présence d'annotations
+	  (c.a.d. de commentaires). 
+
+1997-11-25 Damien Ploix <damien@ai.univ-paris8.fr>
+
+	* GLpolygonStipple : la librairie Xsgi de irix5.2 ne connait
+	  pas XReadBitmapFileData... : modification du configure.in
+	* sofons.c : pb avec l'inclusion de netdb.h placement du
+	  path complet pour eviter l'utilisation du .h gnu.
+	
+
+1997-11-19  Damien Ploix  <damien@Viviane>
+
+	* glImages.c : Ajout de la possibilité, dans Open GL, de l'affichage 
+	  de fichiers TIFF (GLreadTiff) et de l'utilisation de fichiers bitmaps
+	  comme stipple pour les polygones (GLpolygonStipple).
+	* xbvlisp/ : Réorganisation des répertoires de sources en src_... avec 
+	  séparation des sources de Lisp des fichiers liés à l'interface X.
+	  ATTENTION : CETTE MODIFICATION ENTRAINE LA NECESSITE DE L'EFFACEMENT
+	  DE LA DISTRIBUTION PRECEDENTE DANS LE CAS D'UN UPGRADE.
+
+1997-10-22  Damien Ploix  <damien@Viviane>
+
+	* xaide.c: pb dans la suppréssion via le popup de l'aide par section
+	* main.c : pb dans "ssh" qui faisait référence à "/usr/bin/X11/xterm"
+	  ( ce qui n'est pas standard ) : remplacé simplement par le lancement 
+	  de l'exécution de "xterm"
+
+1997-10-08  Damien Ploix  <damien@Viviane>
+
+	* AIDE: création de deux nouvelles commandes
+	  (sections) et (listesection) permettant de diviser les fichiers d'aide
+	  en sous sections et de récupérer les données propres a ces sections.
+	  De plus, une nouvelle interface pour l'aide, comparable a xman, est
+	  disponible. Pour la lancer tapez simplement (aide). Cette interface
+	  est codée en Lisp et les sources sont dans xfile.vlisp ( placé dans 
+	  /usr/local/lib/xbvlisp et présent dans sys_src. Les fichiers d'aide
+	  de xbvl ne sont toujours pas completement corrigés mais je garde 
+	  bon espoir.
+
+Thu Jul 24 14:58:24 1997  Damien Ploix  <damien@ai.univ-paris8.fr>
+
+	* Ajout de la prise en compte des accents (X_USE_LATIN1) par le
+	  passage des (char) en (CHAR) et la définition de CHAR comme (char : non LATIN1) 
+	  ou (unsigned char : LATIN1) et par l'ajout des caractères correspondants dans 
+	  les tabch de main.c et xvter.c (passage de 128 à 256 valeurs)
+
+
+May  1997  Laboratoire d'Intelligence Artificielle de Paris 8  <http://www.ai.univ-paris8.fr>
+	
+	* Xbvl Initial Released Version : May 1997 *

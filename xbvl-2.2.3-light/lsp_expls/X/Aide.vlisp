@@ -1,0 +1,77 @@
+(de aide-list ()
+    (take-aide (get-list 'doc-list)))
+	   
+
+(de take-aide (l) 
+    (if (null l ) t
+      (affiche-info (car l) )
+       (take-aide (cdr l))))
+
+(setq Xx 0)
+(de affiche-info (sujet)             
+    (if(null sujet) nil
+      (let ( -widget- (xCreateXbvlisp (strcat Xx "-view") 15 80 Xx Xx 9))
+	(aide sujet -widget-)
+	(incr Xx 10))))
+
+
+(de Cree-Liste()
+    (xCreateListH 'doc-list '(une premiere liste comme contenu) "9x15" "#F0A"))
+;;
+; teste la posibilite d'afficher les sujets dans d'autres hierarchies
+;;
+;creation et test d'un widget List avec positionnement
+;de la ressources < list >
+
+(de xCreateListH (name lista font color)
+    (if (and (listp lista) (stringp font))
+	(let (root (xCreateWidget (strcat "root-" name) "ApplicationShell"
+				     "allowShellResize" "True"))
+	  (print root)
+	  (let (viewport (xCreateWidget (strcat "view-" name) "awViewport" root
+					"allowVert" 	"True"
+					"allowHoriz"    "True"
+					;"forceBars"    "True"
+					"useRight"      "True"  ))
+	    (print viewport)
+	    (let (-draw- (xCreateWidget name "awList" viewport
+					"pasteBuffer" "True"
+					"font"        font
+					"foreground"  color
+					"list"        lista
+					"resizable"   "True"
+					))
+	      (print -draw-)
+	      (let ( (-width- (xGetValues -draw- "width" "Int"))
+		     (-height- (xGetValues -draw- "height" "Int")))
+		; faire viewport pour envelloper la liste ;
+		(print -width- -height-)
+		(xSetValues viewport 
+			    "width"   (if(> -width- WIDTH) (+(/ WIDTH 2) 20) (+ -width- 20))
+			    "height"  (if(> -height- HEIGHT) (+(/ HEIGHT 2) 20) (+ -height- 20))
+			    )
+		)
+	      (xRealize root)
+	      [root viewport -draw-]
+	      )))
+      (print "Mauvais Arguments" nil)
+    ))
+
+(de new-aide ()
+    (ifn (iswidget 'doc-bVLISP "ApplicationShell") 
+	 (aide)
+	 (xRemoveWidget 'doc-bVLISP)(aide))
+    (if (iswidget 'aide) (xRemoveWidget 'aide))
+    (xUnmanage 'doc-form)
+    (xCreateWidget 'aide "Xbvlisp" 'doc-form
+		   "lignes" 15 "colonnes" 80 "pages" 10
+		   "fromVert" 'doc-viewPort
+		   "resizable" "True"
+		   )
+    (let (-width- (xGetValues 'aide "width"))
+      (print -width-)
+      (xSetValues 'doc-viewPort "resizable" "True" "width" -width-)
+      (xSetValues 'doc-list "width" -width- "resizable" "True"))
+    (xManage 'doc-form)
+    )
+		   

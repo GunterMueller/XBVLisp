@@ -1,0 +1,18 @@
+(de perms (n) (f 0 nil))
+
+(de f (niv e)
+    (if (< niv n)
+        (h (1+ niv) (cons 1 e))
+        (print (reverse e))
+        (g niv (car e) (cdr e))))
+
+(de g (niv x e)
+    (if (eq x n)
+        (if e (g (1- niv) (car e) (cdr e))
+            'fini)
+        (h niv (cons (1+ x) e))))
+
+(de h (niv e)
+    (if (memq (car e) (cdr e))
+        (g niv (car e) (cdr e))
+        (f niv e)))

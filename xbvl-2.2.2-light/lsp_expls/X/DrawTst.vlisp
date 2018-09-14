@@ -1,0 +1,63 @@
+;;
+;;
+(de  xCreateDrawxbvl ( name height width)
+    (let (root    (xCreateWidget (strcat "root-" name) "ApplicationShell"
+	"geometry" "+0+0"))
+      (let (-draw- (xCreateWidget name "Drawxbvl" root
+				  "width"    width
+				  "height"   height ))
+	(xRealize root)
+	[root -draw-]
+	)))
+    
+    ;;
+    ;;
+(de Draw-test1()
+    (xCreateDrawxbvl 'drawin 400 400)
+    (draw-lines drawin)
+    (xSetValues drawin
+		"foreground" "red"
+		"lineWidth"  2     )
+    (fill-polygons drawin 1 0)
+    )
+;
+;
+(de fill-polygons ( -draw-  shape mode )
+    (xFillPolygon -draw- shape mode 0 0 0 200 150 200 0  0)
+    )
+;;
+;;
+(de draw-lines(-draw-)
+    (if (not(iswidget -draw- "Drawxbvl")) 
+	'"un widget de dessin comm argument s.v.p."
+      (let (p 10)
+	(xDrawLines -draw- 10  p 350 p)
+	(xSetValues -draw-
+		    "foreground"  "red"
+		    "lineWidth"     2       )
+	(incr p 20)
+	(xDrawLines -draw- 10  p 350 p)
+	(xSetValues -draw-
+		    "foreground"  "blue"
+		    "lineWidth"     4       )
+	(incr p 20)
+	(xDrawLines -draw- 10  p 350 p)
+	(xSetValues -draw-
+		    "foreground"  "yellow"
+		    "lineWidth"      6      )
+	(incr p 20)
+	(xDrawLines -draw- 10  p 350 p)
+	(xSetValues -draw-
+		    "foreground"  "green"
+		    "lineWidth"      8      )
+	(incr p 20)
+	(xSetValues -draw-
+		    "foreground"  (getNewColor)
+		    "lineWidth"     10      )
+	(incr p 20)
+	(repeat 10
+		(xDrawLines -draw- 10  p 350 p)
+		(incr p 20))
+	)))
+
+

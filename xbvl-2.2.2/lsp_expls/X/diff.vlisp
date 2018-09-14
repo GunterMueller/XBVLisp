@@ -1,0 +1,44 @@
+; imprime les differences entre l1 et l2
+; internal error-trap ??
+;(de diff(l1 l2)
+;    (if (null l1) 'termine
+;      (let ((ele1 (car l1)))
+;	(let (( lele2 ( memq ele1 l2 )))
+;	  (cond ( (null lele2) (print ele1 "non trouvee")(diff (cdr l1) l2))
+;		( t (diff ((cdr l1) l2)))
+;		)
+;	  )
+;	)
+;      )
+;    )
+(de diff(l1 l2)
+    (if (null l1) 'termine
+      (let (( lele2 ( memq (car l1) l2) ))
+	(cond ( (null lele2) (print (car l1) "non trouvee")(diff (cdr l1) l2))
+		( t (diff (cdr l1) l2)))
+		)
+	)))
+
+					; signale les elements repetes d'une liste
+(de conteles(l)
+    (cond
+     ((null l) 'termine)
+     ((> (setq nfois (cont (car l) l)) 1)
+      (print (car l) "repete" nfois "fois") (conteles (cdr l)))
+     (t (conteles (cdr l)))
+     ))
+
+					; compte le nombre d'apparitions d'un element dans une liste
+(de cont(ele lista)
+    (cont1 ele lista 0)			;    (print le "===>" (cont1 le lista 0))
+    )
+
+;auxiliaire de cont
+(de cont1 (el lista n)
+    (let (partie (memq el lista))
+      (if (null partie)  n
+	(cont1 el (cdr partie) (incr n))
+	)
+      )
+    )
+       

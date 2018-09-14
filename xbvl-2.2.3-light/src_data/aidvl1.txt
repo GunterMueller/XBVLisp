@@ -1,0 +1,3018 @@
+^%H Aide en ligne de Xbvl
+^Description de Lisp
+^^Interface au TopLevel et description du système
+^
+bibliothèques
+	Au moment de son lancement, bVLISP lit une bibliothèque de
+	fonctions et macros nommée "bvlisp.sys". Ce fichier 
+	est connu par le système mais il peut être change par 
+	l'utilisateur en définissant la variable d'environnement 
+	BVLISP-SYS.
+	Puis bVLISP tente de lire dans le répertoire courant deux
+	bibliothèques personnelles nommées "vlisp.ini" et "bvlisp.ini".
+	Puis bVLISP passe au toplevel et attend les expressions à exécuter.
+	En l'absence de la bibliothèque concernée, bVLISP signale:
+			bvlisp.sys absente
+		ou	vlisp.ini absente
+		ou	bvlisp.ini absente
+
+	selon le cas.
+	Notez qu'on peut avoir autant de "vlisp.ini" et des "bvlisp.ini"
+que de répertoires ou de sous répertoires. Regardez également
+	(aide EOF)
+^
+commenter
+Deux façons de commenter :
+	- tout ce qui est entre deux ";" sur la MEME ligne.
+	- s'il n'y a qu'UN ";" dans la ligne, le commentaire est le reste
+	  de la ligne.
+	Les commentaires sont gardes à l'intérieur des listes comme des 
+	annotations.
+^
+interrompre
+	Si vous entrez dans une vilaine boucle, vous pouvez en sortir
+	en appuyant sur la touche "ESCAPE".
+
+	
+	Une interruption au clavier, (touche "ESCAPE"), de même qu'une 
+	interruption du système résultant d'une erreur de programmation,
+	est déroutée par bVLISP qui vous dit alors :
+
+	  "(s)ortir de bVLISP ou (c)ontinuer ? (s/c):"
+
+	et attend votre réponse, i.e. "s" pour se retrouver sous Unix,
+	ou "c" pour continuer au toplevel de bVLISP.
+	Votre réponse doit être suivie de RETURN, bien sur.
+	La frappe de ESCAPE suivie de "s" est une façon pressée et
+	radicale de sortir de bVLISP; on peut en sortir plus calmement
+	en utilisant la fonction "(stop)".
+	
+^
+toplevel
+(toplevel)	subr 0
+	Vous pouvez redéfinir une boucle toplevel qui vous est propre.
+	exemple:
+^%L
+	(de toplevel ()
+	  (princ "sous-systeme-foo ?")
+	  (setq foo-it (foo (read)))
+	  (print '= foo-it))
+
+	bVLISP boucle alors là-dessus et y redescend en cas d'erreur.
+^
+eval
+(eval e)	subr 1
+	évalue l'expression e.
+
+^
+apply
+(apply f l)	subr 2
+	applique la fonction f à la liste l d'arguments supposés déjà
+	évalués.
+
+		f peut être: une fonction standard.
+			une lambda expression.
+			une variable.
+			une fonction définie.
+			un entier n, la valeur ramenée sera le n-ieme élément de l.
+			une expression, qui sera alors évaluée.
+
+	exemples :
+^%T2
+		(apply 'car '((a b c)))		-> a
+		(apply 'eval '((car '(a b c))))	-> a
+^
+prompt
+	L'atome prompt a pour valeur courante "? ". Si vous lui affectez
+	autre chose (atome ou chaîne), vous changez le prompt de lecture.
+	exemples:
+		(setq prompt "-->")
+		(setq prompt "")	dans ce cas rien.
+		(setq prompt "login:")	Mmmmm
+
+	On peut l'affecter par setq set let ou passage d'argument.
+
+	A l'intérieur de boucles 'break', le prompt correspond à 
+	l'argument de 'break' (cf. break)
+^
+it
+	La valeur de la dernière évaluation au toplevel est toujours
+	présente dans la variable "it".
+
+	exemples:
+
+		(setq x 3)  ->  3
+		it	    ->  3
+		(+ it it)   ->  6
+		(+ it it)   ->  12
+^
+printlength
+	La variable standard "printlength" a pour valeur courante 800. Elle
+	permet de contrôler le nombre maximum d'éléments à imprimer lors de 
+	l'impression d'une liste. S'il y en a plus, vlisp imprime ...) et
+	arrête. Pour faire différemment, reaffectez "printlength".
+^
+time
+(time)		subr 0
+	Donne une liste à 3 éléments:
+	      (minutes secondes mili secondes)
+	Ces temps représentent les durées de calculs effectues par
+	vlisp depuis le lancement de celui.
+^
+oblist
+(oblist)	subr 0
+	ramène la liste de tous les atomes.
+^
+gc
+(gc e)		subr 1
+	provoque une garbage collection. Si e est différent de nil, des
+	informations sont imprimées: le nombre total de garbage collections
+	effectuées, le nombre de doublets libres restants, le nombre
+	d'"assez-grands-nombres-entiers" libres restants, le nombre d'atomes
+	libres, la taille de la pile, et la place libre restante en octets
+	pour les chaînes, puis le nombre de garbage-collections de chaînes
+	et la place restante pour les chaînes après garbage-collection
+	de celles-ci.
+	Si, par contre, e est nil, l'impression de ces informations est
+	supprimée.
+	Sont récupérés les doublets, les entiers et les atomes. Pour raisons
+	d'efficacité, les chaînes ne sont garbagées que lorsque l'espace des
+	chaînes est plein.
+^
+stop
+(stop)		subr 0
+	fait sortir de bVLISP. On retourne à Unix.
+^
+sh
+(sh e)		subr 1
+	La valeur de "e" doit être une chaîne. La fonction sh
+	appelle alors la commande placée dans cette chaîne. La
+	valeur retournée est "e" elle-même.
+	"sh" sont les deux premières lettres de "shell" qui désigne
+	le toplevel Unix.
+
+	exemples:
+		(sh "who")
+		(sh "mail pg")
+		(sh "ls -l")
+		(sh "ed foo.vlisp")
+^
+ssh
+(ssh e)		subr 1
+	lance une fenêtre X et exécute la commande avec affichage dans
+	cette fenêtre. Celle-ci est détruite aussitôt que la commande est
+	terminée.
+^
+ls
+(ls path) subr 1
+
+	Liste les fichiers contenus dans le répertoire donne en argument
+	et retourne les fichiers sous la forme d'une liste.
+Si path est nil, c'est le répertoire courant qui est pris en compte.
+
+^
+cwd
+(cwd path) subr 1
+
+	Change le répertoire par défaut pour la lecture et l'écriture des fichiers.
+
+^
+session
+(session e)		subr 1
+	Pour sauver une image mémoire de vlisp.
+	idée:
+	préparer vos affaires dans un vlisp frais.
+	puis quand vous êtes contents faites:
+		(session 'FORME-A-EVALUER-POUR-COMMENCER)
+	ca sort avec une indication de nom de fichier ou c'est sauvé.
+	C'est 'session.vlisp'.
+	Pour charger directement votre image mémoire faites:
+		vlisp -s NOM-DE-FILE-SAUVÉE
+	en l'occurrence (si vous n'avez pas change le nom)
+		vlisp -s session.vlisp
+	exemple d'usage:
+	dans vlisp
+^%L
+	(de foo ()
+	  (princ "Bjour msieu! qui vous êtes, dites?")
+	  (setq nom (read)) 
+	  (print "Merci Msieu" nom)
+	  (foo))
+
+	et, ceci défini vous faites
+		(session '(progn (print "C'est reparti !") (foo)))
+	et ca sort.
+	Vous aurez ce que vous méritez si vous faites, sous shell bien sur :
+		vlisp -s session.vlisp
+	NOTE: cette petite douceur coûte environ 60.000 octets de fichier,
+	ne multipliez donc pas les sessions sauvées en cas de saturation disque!
+^
+argc
+(argc)		subr 0
+	ramène le nombre d'arguments de l'appel de vlisp sous shell.
+	Exemple:
+
+		xbvl -fn 9x15
+		(argc)  ->   3
+^
+argv
+(argv n)	subr 1
+ramène la n-ième chaîne, à partir de 0, de l'appel de vlisp sous shell.
+	Exemple:
+
+		vlisp -s session.vlisp
+		(argv 2)  ->  "session.vlisp"
+^
+user
+(user)		subr 0
+	ramène votre nom sous forme de chaîne.
+^
+tty
+(tty)		subr 0
+	ramène le nom de votre tty sous forme de chaîne.
+^
+getenv
+(getenv c)	subr 1
+	ramène la chaîne associée dans l'environnement shell à chaîne (ou
+	l'atome) "c".
+	Exemple:
+	(getenv "TERM")  ->  tvi	si c'est le cas.
+^
+status
+(status at n)	fsubr
+	- (status toplevel 1) : imprime la ligne lue, au clavier ou sur file.
+	  utilité no 1 : dans les "démos", pour imprimer
+	  le truc mis comme commande d'entrée.
+	- (status print 1) : imprime les '"' des chaînes.
+	  (status print 0) : ne les imprime pas.
+	  (status print 2) : pas d'espace avant les impressions.
+	  en fait : 1 = bit 0.	imprime les '"' des chaînes.
+	            2 = bit 1.	pas d'espace avant impression.
+	            3 = bit 0 et bit 1.
+	  (status print) : ramène le status print courant.
+^
+aide
+(aide at [widget] [fichier])	 subr 1
+
+	Vous donne la documentation on-line sur le sujet 'at' si
+	l'argument 'at' est présent. Sinon, aide vous donne la liste des
+	sujets disponibles. Si pour l'argument donné aucune aide n'est
+	disponible, aide donne la liste	des sujets dont l'argument fait
+	partie du nom. 
+	(exemple : (aide br) donne : break, ce qui
+	est le seul sujet contenant la chaîne 'br'.)
+	exemples d'appels :
+		(aide "getcar")
+		(aide 'line-editor)
+		(aide)
+	Si l'on ne veut connaître que les sujets se rapportant à un
+	certain thème, on doit faire précéder l'argument par le caractère
+	'~'. Ainsi, l'appel (aide ~car) livre la liste mapcar car careful ... etc.
+	des seuls sujets qui ont la sous chaîne 'car'.
+	
+	L'utilisateur peut définir les noms des fichiers composant la base
+	de données de la documentation en ligne positionnant les variables
+	d'environnement BVLISP-AIDEDFILE avec le nom du fichier contenant
+	l'indice BVLISP-AIDEINFILE avec le nom du fichier contenant les
+	définitions. Un autre moyen de spécifier les noms des fichiers d'aide
+	et d'index sur l'aide est de spécifier en troisième argument la base
+	du nom de fichier contenant ces informations. Il ne doit pas avoir
+	d'extension : le nom de fichier spécifie + ".dat" contiendra le
+	texte de l'aide et le nom de fichier + ".:dat" contiendra l'index.
+
+	Personnalisation de l'aide.
+
+	Si l'argument <widget> est présent et il est un widget
+	d'interaction avec le système, l'aide est affiche sur ce widget.
+	Si non, l'aide est affichée sur la hiérarchie suivante:
+		Aide-root->aide-form->aide
+		Aide-root est d'un widget "ApplicationShell",
+		aide-form est un widget "awForm",
+		aide d'un widget "Xbvlisp"
+
+	L'aide en ligne est d'une structure très simple et peut être
+	intégrée dans l'interface du système de plusieurs manières. On
+	peut, par exemple, ajouter d'autres widgets à la hiérarchie de base,
+	déposer des callbacks dans ces widgets pour automatiser ainsi
+	accès à la documentation de certains sujets et modifier
+	l'interface elle-même.
+
+	La liste de sujets disponibles
+
+	Au premier appel de (aide) une nouvelle hiérarchie de widgets
+	est automatiquement construite. Cette interface s'occupe de lister
+	les titres de sujets d'aide disponibles. Si on clique sur un titre
+	les informations disponibles sont affichées. On peut ajouter une
+	callback au widget qui s'occupe d'afficher les titres de la
+	documentation et personnaliser d'avantage le module d'aide.
+	Cette hiérarchie est composée des la manière suivante: 
+		Doc-root->doc-form->doc-viewpor->doc-list
+		Doc-root appartient à la classe "ApplicationShell",
+		doc-form est un conteneur "awForm",
+		doc-viewport pour scroller la liste de sujet,
+		doc-list contient la liste de sujet, ce widget appartient à la
+			classe "awList" est peut avoir un callback
+			supplémentaire. 
+^
+sections
+(sections [fichier d'aide])
+
+	retourne la liste des sections d'un fichier d'aide. Ces sections
+	sont indiquées, dans ces fichiers, par la présence en début de ligne
+	de ^^ suivit du titre de la section.
+
+	voir aussi: aide, listesection
+^
+listesection
+(listesection <numéro d'ordre ou titre de la section> [fichier d'aide])
+
+	retourne la liste des entrées d'une section d'un fichier d'aide.
+	
+	voir aussi: aide, sections
+^^Fonctions de contrôle
+^
+quote
+(quote e)	fsubr
+	ramène e sans l'évaluer. Peut aussi s'écrire 'e.
+	Une autre vision dit que la fonction quote ramène le cadr
+	de son appel.
+^
+progn
+(progn e1 ... en)	fsubr
+	évalue en séquence les expressions e1 ... eN et ramène la valeur
+	de la dernière.
+^
+eprogn
+(eprogn l)	subr 1
+	évalue en séquence les éléments de la liste l, et ramène le
+	résultat d'évaluation de son dernier élément.
+^
+prog1
+(prog1 e1 ... eN)	fsubr
+	évalue en séquence les e1 ... eN et ramène la valeur de e1.
+^
+if
+(if et esv esf1 ... esfN)	fsubr
+	évalue l'expression_test "et", si la valeur obtenue est différente
+	de nil if évalue esv (i.e. expression_si_vrai) et ramène sa
+	valeur. Mais si la valeur de "et" est nil, on évalue en séquence
+	les esf1 ... esfN (i.e. expressions_si_faux) et on ramène la
+	valeur de la dernière.
+	C'est un "if-then-else".
+^
+ifn
+(ifn et esf esv1 ... esvN)	fsubr
+	équivalent à (if (not et) ... )
+^
+when
+(when et e1 ... eN)	    fsubr
+	évalue l'expression_test "et" puis, si la valeur est différente
+	de nil, évalue en séquence les e1 ... eN et ramène la valeur de eN.
+	Si évaluation de "et" donne nil, when ramène alors simplement nil.
+	C'est un "if-then".
+^
+unless
+(unless et e1 ... eN)		fsubr
+	équivalent à (when (not et) ... )
+^
+cond
+(cond i1 ... iN)	fsubr
+	Les différents arguments i1 ... iN sont des listes appelées
+	clauses qui ont la structure suivante:
+
+	(a_test a1 ... aN)
+
+	cond va choisir une seule de ces clauses, la 1ere dont
+	évaluation de son élément "a_test" est différente de nil.
+	Les expressions a1 ... aN sont alors évaluées en séquence, et
+	on sort de cond en ramenant la valeur de aN. Si la clause choisie
+	n'a qu'un seul élément i.e. "(a_test)", la valeur ramenée est
+	celle de a_test: la valeur qui a précisément déclenché l'évaluation
+	de la clause.
+	Si aucune des clauses n'est choisie, cond ramène nil.
+^
+selectq
+(selectq e i1 ... iN)	fsubr
+	Les différents arguments i1 ... iN sont des listes appelées
+	clauses qui ont la structure suivante:
+
+	(ob a1 ... aN)
+	selectq évalue l'expression "e". Puis cette valeur est comparée
+	(avec equal) avec les "ob" des clauses (atomes, chaînes
+	ou nombres). Si la valeur de "e" est equalisable avec un de ces
+	"ob", les a1 ... aN sont évaluées en séquences, et on sort du
+	selectq en ramenant la valeur de aN.
+	La dernière clause devra être de la forme
+	(t a1 ... aN)
+	et les a1 ... aN seront évaluées en séquence en ramenant la valeur
+	de aN, si aucun "ob" n'est equalisable avec la valeur de "e".
+
+	On notera que lorsque un "ob" est une liste, le test consiste
+	a regarder si la valeur de "e" a une occurrence comme élément de
+	"ob", ce test occurrence étant fait avec member.
+^
+repeat
+(repeat n e1 ... eN)	fsubr
+	répète n fois (si n est positif) évaluation en séquence des
+	expressions e1 ... eN. Ne ramène en valeur rien de très régulier.
+^
+while
+(while et e1 ... eN)	fsubr
+	Tant que évaluation de l'expression_test "et" donne un résultat
+	différent de nil, les expressions e1 ... eN sont évaluées en
+	séquence. Ramène nil en valeur quand ce n'est plus le cas.
+^
+until
+(until et e1 ... eN)	fsubr
+	équivalent à (while (not et) ... )
+^
+do
+(do ltriples test e1 ... eN)	macro
+	macro d'itération.
+	ltriples est une liste de triples chacun de la forme:
+	(variable init step)
+	test est de la forme
+	(predicat es1 ... esN)
+	"do" initialise en parallèle (comme let e.g.) les variables
+	des triples avec les valeurs des expressions "init".
+	Puis teste le prédicat. Si bon, évalue les es1 ... esN en
+	séquence et sort du "do" en ramenant la valeur de "esN".
+	Si pas bon, évalue les e1 ... eN.
+	Puis affecte aux variables (toujours en parallèle) les
+	valeurs des expressions "step" et recommence le tout (i.e.
+	le prédicat, le corps u.s.g.).
+	Il est la à titre de curiosité.
+
+^^Lambda
+^
+de
+(de nom args corps)	fsubr
+	définit une fonction de type "expr".
+	La partie "args" peut être:
+	une liste de variables :  cas le plus ordinaire.
+	une liste pointée :  dans ce cas, le reste des valeurs des
+	paramètres actuels de l'appel positionnés
+	"a partir du point" sera rassemble en une
+	liste et place dans la variable suivant
+	le point.
+
+	exemple: 
+	((lambda (x y . z) corps) 1 2 3 4 5)
+	x = 1, y = 2, z = (3 4 5)
+
+	une variable : dans ce cas la liste des valeurs des paramètres
+	actuel sera placée dans la variable.
+
+	exemple:
+	((lambda x corps) 1 2 3)
+	x = (1 2 3)
+
+	On notera que les fonctions de type "expr" définies par "de", ou
+	par lambda-expressions, sont "post-recursives", 
+	et "co-post-recursives" en cas d'appels croisés.
+^
+df
+(df nom args corps)	fsubr
+	définit une fonction de type "fexpr".
+	On notera que les "fexprs" ne sont pas "post-recursives".
+	Une fexpr n'évalue pas ses arguments et le premier paramètre
+	est lie à la liste de tous les arguments.
+^
+pretty
+(pretty f1 .. fN)	fexpr
+	vous fait un magnifique pretty-print des fonctions de nom
+	f1 ... fN.
+^
+trace
+(trace {nombre-de-ligne y-coordonne} nom1 ... nom-n) FEXPR
+	naturellement, c'est une trace plus ou moins classique, avec
+	l'exception toutefois, que la fonction N'EST PAS modifiée, et
+	reste donc (si elle l'était) tail-recursive. La fonction
+	trace est autoloadée. 
+	ATTENTION : afin d'éviter tout effet de bord possible, la fonction
+	trace utilise 
+
+	1) le print interne (ce qui veux dire que - même si
+	vous avez redéfini la fonction print (hein Daniel!?) - trace se
+	comporte encore normalement. 
+	2) pendant la trace, les macro-de-sortie sont inhibées (ceci, 
+	puisqu'il existe des gens bizarre comme Daniel Goossens, qui 
+	définissent des dmo avec effet de bord!).
+
+	MAIS : si vous voulez que trace utilise une autre fonction 
+	d'impression que celle disponible de manière standard, 
+	redéfinissez la fonction
+	'traceprint' (après avoir regarde la définition par défaut).
+
+	Si le premier argument est de valeur numérique, il donne le nombre
+	de lignes de la fenêtre de trace, le deuxième argument peut indiquer la
+	ligne ou débute cette fenêtre.
+	Par défaut, cette fenêtre prend les 12 premières lignes de l'écran.
+^
+untrace
+(untrace ftn1 ftn2 ...) FEXPR
+	enlève la trace des fonctions ftn1, ftn2, .. etc.
+^
+lambda
+(lambda (v1 ... vN) e1 ... eN)	fsubr
+	se ramène elle-même par auto-quote.
+^
+let
+(let ((v1 e1) ... (vN eN)) corps)	macro
+	évalue les e1 ... eN dans l'environnement de l'appelant, puis
+	lie les résultats de évaluation des eI aux variables vI
+	correspondantes, et, dans ce nouvel environnement, évalue le
+	corps.
+	L'emploi de "let" est équivalent a
+^%L
+	((lambda (v1 ... vN) corps) e1 ... eN)
+
+	Le second des exemples précédents illustrant le "self"
+	s'écrira ici
+^%L
+	(let ((l '(a b c d)))
+	  (if (cdr l) (self (cdr l)) (car l)))
+
+	On notera que quand il n'y a qu'une seule variable on peut
+	écrire
+
+	(let (v e) corps)
+^
+self
+(self e1 ... eN)	fsubr
+	ne marche que si on est déjà dans une fonction définie. "self"
+	évalue les expressions e1 ... eN et les passe en argument a
+	cette fonction (d'où le nom de self).
+
+	exemples:
+	(lambda () (self))   boucle tout particulièrement.
+^%L
+	((lambda (l)
+	  (if (cdr l) (self (cdr l)) (car l)))
+	 '(a b c d))
+
+	->  d
+^
+letdic
+(letdic arbvars arbvals e1 ... eN)	fsubr
+	"arbvars" est une expression dont évaluation doit donner
+	un arbre de variables. "arbvals" est une expression dont
+	évaluation doit donner un arbre de valeurs.
+	letdic établit un contexte ou les variables de l'arbre de variables
+	sont liées aux valeurs de l'arbre des valeurs en position
+	homologues.
+Dans ce contexte, les e1 ... eN sont évaluées en séquences en
+	ramenant la valeur de eN.
+
+	exemple:
+^%L
+	(letdic '(classe (numero . peres) . messages)
+	  '(tortue (12 . mobile animal) av: dr:)
+	  (print classe numero peres messages))
+	
+	imprimera:
+	  tortue 12 (mobile animal) (av: dr:)
+^
+letdicq
+(letdicq arbvars arbvals e1 ... eN)	fsubr
+	comme letdic, mais arbvars n'est pas évalue.
+^
+letf
+(letf (nom largs . corps) e1 ... eN)	fsubr
+	redéfinit dans la portée du letf la fonction "nom",
+	lui donne le type EXPR, l'affuble de la liste d'arguments "largs"
+	et du corps de fonction "corps".
+	Ceci fait évalue en séquence les e1 ... eN, ramène
+	la valeur de eN, et revient en restituant ces anciennes
+	caractéristiques à la fonction "nom".
+
+	L'exemple classique:
+	(setq chose '(a b c))
+	(letf (car (x) (cdr x)) (car chose)) -> (b c)
+	(car chose) -> a
+
+	On peut bien entendu redéfinir temporairement des choses utiles.
+^
+closure
+(closure lvars fonction)	subr 2
+	"lvars" est une expression dont la valeur doit être une liste
+	de variables.
+	Ramène une fermeture dans laquelle les variables sont "clôturées".
+	Cette fermeture est appelable comme une fonction normale, acceptant
+	des arguments qui se trouveront lies aux paramètres de la "fonction"
+	de l'appel de closure. Le corps de la fonction sera alors évalue
+	dans un contexte où les variables clôturées auront leur valeurs
+	clôturées. Leur affectation sera faite dans la closure, ne
+	touchant pas au contexte externe.
+	A l'intérieur d'une fermeture, la variable SELF contient la
+	fermeture elle-même (utile pour les appels récursifs ou l'auto-
+	passage de messages).
+	Tous les échappements provoquent un basculement de contexte : les
+	valeurs des variables sont re-clôturées et celles du contexte
+	externes sont rétablies.
+	C'est une très belle fonction utile.
+
+	exemples:
+	calcul de moyenne incrémental
+^%L
+	(de incmoy ()
+	  (let ((n 0) (m 0))
+	     (closure '(n m) (lambda (x)
+	     (setq m (/ (+ x (* n m)) (incr n)))))))
+^%L
+		(setq m1 (incmoy) m2 (incmoy))
+		(m1 1) -> 1	(m2 3)  -> 3
+		(m1 5) -> 3     (m2 2)  -> 2
+		(m1 7) -> 4	(m2 11) -> 5
+
+	redéfinition de cons, car, cdr, rplaca, rplacd.
+^%L
+	(de cons (car cdr)
+	  (closure '(car cdr)
+	   (lambda (m)
+	     (m car cdr (lambda (z) (setq car z))
+	        (lambda (z) (setq cdr z))))))
+
+^%L
+	(de car (cell) 
+	    (cell (lambda (a d setcar setcdr) a)))
+	(de cdr (cell)
+	    (cell (lambda (a d setcar setcdr) d)))
+	(de rplaca (cell x)
+	    (cell (lambda (a d setcar setcdr) (setcar x) cell)))
+	(de rplacd (cell x)
+	    (cell (lambda (a d setcar setcdr) (setcdr x) cell)))
+
+				la "classe" triangle
+^%L
+	(de faire-triangle (taille position)
+	  (closure '(taille position) 'fonction-triangle))
+
+^%L
+	(de fonction-triangle message
+	    (selectq (car message)
+	      (TAILLE (setq taille (cadr message)))
+	      (POSITION (setq position (cadr message)))
+	      (VOIR (let (nb-etoiles 1)
+	            (repeat taille
+	            (princh " " (+ position (- taille nb-etoiles)))
+	            (princh "*" (1- (+ nb-etoiles nb-etoiles)))
+	            (terpri)
+	            (incr nb-etoiles)))
+	      "Vous devez être sûrement très content!")
+	      (NATURE 'triangle)
+	      (VALEURS ["taille" taille "position-en-colonne" position])
+	      (MESSAGES "TAILLE <n>, POSITION <n>, VOIR, NATURE, VALEURS")
+	      (t "je n'y comprends rien, ce doit être MERVEILLEUX !!!")))
+^
+exit
+(exit e1 ... eN)		fsubr
+	ne marche que si on est déjà dans une fonction définie. "exit"
+	évalue en séquence les expressions e1 ... eN et sort de la
+	fonction, en ramenant la valeur de eN.
+
+^
+escape
+(escape nom e1 ... eN)		fsubr
+	évalue en séquence les e1 ... eN, et si au cours d'une évaluation
+	de niveau quelconque, on trouve un appel de (nom a1 ... aM), on
+	évalue en séquence les expressions a1 ... aM, et on sort d'un
+	coup de l'escape en ramenant aM en valeur.
+	Si par contre, nul appel de (nom ... ) n'est trouve, escape ramène
+	la valeur de la dernière expression eN.
+^
+lock
+(lock f e1 ... eN)	fsubr
+	f est une fonction. Les e1 ... eN sont évaluées en séquence.
+	Si rien ne se passe on ramène la valeur de eN.
+	Mais si un échappement se produit dans la portée du lock, lock
+	le bloque et appelle la fonction avec 2 arguments.
+	Le premier est le nom de la fonction échappement en question.
+	Le second est la valeur ramenée par la fonction échappement.
+
+	lock évalue alors la fonction avec les arguments, et ramène
+	en valeur l'appel de la fonction. Sauf si vous le relancez à la
+	main dans f, échappement est passe aux oubliettes.
+
+	exemple: si on avait à définir unwind-protect en vlisp
+
+^%L
+	(df protect (p . u)
+	   (prog1
+	      (lock
+	         (lambda (f l) (f (eprogn u) l))
+	         (eval p))
+	      (eprogn u)))
+
+	ou p est la partie à évaluer sous protection
+	   u la partie à évaluer sans protection.
+   
+	la lambda est appelée seulement en cas échappement
+	f est le nom de la fonction échappement qu'on veut bloquer.
+	l est la valeur qu'elle doit ramener.
+
+	Cet exemple rare est du à Eugen Neidl.
+^
+unwind-protect
+(unwind-protect expression-protegée e1 e2 ... eN)	fsubr
+
+	idée: cas normal: l'expression protégée est évaluée, puis les e1 e2 ...
+	en séquence et on ramène la valeur de expression-
+	protégée, un 'prog1' en somme.
+	cas spécial:
+qqpart dans la forme-protegée il y a un appel de fonction-
+	escape, au lieu de rentrer immédiatement avec la 
+valeur on évalue en séquence quand même les e1 e2 ...
+	de l'unwind-protect, puis on rentre de l'escape
+	comme d'habitude avec les bonnes valeurs usuelles.
+	NOTER que les e1 ... eN se font évaluer dans le
+	contexte de l'appel à unwind-protect.
+	exemple:
+^%L
+	(de foo1 ()
+	  (unwind-protect (foo2) (print "et de un")))
+^%L
+	(de foo2 ()
+	  (unwind-protect (foo3) (print "et de deux")))
+^%L
+	(de foo3 () (f 'vu?))
+^%L
+	(escape f (foo3))  -> vu?.
+	(escape f (foo2))  -> imprime "et de deux" et ramène vu?.
+	(escape f (foo1))  -> imprime "et de deux" "et de un" et ramène vu?.
+^
+unwind
+(unwind)		subr 0
+	redescend toute la pile comme un échappement jusqu'au top-level,
+	en déliant toutes les variables.
+	Est attrapé par: unwind-protect, lock.
+
+^
+mapc
+(mapc l f)		expr
+	applique la fonction mono-argument f à tous les éléments en
+	succession de la liste l. Ramène nil.
+	exemples:
+	(mapc '(a b c) (lambda (x)(print x)))
+	imprime:
+		a
+		b
+		c
+		et ramène nil
+	la même chose plus compacte:
+	(mapc '(a b c) 'print)
+	imprime:
+		a
+		b
+		c
+		et ramène nil
+^
+mapcar
+(mapcar l f)		expr
+	Ramène la liste des résultats de l'application de la fonction mono-
+	argument f à tous les éléments en séquence de la liste l.
+	exemple:
+	(mapcar '(a b c) (lambda (x)(print x)))
+	imprime:
+		a
+		b
+		c
+		et ramène (a b c)
+^
+mapct 
+(mapct -l- -f- -x-) fsubr
+	le mapcar arborescent : seules les valeurs non nulles de (-f- (car -l-))
+	sont construites dans le résultat final
+	exemple :
+^%L
+	(mapct '(a 1 b 2 c 3) (lambda (x) (when (numbp x) x)))  ->  (a b c)
+^%%prog
+^%%(prog lvars e1 ... eN)	fexpr
+^%%	fabrique un contexte ou les variables de la liste de variables lvars
+^%%	sont liées à nil. Puis évalue en séquence les e1 ... eN. Ces
+^%%	derniers peuvent être des atomes: dans ce cas ce sont des etiquettes
+^%%	qui ne seront pas évaluées. Ou être des listes: dans ce cas 
+^%%	évaluation. Si ya pas occurrence d'appel de la fonction "return", 
+^%%	prog ramène nil.
+^%%
+^%%	Notez que "return" et "go" agissent comme des échappements en ce
+^%%	qui concerne le retablissement correct des contextes.
+^%%^
+^%%return
+^%%(return e)			expr 1
+^%%	sort du prog immédiatement englobant en ramenant la valeur de
+^%%	l'expression e.
+^%%^
+^%%go
+^%%(go etiq)			fexpr
+^%%      reprend évaluation du corps du prog courant à partir de l'etiquette
+^%%      "etiq".
+^%%
+^^Macros et macro-caracteres
+^
+dm
+(dm nom args corps)	fsubr
+	définit une fonction de type "macro".
+	On notera que les "macros" ne sont pas "post-recursives".
+	Le paramètre d'une macro sera lie à la forme de l'appel même.
+	La macro évalue le corps de la macro et ensuite elle évalue
+	le résultat de évaluation du corps!
+^
+defmacro
+(defmacro nom args corps)	macro
+	Macro génératrice de macros. Produit une macro de même nom,
+	mais ou les variables de l'arbre de variables "args" sont
+	associées aux éléments en position correspondante de l'appel
+	de macro. C'est difficile à comprendre mais simple à utiliser.
+	Exemples:
+
+	Une boucle for incrémentante.
+
+^%L
+	(defmacro for (var bas haut . corps)
+	  `((setq ,var ,bas)
+	    (while (< ,var ,haut)
+	       ,@corps
+	       (incr ,var))))
+
+	Un accès pratique.
+
+^%L
+	(defmacro quatrieme (liste)
+	  `(caddr (cdr ,liste)))
+
+	Voilà, pour l'étudier, comment en vlisp est définie defmacro.
+	C'est en fait assez évident, après réflexion, et ce n'est
+	pas inélégant.
+
+^%L
+	(dm defmacro (call)
+	  `(dm ,(cadr call) (call)
+	       (letdicq ,(caddr call) (cdr call) 
+	         (rplacb call (progn ,@(cdddr call))))))
+^
+macroexpand
+(macroexpand e)		subr 1
+	Ramène le résultat de l'expansion de e vu comme un appel de macro
+	(la macro étant définie par dm). Très pratique pour tester
+	ses macros.
+^
+backquote
+	c'est un dispositif typographique mettant en jeu les caractères
+	`  ,  et  @.
+	Exemples d'utilisation:
+^%T3
+		`(a b c)		->	(a b c)
+	avec x=(d e), y=g		
+		`(a b c ,x f)		->	(a b c (d e) f)
+		`(a b c ,@x f)		->	(a b c d e f)
+		`(a b ,(cadr x) . ,y)	->	(a b e . g)
+
+	En bref, dans la portée du backquote, c'est-à-dire à l'intérieur de
+	`( ... ), une expression précédée de (,) donne sa
+	valeur qui est insérée comme ELEMENT dans le résultat final.
+	Une expression précédée des caractères (,@) donne sa valeur
+	qui est insérée comme SEGMENT dans le résultat final.
+	Très pratique pour écrire des macros lisibles par l'œil humain.
+	Notez que hors de la portée de backquote (,) et (@) se comportent
+	comme d'habitude.
+^
+quasiquote
+(quasiquote . a)  fsubr
+	Fonction résultant de l'utilisation de la backquote.
+^
+diese
+	C'est encore un autre dispositif typographique. Si dans votre
+	texte vlisp vous placez:
+	#/<un-caractere>		e.g. #/A
+	c'est le code ascii de ce caractère qui est inséré (65 dans 
+	l'exemple) Si vous placez:
+	#^<un-caractere>		e.g. #^A
+	c'est le code ascii de ce caractère de contrôle qui est inséré.
+	(1 dans l'exemple).
+	Assez pratique pour écrire des commandes d'éditeurs.
+	Notez que les caractères de contrôle sont compris dans l'intervalle
+	de 0 à 31 : #^@ #^A #^B ... #^Z #^[ #^\ #^] #^^ #^_
+	et que le caractère ESCAPE est #^[, c'est à dire 27
+^
+dmc
+(dmc a args corps)	fexpr
+	définit un "macro-caractere". A la place de "a" vous pouvez
+	avoir un nom de 1 caractère ou une chaîne de 1 caractère.
+	Lorsque bVLISP lira ce caractère, il lancera évaluation
+	du corps, les variables de la liste d'arguments "args"
+	serviront de variables locales si besoin est. Puis le résultat
+	de évaluation sera place à la place du dit caractère dans
+	le flot d'entrée.
+	Une vision de "dmc" est qu'il s'agit d'une fonction d'entrée.
+
+	exemples:
+^%L
+	(dmc "&" () ['VAR (read)])  ->  &
+^%L
+	'(a b &v c &w)  ->  (a b (VAR v) c (VAR w))
+^%L
+	(dmc { () (let (x 'ENSEMBLE) (and (neq x '}) [x . (self (read))])))
+	(dmc } () '})
+^%L
+	'{a b c d}  ->  (ENSEMBLE a b c d)
+^
+dmo
+(dmo nom largs e1 ... eN)	fsubr
+	pour définir des "macros de sorties".
+	Lorsque une impression est faite d'une liste dont le car
+	est le "nom", le reste de la liste est lie aux arguments
+	de la liste largs. Les e1 ... eN sont alors évaluées en séquence.
+	Dans les eI un ordre d'impression sera alors incorpore au flot
+	de sortie.
+
+	exemple:
+	(dmo quasiquote e (prin1 "`" e))
+
+	Ca permet d'une façon générale de contrôler un tant soit peu
+	l'allure de l'impression des listes.
+
+^^Prédicats
+^
+atom
+(atom e)		subr 1
+	ramène nil si e est une liste. Ramène au contraire "t" si
+	e est une non-liste, i.e. un nombre, un atome littéral, ou une chaîne.
+^
+listp
+(listp e)		subr 1
+	ramène "t" si e est une liste, nil si e n'est pas une liste.
+^
+numbp
+(numbp e)		subr 1
+	ramène "t" si e est un nombre, nil sinon.
+^
+litatom
+(litatom e)		subr 1
+	ramène "t" si e est un atome littéral, nil sinon.
+^
+stringp
+(stringp e)		subr 1
+	teste si e est une chaîne. t si vrai, nil sinon.
+^
+null
+(null e)	subr 1
+	teste si e est nil. Ramène "t" si oui, "nil" si non.
+	On notera que la fonction "not" a exactement le même effet.
+^
+eq
+(eq e1 e2)	subr 2
+	teste si l'expression e1 pointe sur le même lieu en mémoire
+	que l'expression e2.
+	teste aussi, si e1 et e2 sont des nombres, si ce sont les mêmes.
+	Ramène "t" si oui, "nil" si non.
+	Peut également écrire: (= e1 e2).
+^
+=
+(= n1 n2)	subr 2
+	teste si n1 = n2. Ramène "t" si oui, "nil" si non.
+	Peut aussi écrire (eq n1 n2).
+^
+equal
+(equal e1 e2)	subr 2
+	selon les cas:
+		si e1 et e2 sont des listes, ramène "t" si elles sont mutuellement copies.
+		si e1 et e2 sont des nombres, ramène "t" si e1 et e2 sont le même nombre.
+		si e1 et e2 sont des chaînes, ramène "t" si elles sont identiques.
+		si l'un est un atome et l'autre une chaîne c'est le 
+			nom de l'atome qui est compare à la chaîne ex:  (equal 'foo "foo") -> t
+		si e1 et e2 sont autre chose, ramène "t" si e1 et e2
+			occupent la même adresse en mémoire.
+		ramène nil dans tous les autres cas.
+^
+neq
+(neq n1 n2)	subr 2
+	Teste si n1 est différent de n2. Ramène "t" si oui, "nil" si non.
+^
+>
+(> n1 n2)	subr 2
+	Teste si n1 est > n2. Ramène "t" si oui, "nil" si non.
+^
+ge
+(ge n1 n2)	subr 2
+	Teste si n1 est supérieur ou égal à n2.
+	Ramène "t" si oui, "nil" si non.
+^
+<
+(< n1 n2)	subr 2
+	Teste si n1 < n2. Ramène "t" si oui, "nil" si non.
+^
+le
+(le n1 n2)	subr 2
+	teste si n1 est inférieur ou égal à n2. Ramène "t" si oui,
+	"nil" si non.
+^
+zerop
+(zerop n)	subr 1
+	teste si n est égal à zéro. Ramène t si oui, nil sinon.
+^
+or
+(or e1 ... eN)		fsubr
+	évalue successivement les différentes expressions eI jusqu'à
+	ce que l'une de ces évaluations ait une valeur différente de nil.
+	"or" ramène alors cette valeur. Noter que  (or) -> nil.
+^
+and
+(and e1 ... eN)		fsubr
+	évalue successivement les différentes expressions eI. Si la valeur
+	d'une de ces expressions est nil, "and" ramène nil sinon "and"
+	ramène la valeur de eN. Noter que (and) -> t.
+^
+not
+(not e)		subr 1
+	fait exactement comme (null e)
+^^Instructions relatives aux listes
+^
+car
+(car e)		subr 1
+	ramène le car de e.
+	Dans une autre vision "car" ramène le premier élément de "e".
+	On notera que (car 'un_atome) -> la CVAL de cet atome.
+	exemple:
+^%L
+	(car nil) -> nil.
+	(car '(a b c)) -> a
+	(setq foo 5) (car 'foo)  ->  5
+^
+cdr
+(cdr e)		subr 1
+ramène le cdr de e, c.à.d. la liste e sans le premier élément.
+	On notera que (cdr nil) -> nil. Pour un atome, cdr ramène sa P-liste.
+	exemple:
+	(cdr '(a b c)) -> (b c)
+^
+cons
+(cons e1 e2)	subr 2
+	Construit une nouvelle liste dont le car est e1 et le cdr est e2.
+	ramène le cons de e1 et e2. Peut aussi écrire: [e1 . e2]
+	exemple:
+	(cons '(a b) '(c d)) -> ((a b) c d)
+^
+caar
+(caar e)	subr 1
+	ramène le car du car de e.
+	exemple:
+	(caar '((a b c) d e f)) -> a
+^
+cadr
+(cadr e)	subr 1
+	ramène le second élément de e.
+	exemple:
+	(cadr '((a b c) d e f)) -> d
+^
+cdar
+(cdar e)	subr 1
+	ramène le cdr du car de e.
+	exemple:
+	(cdar '((a b c) d e f)) -> (b c)
+^
+cddr
+(cddr e)	subr 1
+	ramène le cdr du cdr de e.
+	exemple:
+	(cddr '((a b c) d e f)) -> (e f)
+^
+caaar
+(caaar e)	subr 1
+	ramène le car du car du car de e.
+	exemple:
+	(caaar '(((a b c) d) e f)) -> a
+^
+caadr
+(caadr e)	subr 1
+	ramène le car du car du cdr de e.
+	exemple:
+	(caadr '((a b c) (d e f))) -> d
+^
+cadar
+(cadar e)	subr 1
+	ramène le car du cdr du car de e.
+	exemple:
+	(cadar '((a b c) (d e f))) -> b
+^
+caddr
+(caddr e)	subr 1
+	ramène le troisième élément de e.
+	exemple:
+	(caddr '((a b c) (d e f) (g h i))) -> (g h i)
+^
+cdaar
+(cdaar e)	subr 1
+	ramène le cdr du car du car de e.
+	exemple:
+	(cdaar '(((a b c)) (d e f) (g h i))) -> (b c)
+^
+cdadr
+(cdadr e)	subr 1
+	ramène le cdr du car du cdr de e.
+	exemple:
+	(cdadr '((a b c) (d e f) (g h i))) -> (e f)
+^
+cddar
+(cddar e)	subr 1
+	ramène le cdr du cdr du car de e.
+	exemple:
+	(cddar '((a b c) (d e f) (g h i))) -> (c)
+^
+cdddr
+(cdddr e)	subr 1
+	ramène le cdr du cdr du cdr de e.
+	exemple:
+	(cdddr '((a b c) (d e f) (g h i) j)) -> (j)
+^
+nth
+(nth n l)	subr 2
+
+	ramène le (n-1)-ème cdr de la liste l.
+	exemple:
+	(nth 3 '(a b c d e)) -> (c d e)
+^
+n
+(n l)		subr 1
+	"n" est un nombre: ramène le n-ème élément de la liste l.
+	exemple:
+	(2 '((a b)(c d)(e f))) -> (c d)
+^
+list
+(list e1 ... eN)	fsubr
+	ramène la liste des valeurs de e1 ... eN.
+	Peut écrire aussi: [e1 ... eN].
+^
+mcons
+(mcons e1 ... eN)	nsubr
+	ramène la "liste pointée" des valeurs de e1 ... eN.
+	exemple:
+	(mcons 1 2 3) -> (1 2 . 3)
+
+	L'exemple peut aussi écrire: [1 2 . 3]
+	Une autre vision de "mcons" est qu'il place les éléments
+	e1 ... eN-1 en tête de eN, si eN est une liste.
+^
+append
+(append e1 e2)	subr 2
+	selon les cas,
+	- e1 et e2 listes : concatène une copie de e1 à e2, et ramène
+	cette concaténation.
+	- e1 pas une liste: même effet que [e1 . e2].
+	- e1 liste et e2 pas une liste: concatène une copie de e1 à [e2] et ramène
+	cette concaténation.
+
+	Très pratique.
+	Notez cependant que "nil" est toujours neutre
+
+	(append CHOSE nil)  ->  CHOSE.
+	(append nil CHOSE)  ->  CHOSE.
+
+	Pour mettre "nil" en fin d'une liste faites
+
+	(append LISTE [nil])
+^
+length
+(length l)	subr 1
+	ramène le nombre éléments de la liste l
+	exemple:
+	(length '((a b)(c d)(e f))) -> 3
+^
+last
+(last l n)	subr 2
+	ramène les n derniers éléments de la liste l
+	exemple:
+	(last '(a b c d e) 2)   ->   (c d)
+	si n est omis last ramène le dernier cdr de l
+	exemple:
+	(last '(a b c d e))      ->      (e)
+	dans le cas d'une liste pointée last ramène vraiment
+	le(s) dernier(s) cdr(s)
+	exemple:
+	(last '(a b c . d))	->	 (c . d)
+	attention: c'est un pointeur dans la liste originale l
+	qui est ramenée, pas une copie!
+^
+evlis
+(evlis l)	subr 1
+	ramène la liste des valeurs des éléments de la liste l.
+^
+reverse
+(reverse e1 e2)	subr 2
+	ramène une copie inversée de la liste e1 si e2 est nil.
+	Sinon ramène la concaténation de cette copie inversée à la
+	liste e2.
+
+	exemples:
+	(reverse '(a b c))        -> (c b a)
+	(reverse '(a b c) '(d e)) -> (c b a d e)
+^
+delete
+(delete e l)		subr 2
+	livre une copie de la liste "l" d'ou toutes les occurrences
+	au premier niveau de l'expression "e" ont été éliminées.
+	le test occurrence est fait avec la fonction "equal".
+	exemple:
+	(delete '(a) '((a)(b) c (a) a d)) -> ((b) c a d)
+^
+delq
+(delq e l)		subr 2
+	Comme delete mais le test occurrence est fait avec la fonction "eq".
+^
+member
+(member e l)		subr 2
+	teste si une occurrence de l'expression "e" apparaît au premier
+	niveau de la liste "l". Si c'est le cas, member ramène cette
+	partie de "l" ou apparaît en tête la première occurrence de "e".
+	Si "e" n'apparaît pas dans "l" à ce premier niveau, member ramène
+	nil.
+	Le test occurrence est fait avec la fonction "equal".
+	exemple:
+	(member '(a) '(a (b) (a) c)) -> ((a) c)
+^
+memq
+(memq e l)	subr 2
+	Comme member mais le test occurrence est fait avec la fonction "eq".
+^
+vmemq
+(vmemq at l)  subr 2
+	Comme memq, mais recherche à tous les niveaux de la liste.
+^
+nmemq
+(nmemq at l)  subr 2
+	Si 'at' est un élément de 'l', la liste du reste 
+	des éléments est ramenée, sinon ramène nil
+^%L
+	(nmemq 'a (k a b c)) -> (b c)
+^
+copy
+(copy l)	subr 1
+	ramène une copie de la liste l.
+^
+copy-all
+(copy-all e) subr 1
+	copie l'expression e, avec toutes les annotations.
+^
+subst
+(subst new old e)	subr 3
+	ramène une copie de e ou toutes les occurrences de old sont
+	remplacées par new.
+	Le test occurrence est fait avec equal.
+	exemple:
+	(subst 'A 'a '(a b a c)) -> (A b A c)
+^
+a-listes
+	Une a-liste (ou liste d'associations) est une liste de sous-listes.
+^
+assoc
+(assoc e a)	subr 2
+	Ramène le 1er couple de "a" ou "e" est occurrente en partie gauche.
+	Si il n'y a pas, ramène nil.
+	le test occurrence est fait avec equal.
+^
+assq
+(assq e a)	subr 2
+	Comme assoc, mais le test occurrence est fait avec eq.
+^
+pairlis
+(pairlis e1 e2 a)	subr 3
+
+	construit et concatène à "a" une a-liste formées des éléments
+	de e1 en partie gauche et des éléments de même rang de e2 en
+	partie droite.
+^%L
+	(pairlis '(a b c) '(1 2 3) '((d . 4)(e . 5)))
+	->  ((a . 1)(b . 2)(c . 3)(d . 4)(e . 5))
+^
+sublis
+(sublis a e)		subr 2
+	construit une copie de e ou toutes les occurrences des parties
+	gauches des couples (paires pointées) de "a" sont remplacées par leur partie droite.
+	Le test occurrence est fait avec equal.
+^%L
+	(sublis '((a . A)(c . C)) '((a . 1)(b . 2)(c . 3)(d . 4)(e . 5)))
+	->  ((A . 1)(b . 2)(C . 3)(d . 4)(e . 5))
+^^Instructions relatives aux atomes
+^
+atomes
+	Un atome est en mémoire un groupe de cellules:
+	D'abord la c-val: valeur de l'atome vu comme une variable 
+	(accessible par (car 'NOM-ATOME). Quand la variable 
+	n'est pas encore affectée elle contient l'adresse 
+	de l'atome
+	(très) spécial "undef".
+	Puis:
+	p-val:
+	c'est une p-liste. 
+	f-val:
+	c'est une cellule ou est mise l'adresse de l'atome
+	vu comme une fonction. Adresse de code-C si c'est
+	une fonction standard, adresse de liste si c'est
+	une fonction définie par nous utilisateurs.
+	Accessible par (fval 'NOM-ATOME).
+	f-typ:
+	c'est le type de la fonction. C'est un petit entier.
+	Accessible par (ftyp 'NOM-ATOME).
+	ival: 
+	c'est une cellule ou sont stockées les valeurs
+	internes, principalement pour la
+	documentation. (accessible avec (ival 'nom)
+	p-nom:
+	c'est l'adresse d'une chaîne de caractère, qui est
+	le nom, à lire ou écrire de l'atome.
+	Il y a d'autres champs, mais ils sont expérimentaux, et pas accessibles
+	en vlisp de toute façon.
+^
+p-listes
+	Une p-liste (ou liste de propriétés) d'atome est rangée dans la partie 
+	p-val de cet atome, et est accessible (bien que ce ne soit pas en 
+	général nécessaire) par (cdr 'NOM-ATOME).
+	Elle est organisée comme:
+		(attribut1 valeur1 ... attributN valeurN)
+	Tant qu'on veut. C'est une a-liste deparenthésée!
+^
+get
+(get at attribut)		subr 2
+	Ramène la valeur associée à l'attribut sur la p-liste de l'atome.
+	nil si l'attribut n'existe pas.
+^
+put
+(put at attribut valeur)	subr 3
+	Place (ou remplace) la valeur associée à l'attribut sur la p-liste
+	de l'atome. Ramène l'atome en valeur.
+^
+addprop
+(addprop at attribut valeur)	subr 3
+	Place en tête de la p-liste de l'atome l'association 
+	attribut-valeur. Ne tient pas compte si l'attribut existe déjà ou 
+	nom. Ramène l'atome en valeur.
+^
+remprop
+(remprop at attribut)		subr 2
+	Enlève la 1ere occurrence dans la p-liste de l'atome de l'association
+	attribut-valeur.
+	Ramène l'atome en valeur.
+^
+gensym
+(gensym . l)		subr n
+	Plusieurs cas:
+	(gensym)  ->   un atome de la forme g00N avec N incrémenté à chaque appel.
+
+	(gensym e1 ... eN)
+	fait comme strcat, mais le résultat n'est pas
+	une chaîne, mais un atome.
+	Notez que (gensym s) ou "s" est une chaîne donne un atome qui
+	aura pour p-nom une copie de la chaîne "s".
+^
+explode
+(explode e)		subr 1
+	Fabrique une liste d'atomes mono-caracteres formée de tout ce qui
+	aurait été imprime si vous aviez demande l'impression de "e".
+	"e" peut être n'importe quoi d'imprimable: atome, chaîne, liste,
+	nombre ...
+	exemples:
+	(explode 122) -> (1 2 2)
+	(explode 'atom) -> (a t o m)
+^
+implode
+(implode e)		subr 1
+	"e" est une liste d'atomes mono-caracteres. Fait avec ce que
+	vlisp aurait fait si vous aviez tape ces caractères au clavier,
+	l'un à la suite de l'autre.
+	Cela peut donner une liste ou un atome.
+
+^
+atoi
+(atoi e)		subr 1
+	"e" est un atome ou une chaîne mono-caracteres. "atoi" ramène alors
+	l'entier qui est le code ascii de ce caractère. Si l'atome ou la 
+	chaîne ne sont pas mono-caracteres, seul le 1er caractère est pris 
+	en compte.
+^
+itoa
+(itoa n)		subr 1
+	Ramène un atome mono-caractere qui a pour p-nom le caractère de code
+	ascii "n". Si cet atome n'existe pas déjà il est crée.
+^
+remob
+(remob at)		subr 1
+	Elimine physiquement l'atome du système. Ramène l'atome en valeur,
+ce qui n'est paradoxal que en apparence.
+^
+fval
+(fval e1 e2)		subr 2
+	si e2 est nil, ramène la valeur fonctionnelle de e1.
+	exemple:
+	(de foo (x) (+ (car x) (truc (cdr x))))
+
+	(fval 'foo) -> ((x) (+ (car x) (truc (cdr x))))
+
+	si e2 n'est pas nil, e2 est placée comme valeur fonctionnelle
+	de e1.
+	exemple:
+	(fval 'foo '((x y) (* (+ x y) (- x y))))
+
+	Dans les 2 cas, la valeur ramenée est la valeur fonctionnelle de e1.
+^
+ftyp
+(ftyp e1 e2)		subr 2
+	si e2 est nil, ramène le type fonctionnel de e1.
+	Ce type est:
+^%T2
+		0	pour une non-fonction.
+		1	pour une subr à 0 argument.
+		2	pour une subr à 1 argument.
+		3	pour une subr à 2 arguments.
+		4	pour une subr à 3 arguments.
+		5	pour une subr à n arguments.
+		6	pour une fsubr.
+		7	pour une expr.
+		8	pour une fexpr.
+		9	pour une macro.
+		10	pour une fonction-escape.
+		11	pour une macro-de-sortie (définie par dmo).
+
+	exemples:
+^%L
+	(ftyp 'car)  ->  2.
+	(de foo (x) [x x])
+	(ftyp 'foo)  ->  7.
+
+	Si e2 n'est pas nil, e2 DOIT être un des types décrits, ce type
+	est alors affecte à e1. A utiliser avec précautions !
+	Dans les deux cas le type final est ramène en valeur.
+
+^^Instructions relatives aux nombres
+^
+flottants
+	bVLISP autorise les entrées-sorties de constantes flottantes.
+	Elles s'écrivent comme suit:
+
+^%T2
+		le caractère "-" ou rien	SUIVI DE 
+		chiffre(s)			SUIVI(S) DE
+		le caractère "."		SUIVI DE
+		chiffre(s)	
+
+	exemples:
+	1.1  0.056  -0.00145  12345.6    52000.0   0.0   3.14159
+
+	ou si c'est TRES grand ou petit:
+
+^%T2
+		le caractère "-" ou rien	SUIVI DE
+		chiffres(s)			SUIVI(S) DE
+		le caractère "e"		SUIVI DE
+		le caractère "+" ou "-"		SUIVI DE
+		chiffre(s)	
+
+	exemples:
+		12e+045   0e-012   -14e+123
+
+	Les erreurs de débordement flottant sont trappées, vlisp se
+	plaint et vous met au top-level.
+
+	Dans les fonctions flottantes suivantes on peut mélanger
+	entiers et flottants, la règle est que s'il n'y a pas de flottants
+	comme arguments le résultat sera entier, mais s'il y a au moins
+	un flottant en argument, le résultat est flottant.
+	Ceci pour les fonctions numériques.
+	Même règle pour les prédicats, en cas de flottaison d'un argument,
+	la comparaison est faite comme si tous les arguments étaient
+	flottants par conversion automatique.
+
+	(+ n1 n2)
+	(- n1 n2)	et  (- n)
+	(* n1 n2)
+	(/ n1 n2)
+
+	(=  n1 n2)
+	(>  n1 n2)
+	(ge n1 n2)
+	(<  n1 n2)
+	(le n1 n2)
+
+	exemple d'utilisation:
+
+^%L
+	  (de fac (n)
+	    (if (= n 0) 1 (* n (fac (- n 1)))))
+
+	puis:
+
+^%L
+	  (de caf ()
+	    (let ((n 1.0))
+	      (print "fac" (fix n) (fac n))
+	      (self (+ n 1))))
+
+	et on appelle:
+
+	  (caf)
+^
++
+(+ n1 n2)	subr 2
+	ramène la somme de n1 et n2.
+^
+-
+(- n1 n2)	subr 2
+	ramène la différence de n1 et n2.
+
+(- n)		subr 1
+	ramène l'oppose de n.
+^
+*
+(* n1 n2)	subr 2
+	ramène le produit de n1 et n2.
+^
+/
+(/ n1 n2)	subr 2
+	divise n1 par n2,
+	ramène la partie entière du quotient de n1 par n2 si n1 et n2
+	sont des entiers, le quotient réel sinon.
+^
+rem
+(rem n1 n2)	subr 2
+	ramène le reste de la division entière de n1 par n2.
+^
+1+
+(1+ n)		subr 1
+	ramène le successeur de n.
+^
+1-
+(1- n)		subr 1
+	ramène le prédécesseur de n.
+^
+ibase
+(ibase n) subr 1
+	si l'argument n est omis, (ibase) donne la base courante de lecture
+	des nombres, sinon, ca affecte la variable ibase avec la valeur de 
+	n. Cette variable détermine la base des nombres en entrée. A 
+	l'initialisation du système la base d'entrée est 10. Pour la 
+	changer, il suffit d'affecter cette variable avec la bonne valeur.
+	Ainsi, après avoir fait:
+	(ibase 2)
+	a la lecture:
+	1010 sera égal à 10 (décimal)
+	et 1111 sera égal à 15 (décimal)
+
+	Naturellement, si vous avez une base plus grande que 10, afin 
+	d'entrer des nombres se composant exclusivement de lettres, 
+	vous devrez le faire précéder par un '0'.
+
+	si vous donnez une valeur inférieure à 1 ou une valeur plus grande 
+	que 62 (décimal) à ibase, le comportement du système n'est plus 
+	garanti.
+^
+obase
+(obase n) subr 1
+	si l'argument n est omis, (obase) donne la base courante d'écriture
+	des nombres, sinon, ca affecte la variable obase avec la valeur de 
+	n. Cette variable détermine la base des nombres en sortie. A
+	l'initialisation du système la base de sortie est 10. Pour la 
+	changer, il suffit d'affecter cette variable avec la bonne valeur.
+	Ainsi, après avoir fait
+	(obase 2)
+	évaluation de
+	10 imprimera 1010 (binaire)
+	et 15 donnera 1111 (binaire)
+
+	si vous donnez une valeur inférieure à 1 ou une valeur plus grande
+	que 62 (décimal) à obase, le comportement du système n'est plus 
+	garanti.
+^
+random
+(random n)		subr 1
+	ramène un entier non-negatif aléatoire modulo n.
+	On peut initialiser soi-même (pour rendre répétable) cette
+	fonction en faisant:
+	(setq random UN-ENTIER) puis
+	(random) pour initialiser le random et
+	(random n) pour tirer des valeurs aléatoires.
+^
+lognot
+(lognot n)		subr 1
+	ramène le complément logique de n.
+^
+logand
+(logand n1 n2)		subr 2
+	ramène le et logique de n1 et n2.
+^
+logor
+(logor n1 n2)		subr 2
+	ramène le ou logique de n1 et n2.
+^
+logxor
+(logxor n1 n2)		subr 2
+	ramène le ou exclusif logique de n1 et n2.
+^
+logshift
+(logshift n1 n2)	subr 2
+	ramène n1 décale à gauche de n2 cran: si n2 est >= 0,
+	sinon décale à droite de n2 crans.
+^
+fix
+(fix n)		subr 1		
+	donne l'entier converti du flottant n.
+^
+float
+(float n)	subr 1		
+	donne le flottant converti de l'entier n.
+^
+sqrt
+(sqrt n)	subr 1		
+	donne la racine carrée du flottant n.
+^
+sin
+(sin n)		subr 1		
+	donne le sinus du flottant n (n est exprime en radians).
+^
+cos
+(cos n)		subr 1		
+	donne le cosinus du flottant n (n est exprime en radians).
+^
+asin
+(asin n)	subr 1
+	donne l'arc sinus du flottant n (l'angle retourné est exprimé
+	en radian compris entre -PI/2 et PI/2)
+^
+acos
+(acos n)	subr 1
+	donne l'arc cosinus du flottant n (l'angle retourné est exprimé
+	en radian compris entre 0 et PI)
+^
+atan
+(atan n)	subr 1
+	donne l'arc tangente du flottant n (l'angle retourné est exprimé
+	en radian compris entre -PI/2 et PI/2)
+
+
+^^Instructions relatives aux chaînes
+^
+chaînes
+	Il y a des chaînes de caractères en vlisp.
+	Une chaîne s'écrit "SUITE-DE-CARACTERES".
+	exemples:
+		"abc"
+		"ab
+		 c"
+	Une chaîne peut être de longueur quelconque.
+	Dans la chaîne on peut mettre \n  pour placer un 'fin-de-ligne'
+		\t  pour une tabulation
+		\r  pour un carriage-return (CR)
+		\b  pour un back-space.
+		\0<nombre-octal> pour placer le caractère correspondant, exemple:  "BÉE\07P"
+		\<caractère> pour placer le caractère correspondant, exemples:  "anti\\slash"  "double\"quote"
+
+	Le caractère delimiteur-de-chaine (") est redéfinissable comme d'habitude.
+	Les chaînes sont garbage-collectées. (voir également (aide 'ANTISL))
+^
+dupl
+(dupl e n)		subr 2
+	fabrique une chaîne formée de la concaténation de n copies de e.
+	e peut être un atome ou une chaîne.
+	Si n <= 0, e est ramène.
+^
+strcmp
+(strcmp e1 e2)		subr 2
+	pour la comparaison lexicographique de e1 et e2, chaînes ou atomes.
+	ramène un entier négatif si e1 <LEX e2.
+	 zéro		 si e1 =LEX e2.
+	 un entier positif si e1 >LEX e2.
+^
+strlen
+(strlen str) subr1
+	retourne la longueur de la chaîne donnée en argument.
+^
+strcat
+(strcat e1 e2 ... eN)	nsubr
+	fabrique une chaîne formée de la concaténation de copies des
+	e1 ... eN.
+	Les e1 ... eN peuvent être des atomes, des chaînes, ou des nombres,
+	mêmes négatifs!
+	Notez que (strcat at) ou "at" est un atome donne une copie de la
+	chaîne qui est le p-nom de "at".
+^
+strcar
+(strcar e n)		subr 2
+	ramène 1 chaîne formée des n 1ers caractères de e, atome ou chaîne.
+	Si n est absent on prend le 1er caractère.
+^
+strcdr
+(strcdr e n)		subr 2
+	ramène une copie de la chaîne (ou atome) e amputée de ses n 1ers
+	caractères. Si n est absent on en enlève 1 caractère.
+^
+plength
+(plength atom) subr 1
+	vous donne le nombre de caractères de l'atom donne en argument
+^
+strincp
+(strincp str1 str2) subr 2
+	Si 'str1' fait partie de 'str2' ramène t, nil si non.
+
+	Par exemple le programme suivant ramène la liste des éléments a
+	l'intérieur de 'l' qui contiennent la chaîne 'str'.
+
+^%L
+	(de index (str l)                                                               
+	    (if	(or (null l) (atom l)) 'mauvais-arguments
+	       (m-index str l)))
+
+        ; auxiliaire de index
+^%L
+	(de m-index (str l)
+	    (cond
+	    	((null l) ())
+	        ((strincp str (car l))
+	            (cons (car l) (m-index str  (cdr l) )))
+	        (t (m-index str (cdr l) ))))
+
+^%% bufstr
+^%% (bufstr)   subr 0
+^%%	?
+
+
+^^Affectations et Modifications physiques
+^
+setq
+(setq v1 e2 ... vN eN)	fsubr
+	place les résultats de évaluation des eI dans les variables vI
+	correspondantes. Evaluation se fait en séquence. La valeur
+	ramenée est celle de eN.
+^
+set
+(set e1 e2)		subr 2
+	place le résultat de évaluation de e2 dans le lieu (variable ou
+	place dans une liste) résultat de évaluation de e1. Ramène la
+	valeur de e2.
+
+	exemples:
+^%T2
+	(set 'x 1) -> 1			et affecte 1 à la variable x.
+	(setq y '(a b)) -> (a b)	si je fais suivre par:
+	(set y 1) -> 1			la nouvelle valeur de y 
+	 	 			sera (1 b),
+	(set (cdr y) 2) -> 2		et la nouvelle valeur de y
+		 		    	sera (1 2).
+^
+deset
+(deset a e)		subr 2
+	Lie les variables de l'arbre de variables "a" aux éléments de
+	l'expression "e" en position correspondante, et ramène t pour
+	faire bonne mesure. Il s'agit d'une affectation: les anciennes
+	valeurs des variables sont perdues.
+
+	exemple:
+^%L
+	(deset '(parents (serpent . enfants)) 
+		'((adam eve) (Sss Cain)))
+
+	va lier:
+^%T3
+		parents 	A	 (adam eve)
+		serpent 	A	 Sss
+		enfants 	A	 (Cain)
+
+	pour ce que ca vaut.
+^
+rplaca
+(rplaca e1 e2)		subr 2
+	agit comme "set", mais ramène e1 en valeur.
+^
+rplacd
+(rplacd e1 e2)		subr 2
+	remplace le cdr de e1 par e2, et ramène e1 en valeur.
+^
+rplacb
+(rplacb e1 e2)		subr 2
+	remplace le car de e1 par le car de e2, remplace également
+	le cdr de e1 par le cdr de e2, et ramène e1 en valeur.
+^
+rplac
+(rplac e1 e2 e3)	subr 3
+	remplace le car de e1 par e2, et remplace également le cdr
+	de e1 par e3, et ramène e1 en valeur.
+^
+nextl
+(nextl v)		fsubr
+	ramène le car de la liste contenue dans la variable v, et "avance"
+	dans la liste.
+
+	exemples:
+^%T3
+	(setq x '(a b c))  	->	  (a b c)
+	(nextl x)	   	->	  a
+	x		   	->	  (b c)
+^
+newl
+(newl v e)		fsubr
+	"conse" en tête de la liste contenue dans la variable v, le résultat
+	de évaluation de e, et ramène e en valeur.
+
+^%T3
+	exemples:
+	(setq x '(b c))    	->	  (b c)
+	x			->	  (b c)
+	(newl x 'a)		->	  a
+	x			->	  (a b c)
+^
+incr
+(incr v)	fsubr
+	affecte à la variable v le successeur de sa valeur, et ramène
+	cette valeur.
+
+(incr v n)	fsubr
+	comme incr, mais c'est la valeur de n et non 1 qui est ajoutée à la
+	variable v.
+^
+decr
+(decr v)	fsubr
+	affecte à la variable v le prédécesseur de sa valeur, et ramène
+	cette valeur.
+
+(decr v n)	fsubr
+	comme decr, mais c'est la valeur de n et non 1 qui est retirée à la
+	variable v.
+^
+nconc
+(nconc e1 e2)		subr 2
+
+	fait comme "append", mais sans effectuer une copie de la liste e1.
+	e2 est physiquement concatène à e1, qui se trouve ainsi modifiée.
+^
+nreverse
+(nreverse e1 e2)	subr 2
+
+	inverse physiquement la liste e1 et lui concatène e2.
+	Si e2 est nil, comme dans l'appel (nreverse e1), ramène
+	simplement l'inverse de e1.
+	Mais dans tous les cas e1 est physiquement modifiée.
+^
+:=
+(:= expr1 expr1) MACRO
+	:= est l'instruction d'affectation générale. Le premier argument,
+	expr1, peut être une variable, dans ce cas l'instruction :=
+	est identique a` l'instruction setq, un appel de la fonction
+	car, := est alors identique a` un rplaca, etc.
+
+	exemples :
+	(:= a 1)	=	(setq a 1)
+	(:= (car l) 1)	=	(rplaca l 1)
+	(:= (cdr l) '(a b))  =	(rplacd l '(a b))
+	(:= (cadr l) 3)	=	(rplaca (cdr l) 3)
+	(:= (car (foo l)) 4)  =	(rplaca (foo l) 4)
+	(:= (get x 'foo) 5)  =	(put x 'foo 5)
+	(:= (get x 'foo) (1+ *-*))  =	(put x 'foo (1+ (get x 'foo)))
+
+	Le symbole *-*, dans le deuxième argument de :=, est une
+	abréviation pour une occurrence du premier argument.
+
+	Cette macro est particulièrement utile en combinaison avec les records.
+^
+attach
+(attach e l)		subr 2
+	place e en tête de l, mais de telle sorte que l'adresse de l
+	reste constante. Pour mieux comprendre autant lire la définition
+	de attach en vlisp:
+		(de attach (e l)
+		  (rplac l e [(car l) . (cdr l)]))
+^^Entrée Sortie
+^
+print
+(print e1 ... eN)	nsubr
+	imprime en séquence sur la même ligne les valeurs des expressions
+	e1 ... eN, effectue à la fin un passage à la ligne, et ramène en
+	valeur celle de eN.
+^
+princ
+(princ e1 ... eN)	nsubr
+	fait comme "print", mais ne fait pas de passage à la ligne en
+	fin d'impression, ce qui est utile pour faire une impression
+	immédiatement suivie d'une question.
+
+	exemple:
+		(princ "La réponse est" x " c'est ca ou non (oui/non):")
+^
+prin1
+(prin1 e1 ... eN)	nsubr
+	prépare l'impression des e1 ... eN sans néanmoins les afficher
+	tant que la marge droite n'est pas dépassée. Le prochain "print",
+	"princ" ou "terpri" les fera apparaître.
+^
+terpri
+(terpri)	fsubr
+	effectue un passage à la ligne. Ramène "nil" en valeur.
+^
+princh
+(princh e n)	subr 2
+	imprime n fois l'expression e. Si n est absent: 1 fois.
+Si e est une chaîne, les délimiteurs (") n'apparaissent
+	jamais dans l'impression.
+^
+read
+(read)		subr 0
+	lit un objet: liste, nombre, nom, ou chaîne, et ramène cet
+	objet en valeur
+^
+readch
+(readch)	subr 0
+	lit le caractère suivant du flot d'entrée et le ramène en valeur
+	sous forme d'un atome mono-caractere.
+	readch lit vraiment n'importe quoi.
+^
+peekch
+(peekch)	subr 0
+	comme readch mais le caractère lu est remis dans le flot d'entrée
+	et sera lu normalement lors de la prochaine lecture.
+	"peekch" sert à voir ce qu'on s'apprête à lire.
+^
+readline
+(readline)	subr 0
+	lit une ligne dans le flot d'entrée et la ramène sous forme
+	d'une chaîne. Le caractère NEWLINE en fin de ligne est enlève
+	de la chaine-resultat.
+^
+lib
+(lib nom_de_fichier)	fsubr
+	lit un fichier d'expressions dans le fichier donnée en argument,
+	définitions de fonctions, affectations, ce qu'on veut, puis
+	revient lire au terminal comme d'habitude, en ramenant le
+	nom_de_fichier en valeur.
+	Le nom_de_fichier peut être un atome ou une chaîne.
+
+	exemples:
+	(lib foo.vlisp)  ->  foo.vlisp
+	et lit sur disque le dit fichier, comme si on en
+	avait tape le contenu au terminal.
+	Notons que l'extension ".vlisp" est cherchée
+	automatiquement. On aurait pu dire: (lib foo).
+
+	(lib /usr/grp/litp/pg/vlisp/tests.vlisp) ->
+	/usr/grp/litp/pg/vlisp/tests.vlisp
+
+	et lit en évaluant le contenu de cette file.
+^
+include
+(include fichier)  fsubr
+	fait l'inclusion du fichier passe en paramètre, comme lib
+^
+input
+(input fichier) subr 1
+	xbvl fait la lecture dans le fichier passée en
+	paramètre. Si le fichier est nil, retour à la lecture
+	sur la fenêtre d'interaction.
+	
+^
+output
+(output fichier)  subr 1
+	xbvl fait toutes les sorties sur le fichier passe
+	en paramètre. Si fichier est nil, les sorties son faites
+	normalement vers la fenêtre d'interaction .
+^
+open
+(open fichier)  fsubr
+	ouvre le fichier et
+	ramène un descripteur de fichier,
+	ramène nil si l'ouverture du fichier est impossible.
+	
+^
+fread
+(fread fdes)  fsubr
+	Fait la lecture d'un objet Lisp sur le descripteur de fichier, fdes, 
+	ramène précédemment par (open fichier).	
+^
+close
+(close fdes) fsubr
+	ferme un descripteur de fichier précédemment ramène
+	par <open>. Ramène nil si la fermeture du descripteur
+	est impossible. Voir open.
+^
+tyo
+(tyo n)		subr 1
+	affiche sur l'écran, à la position courante du curseur, le
+	caractère dont la valeur ascii est n. La valeur ramenée est n.
+	Ne fonctionne pas pour les caractères non imprimables
+
+	exemples:
+^%% ^%T3
+^%% Ne semble pas très utilisable sous X11 (fb, 21/3/97)
+^%%	(tyo 7)   	->	   7   et fait un bruit.
+^%%	(tyo  9)   	->	  9   et écrit une tabulation.
+^%%
+^%%	(tyo 65)   	->	  65  et affiche le caractère "A".
+^%% Ne semble pas très utilisable sous X11 (fb, 21/3/97)
+^%% ^
+^%% tyoesc
+^%% (tyoesc n)	subr 1
+^%%	agit comme "tyo", mais de plus la valeur affichée est précédée
+^%%	de la valeur "ESCAPE" i.e. 27. Très commode pour envoyer des
+^%%	"sequences-escape" à un terminal pour contrôler ses fonctions.
+^%%	exemple:
+^%%	(tyoesc 69)  ->  69   et efface l'écran d'une H19.
+^
+tyi
+(tyi)		subr 0
+	lit un caractère au clavier du terminal, et retourne la valeur
+	ascii du caractère tape aussitôt après cette frappe. Nul
+	besoin de terminer la ligne par un return. Utile pour faire
+	des programmes très nerveux et réactifs.
+	On notera que le caractère tapé n'apparaît pas sur l'écran,
+	l'écho est inhibe, si on veut le voir on pourra faire
+
+	(tyo (tyi))
+^
+typch
+(typch e n)	subr 2
+	"e" peut être un atome ou une string
+	si n = nil -> donne la valeur de caractère courante de e.
+	sinon re-affecte la valeur-de-caractere de 'e' avec n.
+	ex: pour donner à "~" le statut de "." faire:
+	(typch '~ (typch "."))
+	les vals de caractères sont:
+^%T2
+	deb-commentaire: 	1
+	fin-commentaire: 	2
+	réservé à [pg]		3
+	(		 	4
+	)		 	5
+	[		 	6
+	]		 	7
+	.		 	8
+	séparateur	 	9
+	macro-carac	 	10
+	delimiteur-chaines	11
+	normal		 	12
+	réservé à [pg]		13
+
+^
+outpos
+(outpos n)	subr 1
+	place l'index du buffer de sortie à la position "n".
+	Si l'argument "n" est absent, ramène la position courante de
+	cet index. Dans les deux cas la position de l'index est
+	ramenée en valeur.
+^
+probef
+(probef nom_de_fichier)	subr 1
+	ramène le nom_de_fichier si le fichier existe, nil sinon.
+	"nom_de_fichier" peut être un atome ou une chaîne.
+^%% ^
+^%% eol
+^%% (eol) subr 0
+^%%	?
+^
+rtext
+(rtext at)   subr 1
+	Le fichier passe en paramètre est lu par bVLISP mais non pas
+	évalue. Ramène une liste composée des chaînes de caractères dont
+	les éléments sont les lignes de texte lues.  
+^^Editeurs Intégrés 
+^%% et Annotations
+^
+éditeur
+	il existe deux éditeurs : un éditeur de ligne (pour en savoir
+	plus faites (aide 'page-editor)) et un éditeur de programme (pour
+	en savoir plus faites (aide 'edit))
+	REMARQUE : edit n'a pas encore été porte sous X11
+^
+page-editor
+	Vous avez en permanence un éditeur à votre disposition. Les
+	commandes son celles d'un éditeur EMACS :
+
+^%T2
+	^a	ramène le curseur vers le début de la ligne
+	^b	recule le curseur d'un caractère
+	^d	delete le caractère à gauche du curseur
+	^e	met le curseur vers la fin de la ligne
+	 	blancs non compris
+	^f	avance le curseur d'un caractère
+	^g	delete l'atome suivant
+	^h <BS>	delete le caractère sur lequel pointe le curseur
+	^j	positionne le curseur sur le mot de gauche
+	^k	delete le reste de la ligne 
+	 	(a partir de la position du curseur)
+	^i	efface l'atome à gauche du curseur
+	^l	réaffiche l'écran
+	^n	met le curseur une ligne plus bas de la ligne
+	^m	insère un fichier interactivement 
+	^p	met le curseur une ligne plus haut
+	^v	scroll d'une page vers le bas
+	^t	transpose les caractères sur à la position du curseur
+	^y	re-insère, à la position du curseur, le bout de ligne delete 
+	 	par la dernière commande ^k. Naturellement, ce bout de ligne
+	 	se garde jusqu'à ce que vous re-activiez un ^k.
+	^w	affiche cette aide dans la barre de menu
+	^z	scroll d'une ligne vers le haut
+	^0	insère la sélection 1
+	^1	insère la sélection 2
+	^n	insère la sélection n
+	 	éditeur garde la trace des 7 dernières  sélections
+	F1	cherche de l'aide pour le mot sélectionne (en surbrillance)
+	F2	liste tous les sujets d'aide disponibles
+	F3 	affiche cette aide dans la barre de menu
+	F4	toggle du mode d'insertion des caractères (inséré ou refrappe)
+	*un click du bouton gauche	positionne le curseur à la position du pointeur
+	 	et commence une sélection
+	*deux clicks du bouton gauche	réalisent la sélection d'un mot
+	*le mouvement avec le bouton de gauche	augmente la sélection
+	*cliquer le bouton de droite	augmente la sélection
+	*le mouvement avec le bouton de droite	augmente la sélection
+	*cliquer le bouton du centre	insère la sélection à la position du curseur
+	^s	recherche ou remplace (interactivement) vers l'avant 
+	^r	recherche ou remplace (interactivement) vers l'arrière
+^%%	M-b	le curseur recule d'un mot
+^%%	M-D	les caractères à la droite du curseur sont déplacés 
+^%%	 	vers la droite
+^%%	M-<	positionne le curseur au début du texte
+^%%	M->	positionne le curseur à la fin du texte
+^%%	M-[	scroll vers le bas d'un paragraphe
+^%%	M-]	scroll vers le haut d'un paragraphe
+^%%	*Ctrl+cliquer le bouton de droite	communique la sélection à l'évaluateur
+^%%	 	et la sélection est évaluée.
+^%%	 	pour la version 4 et 5 de X11 seulement	
+^%%	^m	formate le paragraphe sur lequel est situe le curseur.
+^
+edit
+(edit ftn [typ])
+	LE PORTAGE DE L'EDITEUR DE PROGRAMMES A LA NOUVELLE INTERFACE
+	X EST ENCORE A FAIRE, UN JOLI SUJET DE MAITRISE !
+	Cette fonction vous fait entrer dans l'édition de la fonction
+	ftn. Si ftn est déjà définie, le deuxième argument est superflu,
+	sinon, ce deuxième argument doit être l'un des mots clefs
+	suivant : de, df, dm, dmc ou dml.
+	Editeur garde tous les états d'une fonction.
+	Des aides supplémentaires sur éditeur LISP se trouvent sous les
+	mots clefs :
+	anoted edhelp add-anote ed-entrée ed-sortie ed-time
+	add-entrée add-sortie get-entrée get-sortie get-time
+	clear-entrée clear-sortie fs fsr bs bsr mv ex del rpl
+	ins insl p unp picks pickl puts dpl see-version see-time
+	sabt edptr fnptr from timeptr pickptr ed-version ev
+^
+crossfile
+(crossfile file_de_sortie file_d'entrée header ntroff) EXPR
+	pour faire un joli listing accompagne d'une jolie cross-reference
+	(ca prend BEAUCOUP de temps!!!) Si le premier argument est nil,
+	le résultat se trouve dans le fichier 'cross.cro' du répertoire
+	courant.
+	Exemple :
+	(crossfile () "foo.vlisp")
+	crée un fichier 'cross.cro' dans lequel vous trouvez le cross
+	du fichier 'foo.vlisp'
+	si l'argument 'header' = t, chaque page commence par un entête.
+	si l'argument 'ntroff' = t, le fichier sortie est prépare 
+		spécialement pour ntroff (changement de fonts, etc.).
+^
+prettyfile
+(prettyfile file_de_sortie file_d'entrée) EXPR
+	pour faire un joli listing.	
+	(ca prend BEAUCOUP de temps!!!) Si le premier argument est nil,
+	l'impression se fera sur votre terminal.
+	Exemple :
+	(prettyfile "foo.prt" "foo.vlisp")
+	crée un fichier 'foo.prt' dans lequel vous trouvez joliment
+	imprime le contenu du fichier 'foo.vlisp'
+^
+crossf
+(crossf fichier header ntroff) FEXPR
+	fait dans le fichier 'fichier.cro' un crossfile de fichier.
+	Exemple :
+	(crossf foo)
+	fait dans le fichier 'foo.cro' un cross-reference listing du
+	fichier 'foo.vlisp'.
+	(crossf "vlisp.ini")
+	fait dans le fichier 'vlisp.ini.cro' un cross-reference listing
+	du fichier 'vlisp.ini'.
+	si l'argument 'header' = t, chaque page commence par un entête
+	si l'argument 'ntroff' = t, le fichier sortie est prépare 
+		spécialement pour ntroff (changement de fonts, etc.)
+^
+prettyf
+(prettyf fichier) FEXPR
+	comme 'crossf' mais l'extension du fichier résultat est 'prt' et
+	non 'cro'.
+^
+user-doc
+	il existe plusieurs possibilités d'augmenter la puissance des
+	utilitaires de documentation: une possibilité de définir le format
+	de fonctions définies par l'utilisateur pour le grand pretty-printeur
+	(prettyfile, crossfile, crossf et prettyf) et une possibilité de
+	définir le format syntactique de fonctions utilisateurs pour
+	la documentation on-line.	 
+	Pour le Pretty-Print :
+	Afin de faire connaître au pretty-printeur le format préféré pour
+	l'impression de vos fonctions utilisateurs, mettez sur la P-liste
+	du nom de la fonction, sous l'indicateur 'PRETTY' (en majuscule!)
+	le type d'impression particulier que vous voulez. Les types reconnus
+	par le Pretty-Print sont :
+^%T2
+	quote	l'appel de cette fonction sera alors imprime comme un
+	 	appel de la fonction quote
+	mcons	la fonction sera formatée comme le mcons (avec des crochets)
+	cons
+	progn
+	setq
+	escape
+	de
+	while
+	prog
+	selectq
+	cond
+
+	Pour la doc on-line :
+	La fonction 'ind' sert à faire connaître à bvlisp le format
+	syntactique pour l'analyse syntactique de fonctions définies par
+	l'utilisateur. Avant de donner la liste de tous les types possibles,
+	voici un petit exemple :
+	Supposons que l'utilisateur ait défini une fonction 'test' comme 
+	suit:
+
+^%L
+	(df test (x)
+	  (put (car x) 'args (cadr x))
+	  (eval ['de . x]))
+
+	et qu'il ait fait SUIVRE cette définition par un appel de 'ind' :
+
+	(ind test de)
+
+	un appel de la fonction test comme :
+
+	(test bar (a b) (cons a (list (1+ b)))
+
+	aura évidemment l'effet de définir la fonction 'bar'.
+	Mais également que si l'utilisateur demande ensuite une description
+	de bar, par :
+
+	(%descr bar)
+
+	le résultat en serait :
+
+		------- bar ------
+		type : test
+		variables locales : (a b)
+
+	i.e., l'analyseur garde une trace de l'origine de cette fonction.
+	c'est très utile pour la mise au point de programmes.
+
+	Voici les différents types que bvlisp peut connaître :
+
+^%T2
+	prog	l'analyseur suppose alors que le premier argument est
+	 	une liste de variables, le reste des s-expressions à évaluer
+	quote	l'analyseur suppose alors qu'il n'y a rien à analyser
+	escape	le premier argument est un nom-de-fonctions, le reste
+	 	une suite de s-expressions
+	selectq	le premier argument est à évaluer, le reste est une suite
+	 	de liste du même style que les clauses d'un selectq
+	cond	une suite de clause style cond
+	let	le premier argument est une liste de couples 
+	 	variables-valeurs, le reste une suite de s-expressions
+	lambda	comme le prog (mais sans les étiquettes)
+	setq	comme le setq : un nom suivi d'une valeur etc.
+	nconc	une fonction qui modifie physiquement son premier argument
+	apply	une fonction suivie d'une liste des arguments
+	de	comme une fonction de définition
+^
+ind
+(ind nom_de_fonction type)
+	pour faire connaître à bvlisp le type de votre fonction. Faites
+	donc un (aide 'user-doc)
+
+^^Directives système
+^
+background
+(background . l)  Fsubr 
+	exécute la suite d'instructions donnée en argument dans un processus
+	séparé, qui n'existe que pendant l'exécution de cette suite
+	d'instructions. C'est très utile pour le prettyf ou crossf, par 
+	exemple, que vous pouvez lancer en faisant:
+
+		(background (crossf nom_du_fichier))
+
+	et ensuite vous pouvez tranquillement continuer à faire votre
+	lisp ordinaire, pendant qu'un autre processus vous construit
+	le cross-reference.
+	Ca peut également servir à faire des processus parallèles :
+	Par exemple, si vous lancez un processus `foo' dans le background,
+	ca active un nouveau processus et ramène le numéro du processus
+	en valeur. Si un autre processus doit travailler sur le résultat
+	de celui-ci, alors vous devez faire un:
+		
+		(wait numero_du_processus)
+
+	(cf. wait)
+^
+wait
+(wait n) subr 1
+	attend que le processus numéro `n' soit termine.
+	(cf. background)
+^
+break
+(break nom) Fsubr 
+	break interrompt le calcul en cours et entre dans une boucle
+	PRINT-READ-EVAL d'inspection. Dans cette boucle vous avez accès
+	a toutes vos variables etc.
+	A l'intérieur de la boucle, le caractère prompte n'est plus le '?'
+	habituel, mais l'atome donne en argument. Pour sortir de la boucle
+	il suffit d'évaluer cet atome.
+	Si vous voulez complètement abandonner le calcul en cours tapez
+	un '-', ensuite vous vous retrouvez dans un toplevel ordinaire.
+^%% ^
+^%% pour
+^%% (pour ftn . l) Fsubr 
+^%%	pour, principalement, aide à écrire des utilitaires travaillant
+^%%	sur des programmes.
+^%%	(pour eval suite_d'actions_a_faire)
+^%%	exécute normalement la fonction
+^%%	(pour ftn_different_de_'eval' suite_d'actions_a_faire)
+^%%	ramène nil. Cette fonction permet de diriger le comportement
+^%%	d'un programme lisant un fichier. Ainsi, par exemple, dans
+^%%	quelques-uns de mes programmes, j'ai l'instruction
+^%%	(pour pretty faire_ceci faire_cela)
+^%%	et cette instruction est ignorée par tous sauf le pretty-printeur.
+^%%	Si vous voulez déterminer des actions pour plusieurs utilitaires,
+^%%	donnez comme premier argument à 'pour' une liste avec les noms 
+^%%	adéquats :
+^%%	(pour (pretty foo) ... )
+^%%	n'est évaluer que dans l'utilitaire 'pretty' et 'foo'
+^
+date
+(date) subr 0
+	ramène la chaîne compose de la date courante et de l'heure 
+^
+time
+(time nil/t) subr 1
+	ramène la chaîne compose de l'heure, les minutes et les secondes
+	si l'argument est t, sinon, si pas d'arguments, (time) ramène
+	un nombre correspondant à l'heure.
+^
+EOF
+	Quand vous utilisez la fonction 'input', vous avez la possibilité
+	de définir vous-même ce que vous voulez faire si vous rencontrez,
+	normalement!, un end-of-file. Pour cela, vous devez définir une
+	fonction du nom 'EOF' (en majuscules!). N'oubliez pas de détruire
+	cette fonction, une fois que vous n'en avez plus besoin!
+^
+undmc
+(undmc c) Fsubr 
+	Cette fonction à un argument, qui est obligatoirement une chaîne
+	de caractères de UN caractère, indique au système bvlisp d'ignorer
+	temporairement la définition de l'argument 'c' comme 
+	macro-caractere. 'undmc' veux dire 'undefine macro caractère'. 
+	(Regardez aussi 'redmc')
+^
+redmc
+(redmc c x) Fsubr 
+	'RE-Define MacroCaratere' réactive le macrocaractere 'c'. 
+	Naturellement, cette fonction n'a aucun sens si vous n'avez pas
+	préalablement fait un 'undmc'. Si l'argument 'x' est nil, le
+	caractère 'c' sera une dmc, si l'argument 'x' est 't', le
+	caractère 'c' sera une dml, sinon 'x' doit être un nombre qui
+	détermine le type du caractère 'c':
+
+		si 'x' = 1 ou 2, 'c' sera un caractère 'début ou fin de commentaire'
+		si 'x' = 4, 'c' sera un caractère 'parenthèse gauche'
+		si 'x' = 5, 'c' sera un caractère 'parenthèse droite' 
+		si 'x' = 6, 'c' sera un caractère 'crochet gauche'
+		si 'x' = 7, 'c' sera un caractère 'crochet droite'
+		si 'x' = 8, 'c' sera un caractère 'point'
+		si 'x' = 9, 'c' sera un caractère 'séparateur'
+		si 'x' = 10, 'c' sera un macro-caractere 'dmc'
+		si 'x' = 11, 'c' sera un caractère 'début de chaîne'
+		si 'x' = 12, 'c' sera un caractère normal
+		si 'x' = 10, 'c' sera un sharp-caractere
+		si 'x' = 16, 'c' sera un caractère 'début annotation'
+		si 'x' = 17, 'c' sera un caractère 'fin annotation'
+
+	Par exemple, pour temporairement enlever l'effet du caractère ';',
+	vous faites d'abord :
+	(undmc ";")
+	ensuite vous faites tout ce que vous voulez, sachant que le
+	caractère ';' est maintenant un caractère comme les autres,
+	ensuite, pour le réactiver dans son sens standard, vous faites:
+	(redmc ";" 1)
+^
+isuser
+(isuser at) subr 1
+	ramène t si at est un atome utilisateur, nil sinon.
+	Exemple :
+	(isuser 'aa)  --> t.
+	(isuser 'car) --> nil.
+^
+getpackage
+(getpackage at) subr 1
+	ramène le nom du package dont l'atome 'at' fait partie.
+^
+package
+(package at) Fsubr 
+	La fonction 'package' sert à circonvenir les problèmes des conflits
+	des noms de vos fonctions. C'est surtout utile dans des packages
+	utilitaires. Quiconque à eu une fois le problème d'une 
+	erreur due à ce que vous avez eu un nom de variable qui était 
+	utilise déjà ailleurs, comprendra. '(package un_nom)' indique au 
+	lecteur lisp de précéder TOUS les nouveaux noms apparaissant dans le 
+	flux d'entrée par "un_nom.". Ainsi, le fichier contenant le 
+	pretty-printeur commence par l'évaluation de (package pretty), ainsi 
+	tous les noms suivants jusqu'à l'appel de (package) (sans arguments!)
+	suivants seront précédés par 'pretty.', par exemple 'x' deviendra 
+	'pretty|x' . Si toutefois vous 	voulez garder un nom tel quel, 
+	placez le macro-caractere '|' avant le nom. Dans le fichier 
+	pretty.vlisp, la définition de la fonction pretty débute, par 
+	exemple comme	 
+			(de |pretty ...
+	assurant ainsi que le nom 'pretty' sera pris en compte tel quel.
+	N'oubliez pas de terminer la définition d'un package par l'appel
+	de (package) sans arguments, sinon, le lecteur continuera 
+	joyeusement de préfixer chaque nom.
+^
+|
+	c'est le caractère d'inhibition de l'effet du package courant,
+	cf. (aide package).
+	Ainsi, si vous êtes dans le package "user", l'écriture
+	|un_atom
+	réfère à l'atome un_atom du niveau supérieur externe à tout
+	package, et l'écriture
+	test|un_atom
+	réfère à l'atome un_atom dans le package "test".
+^
+unstep
+(unstep ftn1 ftn2 .. ftn-n) Fsubr 
+	enlève les fonctions données en argument de la liste des fonctions
+	a exécuter en pas-à-pas.
+^
+step
+(step ftn numéro t/nil) Nsubr 
+	step vous permet une exécution pas à pas. Une exécution pas-a-pas
+	vous met à des instant bien déterminés dans des boucles break.
+	Si vous ne donnez aucun	argument à l'appel, i.e. vous appelez 
+	(step)
+	toutes les fonctions-utilisateurs seront 'steppes'. Ca veux dire :
+	a chaque appel d'une fonction utilisateur QUELCONQUE vous vous
+	trouverez dans une boucle break. Si vous donnez un nom de fonction,
+	seulement les appels de cette fonction seront steppes. Le nom peut
+	être une fonction utilisateur ou une fonction standard. Le numéro 
+	'n' optionnel vous permet d'indiquer à partir du combien-tieme appel
+	d'une fonction vous voulez stepper.
+	Notez que l'entrée dans la boucle break se fait AVANT évaluation des
+	arguments, sauf si vous donnez un troisième argument 't', l'entrée
+	dans le pas-a-pas des fonctions utilisateurs se fera APRES 
+	évaluation des arguments (et après liaison des paramètres).
+	Ca se perfectionnera au fur et à mesure...(regardez aussi 'steptr')
+^
+steptr
+(steptr nom_de_fonction) FEXPR
+	REMARQUE : cette fonction n'a pas encore été portée sous X11
+	'steptr' est une aide visuelle pour 
+
+	1) activer des pas-a-pas sur des fonctions utilisateurs.
+	2) avoir un film du déroulement de votre programme.
+
+	voici comment ca fonctionne :
+	quand vous appeler 'steptr', bvlisp partage l'écran en deux 
+	fenêtres, la fenêtre du haut contient l'arbre des appels de 
+	fonctions engendre par la fonction donnée en argument (c'est le 
+	même arbre que celui que vous obtenez en faisant 
+	(%a nom_de_fonction)), la fenêtre 
+	du bas est la fenêtre d'interaction avec lisp. Vous avez alors la 
+	possibilité de positionner interactivement le curseur sur la 
+	fonction de votre
+	choix. Pour déplacer le curseur vous avez les commandes :
+
+		l pour aller à droite
+		h pour aller à gauche
+		k pour aller vers le haut
+		j pour aller vers le bas
+
+	(c'est les mêmes commandes que celles de rogue!) D'ailleurs, steptr
+	vous donne un menu en haut de l'écran vous rappelant ces commandes.
+	Si vous voulez entrer en pas-a-pas dans une fonction, il suffit de
+	donner la commande 's' quand le curseur se trouve devant le nom de
+	cette fonction, pour sortir de ce mode, la commande 'u' vous servira
+	très bien. Pour sortir de ce mode de positionnement interactif, 
+	tapez un caractère quelconque qui n'est pas une commande.
+	La machine vous demande alors si vous voulez une trace vidéo; si
+	vous répondez par 'y', alors, pendant exécution, vous verrez
+	dans cet arbre les fonctions actives précédées par un '*'. Si vous
+	le faites avec la fonction 'vc', du générateur de condition de
+	vérification dans /usr/vlisp80/hw/lisp/src/vcg.vlisp, ca vous
+	donnera un très joli film. L'utilité de cette chose est, entre
+	autre, de VOIR les fonctions qui sont le plus utilisées. Pour sortir
+	de ce mode, appelez la fonction 'end-step'. 
+	La commande 'e' vous mets en édition de la fonction pointée.
+	Pour, après exécution, ou pendant un breakpoint, re-entrer dans le
+	mode de positionnement interactif, lancez la fonction 'stp' sans
+	arguments.
+^
+stp
+(stp)	EXPR
+	fonction auxiliaire pour 'steptr' vous permettant de re-
+	entrer dans un mode de positionnement interactif.
+^^Activités supplémentaires
+^
+undo
+(undo {n}) subr 1
+	cette fonction vous permet, à l'intérieur d'une boucle d'inspection
+	(option 'i' du menu du traitement des erreurs) de descendre dans la
+	pile de travail, c'est à dire: de défaire des appels de fonctions.
+	L'argument 'n' permet de descendre 'n' blocs de contrôles (cf. frame)
+	a la fois. La fonction 'restart' permet de reprendre le calcul à 
+	partir de l'endroit d'ou vous vous trouvez.
+^
+done
+(done x . l) Fsubr 
+	s'appelle comme :
+	(done () . l)
+	ou:
+	(done n . l)
+	sans arguments l, done vous sort de la fonction et vous met au 
+	niveau 	DE RETOUR du n-ieme block de contrôle. Alors, vous vous 
+	trouvez dans une boucle break et vous pouvez inspecter l'état de vos
+	variables, de la pile (soit dit en passant, l'image de la pile est 
+	beaucoup plus lisible qu'en vlisp). Vous sortez de la boucle break 
+	comme d'habitude. MAIS, n'oubliez pas de donner comme dernier truc
+	a évaluer dans la boucle, la valeur que vous voulez ramener de
+	votre dernière lambda. Cette valeur est calculée dans le contexte
+	APRES le unbind!
+	Avec arguments l, done vous sort de la fonction et évalue les 
+	arguments dans le contexte APRES le unbind.
+	Le premier argument DOIT être une valeur numérique ou nil. Si c'est
+	une valeur numérique, ca indique alors de combien de blocs lambda
+	vous sortez. Si c'est nil, vous ne sortez que d'un bloc lambda.
+
+	Bref, 'done' est presque comme 'exit', mais seulement presque!
+	ATTENTION, il peut vous arriver que des liaisons soient 
+	défaites parce que vous avez trop dépile!
+^
+first-call
+(first-call nom-de-fonction nombre) EXPR
+	ce prédicat permet de savoir, à l'intérieur d'une activité
+	supplémentaire de sortie, si l'on se trouve à la sortie du n-ieme
+	appel récursif de la fonction nom-de-fonction. 
+	Exemple:
+	(sortie 'foo '(if (first-call 'foo 1) 
+	  (changeval ['a sortie])))
+	change la valeur ramène de foo en une liste compose de deux éléments:
+	le premier est l'atome a, le deuxième élément est le résultat calcule
+	par l'appel de foo.
+
+	(sortie 'foo '(if (first-call 'foo 3) 
+	  (changeval ['a sortie])))
+	cet deuxième appel change la valeur du 3-ieme appel récursif.
+^
+chemin-entrée
+(chemin-entrée ftn-1 ftn-2 ... ftn-n) FEXPR
+	comme chemin, mais pour les activités supplémentaires à l'entrée
+	des fonctions
+^
+chemin-sortie
+(chemin-sortie ftn-1 ftn-2 ... ftn-n) FEXPR
+	comme chemin, mais pour les activités supplémentaires à la sortie
+	des fonctions
+^
+chemin
+(chemin ftn-1 ftn-2 ... ftn-n) FEXPR
+	ce prédicat est vrai si l'on se trouve à l'intérieur d'une fonction
+	ftn-n en ayant suivi le chemin d'appel
+		ftn-1 -> ftn-2 -> ... -> ftn-n
+	chemin est une fonction à utiliser dans les programmes utilisateurs.
+	SI l'on veut savoir les chemins à l'intérieur d'une activité 
+	supplémentaire d'entrée ou de sortie IL FAUT UTILISER les fonctions
+	chemin-entrée ou chemin-sortie.
+	Le prédicat chemin-entrée
+	utilisé à l'intérieur d'une activité d'entrée est vrai au lancement
+	du premier appel de ftn-n (si l'on vient bien du chemin indique),
+	le prédicat chemin-sortie
+	utilisé à l'intérieur d'une activité supplémentaire de sortie
+	est vrai à la sortie du premier appel de ftn-n (ce qui 
+	implique qu'il a bien pu avoir d'autres appels récursifs de ftn-n qui
+	ont été ignore.
+^
+changeval
+(changeval valeur) subr 1
+	fonction de mise au point qui permet de changer, à l'intérieur
+	d'une activité supplémentaire de sortie d'une fonction,
+	la valeur retournée de cette fonction.
+^
+getcar
+(getcar x) subr 1
+	vous ramène soit nil, si x est une liste normale, soit
+	la listée compose du car de x et de l'annotation de ce car. Les
+	commentaires sont alors considérés comme des chaînes. (Soit dit
+	en passant, les commentaires sont TOUJOURS associes au car. Et
+	la liste des annotations est organisée comme une p-liste, 
+	l'indicateur de commentaire étant l'atome COM).
+
+^
+getcdr
+(getcdr x) subr 1
+	même chose que getcar mais pour le cdr
+
+^
+putcar
+(putcar x y) subr 2
+	'cons' y à la liste d'annotation du car de x. Ceci vous permet
+	de mettre toute sorte d'information cache dans vos listes.
+^
+putcdr
+(putcdr x y) subr 2
+	même chose que putcar mais pour le cdr
+
+^
+clearcar
+(clearcar x) subr 1
+	si le car de x possède des annotations, clearcar les enlève.
+	Ramène x en valeur.
+
+^
+clearcdr
+(clearcdr x) subr 1
+	enlève les annotations du cdr de x. Cette fonction ramène x en 
+	valeur, de même que la fonction clearcar.
+
+^
+careful
+(careful t)	subr 1
+	met en mode careful. TOUT ce qui suit ne marche qu'en mode careful
+	il est donc conseille de se mettre immédiatement en mode careful
+	en évaluant (careful t)
+(careful)
+	vous sort temporairement de ce mode. C'est utile si vous voulez
+	lire des fichier sans les analyser (ex : pretty, trace etc.)
+(careful 1)
+	vous sort définitivement du mode careful et en efface toutes les
+	traces
+^
+%i
+(%i f1 f2 ... fn) FEXPR
+	vous livre les arbres d'appels des fonctions f1, f2 etc. AINSI
+	qu'une description de TOUTES les variables utilisées à l'intérieur
+	de ces fonctions
+	sans arguments, cette fonction vous livre l'ensemble des arbres
+	d'appels et une description de toutes les variables.
+^
+%a
+(%a f1 f2 ... fn) FEXPR
+	vous livre les arbres d'appels des fonctions f1, f2 etc. 
+	sans arguments, cette fonction vous livre l'ensemble des arbres
+	d'appels
+
+^
+%descr
+(%descr obj1 obj2 .. objn) FEXPR
+	vous livre une description des différents objets obj1, obj2 etc.
+	sans arguments, cette fonction livre la description de la totalité
+	des objets connus (sous mode careful)
+^
+example
+(example 'nom_de_fonction liste_d'exemples) EXPR
+	attache à la fonction (donnée en premier argument) les exemples
+	que vous donne la liste en deuxième argument. A la première
+	exécution de la fonction, évaluation normale sera interrompue
+	et la fonction sera d'abord testée sur ces exemples. Ainsi
+	essayez donc:
+^%L
+	(de test (x) (cons 1 [x]))
+	et:
+	(example 'test '(((test 1)(1 1))
+	  ((test 2)(2 1))
+	  ((test 3)(1 3))
+	  ((test 4)(4 1)) ))
+	ensuite appelez:
+	(test 111)
+
+	(example 'nom_de_fonction)
+	vous donne les exemples attaches à la fonction
+
+	(example 'nom_de_fonction t)
+	réactive le test sur les exemples
+
+^
+erreurs
+LES ERREURS :
+	les erreurs "variable non définie" et "fonction non définie"
+	sont trappées de la manière suivante :
+
+	 "variable non définie" :
+	si vous évaluez une variable qui n'a pas encore de valeur,
+	BVLISP vous demande de donner interactivement une valeur. La
+	valeur que vous donnez est naturellement évaluée! Donc, si
+	vous voulez donner une valeur, quotez la!.
+
+	 "fonction non définie" :
+	si pendant exécution d'une fonction vous tombez sur une erreur
+	de ce type, bvlisp vous permet de trapper l'erreur de plusieurs
+	manières :
+
+	1) la fonction non définie correspond à une erreur de frappe. Dites
+	alors que vous voulez donner le nom de la fonction correcte (en
+	tapant 'f<return>') et ensuite donnez le nom de la fonction.
+	Ceci modifiera votre programme et continuera exécution avec
+	cette nouvelle fonction.
+	2) la fonction non définie est une fonction que vous n'avez pas 
+	encore définie. Vous avez alors la possibilité de donner à la 
+	machine une valeur (en tapant 'v<return>' suivi de la valeur). 
+	Ce sera cette valeur qui sera considérée comme valeur de l'appel 
+	de la fonction erronée, et le calcul continue avec cette valeur.
+	Vous pouvez également donner le nom d'une fonction, sans modifier
+	votre programme (en tapant 'e<return>' suivi du nom 
+	de la fonction).
+	3) si à l'entrée d'une erreur de ce type vous tapez 'i<return>', 
+	vous entrez alors dans une boucle d'inspection (une boucle break).
+	cette boucle doit être terminée par 'fin', et ensuite vous vous
+	trouvez dans les mêmes cas que les précédents.
+^
+entrée
+(entrée ftn expression) EXPR
+	ajoute l'expression expression comme activité supplémentaire
+	a votre fonction. Comme le nom l'indique, cette activité sera
+	exécutée à chaque entrée dans la fonction
+	Si des appels de fonction existe dans l'expression donnée, 
+	les fonction correspondantes seront ajoutées dans les 'ival' de
+	la fonction au premier appel. Si cet effet est indésiré, 
+	la fonction (a définir par l'utilisateur) 'f-entrée' ne sera
+	pas ajoutée dans les 'ival'.
+^
+sortie
+(sortie ftn expression) EXPR
+	ajoute l'expression à la sortie de la fonction ftn. (Comme 'entrée',
+	mais pour la sortie). De même que pour 'entrée', la fonction
+	utilisateur 'f-sortie' ne serra pas prise en compte dans les 'ival'.
+^
+enlève
+(enleve-entree ftn at) EXPR
+	si vous voulez annuler l'effet d'une activité
+	supplémentaire d'entrée utilisez cette fonction-ci. Par exemple,
+	si vous avez fait un 
+	(entrée 'foo '(truc-muche ... ))
+	pour enlever cette spécification d'entrée, il faut appeler :
+	(enleve-entree 'truc-muche 'foo)  
+^
+enleve-sortie
+(enleve-sortie ftn at) EXPR
+	même chose que enleve-entree, mais pour la sortie
+^
+assert-entree
+(assert-entree ftn assertion) EXPR
+	si vous êtes en mode careful, ceci vous permet de tester à chaque
+	entrée dans la fonction ftn, des conditions de vérifications
+	sur les entrées. L'argument 'assertion' doit être UNE expression
+	LISP, dans laquelle vous pouvez naturellement utiliser les
+	variables de la fonction 'ftn'.
+^
+assert-sortie
+(assert-sortie ftn assertion) EXPR
+	si vous êtes en mode careful, ceci vous permet de tester à chaque
+	sortie de la fonction ftn, si la condition de vérification
+	'assertion' est vérifiée. Comme pour assert-entree, si la
+	condition n'est pas vérifiée, la machine vous informe très
+	amplement des problèmes. Dans l'assertion, vous pouvez vous
+	référer au résultat de l'appel de la fonction avec la variable
+	'sortie'. Cette variable contient à tout instant le résultat du
+	dernier appel (dynamique) de l'EXPR ou de la FEXPR dont vous êtes
+	juste en train de terminer exécution.
+	(pour un exemple, regardez les assertions (bidon) dans le fichier
+	 /usr/vlisp80/hw/lisp/src/vlisp.ini)
+^
+unassert
+(unassert-e ftn1 ftn2 ...) FEXPR
+	enlève temporairement les assertions d'entrée des fonctions ftn1,
+	ftn2, .. etc. Pour les réactiver, il faut utiliser la fonction
+	reassert-e.
+
+(unassert-s ftn1 ftn2 ...) FEXPR 
+	enlève temporairement les assertions de sortie des fonctions ftn1,
+	ftn2, .. etc. Pour les réactiver, il faut utiliser la fonction
+	reassert-s.
+^
+reassert
+(reassert-e ftn1 ftn2 ...) FEXPR
+	re-active les assertions de sortie des fonctions ftn1, ftn2, .. etc.
+
+(reassert-e ftn1 ftn2 ...) FEXPR
+	re-active les assertions de sortie des fonctions ftn1, ftn2, .. etc.
+^
+test-entree
+(test-entree x . expression) EXPR
+	attache au CAR de x l'expression 'expression' comme activité à faire
+	AVANT exécution du CAR de la liste. 
+^
+test-sortie
+(test-sortie x . expression) EXPR
+	attache au CAR de x l'expression 'expression' comme activité à faire
+	APRES exécution du CAR de la liste. Naturellement, ca revient au
+	même comme une activité à faire AVANT exécution  du CDR de la liste.
+^
+ival
+(ival atom valeur) subr 2
+	si valeur est donnée, met le ival de l'atom à valeur
+	sinon ca ramène le ival de l'atome
+	(normalement le ival (Internal VALue) ne devrait pas être utilise
+	 par vous. Il est réservé au système).
+
+	Les valeurs que le système place dans l'ival d'un atome correspondes à :
+
+^%T2
+	Nom		Signification
+	pour les VARIABLES:	
+	globalvar	var est variable globale
+	localvar	var est variable locale
+	incr		var est variable globale modifiée
+	pour les FONCTIONS:	
+	0		liste de toutes les variables locales
+	1		liste de toutes les variables globales
+	2		liste des variables globales modifiées
+	3		liste des fonctions appelantes
+	4		liste des fonctions appelées
+	5		liste des clauses appelées (pour les clauses)
+	6		liste des clauses appelantes
+	7		liste des fonctions appelées dans une clause
+	20		fichier définissant la fonction
+	100		temporaire de construction pour les fonctions
+	200		temporaire de construction pour les clauses
+
+	Variables Globales accessibles en LISP:
+	globalvar -> liste des variables globales.
+	localvar -> liste des variables locales.
+	all_functions -> liste des fonctions définie sous careful=t.
+	all_clauses -> liste des clauses prolog définies sous careful=t.
+^
+clrival
+(clrival atom) subr 2
+	remet le ival de l'atome donne en argument à nil
+^
+globalvar
+	contient la liste de toutes vos variables globales utilisées dans
+	des fonctions définies sous mode careful.
+^
+localvar
+	contient la liste de toutes les variables qui sont argument de vos
+	fonctions définies sous mode careful.
+^
+all_functions
+	la liste de toutes les fonctions que vous avez définies sous mode
+	careful
+^
+sortie
+	une variable interne qu'il est TRES souhaitable de ne pas toucher.
+	Consultez sa valeur tant que vous voulez, mais surtout ne la modifiez
+	pas.
+^
+all
+(all)	EXPR
+	la fonction all positionne un indicateur pour que pretty imprime
+	(joliment) la fonction avec toutes ses annotations, assertions,
+	commentaires, etc.
+^
+not-all
+(not-all) EXPR
+	enlève l'indicateur positionne par all.
+^^Contrôle des formats d'entrée/sortie
+^
+nomacout
+(nomacout) subr 0
+	inhibe le lancement des dmo's. C'est principalement pour des 
+	utilitaires de style trace etc.
+^
+macout
+(macout) subr 0
+	réactive les dmo's.
+^
+boundp
+(boundp x) subr 1
+	ramène t si x a une c-valeur différente de 'undef', sinon 'nil'.
+^
+readlin
+(readlin) subr 0
+	readlin (SANS 'e' à la fin!) est comme la fonction 'readline' mais
+	n'attend pas un newline. C'est très utile pour des macrocaracteres
+	qui veulent lire ce qui suit dans la ligne sans entrer dans le
+	lecteur-lisp standard. Comme exemple, regardez la définition
+	du macrocaractere ^ dans le fichier ~hw/lisp/src/ef.vlisp.
+^
+dml
+(dml () . corps) Fsubr	 (OBLIGATOIREMENT la liste des variables = () !!!)
+	avec 'dml' vous pouvez définir des macrocaracteres qui prennent 
+	effet directement à la lecture. Dans la suite, leur effet est NUL!!!
+	MAIS : les dml ne sont reconnus que pendant l'utilisation interactive
+	a votre terminal. Pendant la lecture de fichiers tous les dml sont
+	considérés comme des caractères normaux.
+	Exemple : si vous voulez en plein milieu d'écriture avoir la 
+	possibilité de consulter votre programme, une bonne manière de le 
+	faire est la suivante :
+
+	(dml # ()(princ "des renseignements")(break >)
+		 (princ "maintenant continuez à taper :"))
+
+	Si pendant la frappe, vous tapez un '#', la machine vous dit alors :
+
+	des renseignements >  la vous tapez alors n'importe quoi... vous vous
+	trouvez dans une boucle break et quand vous en sortez en tapant '>'
+	la machine répond :
+	maintenant continuez à taper : ? et là vous continuez comme si 
+	rien ne était passe. 
+
+	Ca servira principalement à la doc on-line.... Naturellement, si
+	vous voulez réellement entrer un caractère qui a été défini comme
+	dml, il faut le quoter par ^w (cf. le page-editeur).
+
+^%% ^
+^%% del
+^%%	Actuellement, vous pouvez interrompre tout calcul en tapant 
+^%%	le caractère '\' ou le caractère 'ESC'.
+^%%	A ce deuxième caractère d'interruption, vous pouvez accrocher
+^%%	des activités définies par l'utilisateur en définissant une fonction
+^%%	de nom 'onintr'. Normalement ceci peut être utile si vous avez
+^%%	un très long calcul et que vous ne savez plus si votre programme
+^%%	boucle ou pas. Ainsi la définition suivante :
+^%%	
+^%%	(de onintr () (print (2 (frame 100)))(break i>))
+^%%
+^%%	vous donne, après avoir tape le DEL, la fonction dans laquelle vous
+^%%	vous trouviez à l'instant de l'interruption, et entre dans une 
+^%%	boucle d'inspection. A la sortie de cette boucle, le calcul 
+^%%	interrompu est repris, sauf si vous êtes sorti de la boucle 
+^%%	par le '-'.
+^%%
+^
+ANTISL
+	cette variable guide l'impression de chaînes de caractères.
+	Normalement sa valeur est nil. Si sa valeur est égale à 't',
+	les backslashs ('\') ne sont pas pris en compte à l'intérieur
+	des chaînes. Si sa valeur est égale à '1', les backslashs ne
+	sont non seulement pas pris en compte, mais ils sont doubles.
+	Cette variable est d'une grande utilité si vous faites, sous
+	BVLISP, des fichiers pour 'troff'. Autrement, je ne vois
+	pas à quoi ca pourrait servir.
+^
+extprint
+(extprint . l) fsubr
+	comme allprint sans la restitution forcée des '"' autour des
+	chaînes.
+^
+extprin1
+(extprin1 . l) fsubr
+	comme allprin1 sans la restitution forcée des '"' autour des
+	chaînes.
+^
+allprint
+(allprint . l) fsubr
+	Cette fonction imprime ses arguments AVEC toutes les annotations, tous
+	les atomes sont imprime avec leur package et les chaînes sont imprimées
+	avec les caractères '"'. 'allprint' ramène la valeur du dernier argument 
+	en valeur.
+^
+allprin1
+(allprin1 . l) fsubr
+	comme 'allprint', sans imprimer pas un newline.
+^
+getdoc
+(getdoc . l) fexpr
+	getdoc attend en argument un ou plusieurs noms de fonctions.
+	getdoc imprime le commentaire (suivant la liste des variables)
+	associe à une fonction.
+^
+allpretty
+(allpretty ftn1 ftn2 ... ftn-n) FEXPR
+	 Fait un pretty-print des fonctions données en arguments, AVEC toutes
+	 les annotations. 
+^%% ^
+^%% record
+^%%	appel :
+^%%	(record-type <nom><flag> ( .. <slot> ..))
+^%%
+^%%	exemples :
+^%%	(record-type terminal (result))
+^%%	(record-type node nil (test node-if-t node-if-nil))
+^%%	(record-type goal-node $gn (char state . plan))
+^%%
+^%%	 exemples d'utilisation :
+^%%	(is :terminal foo) -> test de type
+^%%	(result :terminal foo) -> file le slot <result> de foo
+^%%	(terminal 'machin) -> construit (terminal machin)
+^%%
+^%%	 notes :
+^%%	si flag est absent -> flag est le <nom>
+^%%	le flag ne sert qu'a permettre (si nécessaire) un test de type
+^%% 
+^%% ^
+^%% monitor
+^%% (monitor var ycoord xccord {quoi} {quand}) EXPR
+^%%	Cette fonction permet le monitoring des variables. Pour monitorer la
+^%%	variable `a', par exemple, faites
+^%%	(monitor 'a 12 60)
+^%%	ca aura comme effet la création d'une fenêtre de nom a-win dans
+^%%	la ligne 12 colonne 60 (d'une ligne imprimable de 18 caractères).
+^%%	Dans cette fenêtre sera affichée la valeur de cette variable a` chaque 
+^%%	consultation. L'argument optionel 'quoi' donne l'expression à imprimer
+^%%	a chaque consultation et l'argument 'quand' donne un prédicat determinant
+^%%	dans quelles circonstances il faut faire 'quoi' (l'impression de la 
+^%%	valeur de la variable par defaut).
+^%% ^
+^%% unmonitor
+^%% (unmonitor at1 at2 .. atn) FEXPR
+^%%	Desactive le monitoring des variables 'at1', 'at2', ... 'atn'
+
+
+

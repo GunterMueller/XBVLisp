@@ -1,0 +1,26 @@
+(de pnbres (n)
+    (output "toto")
+    (print 0 0.0 ":" (date))
+    (output)
+    (setq prev -1 y 0.0)
+    (let (x 0)
+      (while (> x prev)
+	(setq prev x)
+	(princ (incr x) " " (setq y (+ y 1.0)))
+	(if (not(zerop (rem x n)))
+	    (princ "+")
+	  (output "toto")
+	  (princ x )
+	  (printdate x n )
+	  (output)
+	  ))))
+
+;(de printdate(x n )
+ ;   (if (not (and (numberp n) (numberp x))) 'erreur_printdate
+  ;    (if (zerop (rem x (* 10 n)))
+	;  (print (date)))))
+
+
+(de printdate(x n)
+      (if (zerop (rem x (* 10 n)))
+	  (print  x (date)))))

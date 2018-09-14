@@ -1,0 +1,26 @@
+;
+; pour permetre a un Shell d'eccepter des requettes de redimensinement
+; de son enfant. Il faudrait tester que le widget est bien un ShellWidget
+;
+(de allowShellResize ( widget )
+    (xSetValues widget "allowShellResize" 1)
+    )
+
+;
+(de xSetWidgetWidth (widget val)
+    (xSetWidgetDim widget "width" val)
+    )
+;
+(de xSetWidgetHeight (widget val)
+    (xSetWidgetDim widget "height" val)
+    )
+;
+(de xSetWidgetDims (widget height width borderWidth)
+    (xSetValues widget
+	     "heigth"        height
+	     "width"         width
+	     "borderWidth" borderWidth     )
+    )
+;
+(de xSetWidgetDim (widget dim val)
+    (xSetValues widget dim  val)     )

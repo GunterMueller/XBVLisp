@@ -1,0 +1,172 @@
+; ----- micro verifieur de preuves par induction
+;       de proprietes de programmes vlisp (TRES pur)
+;                                                       pg
+
+(setq rmargin 79)
+(de caddar (l) (caddr (car l)))
+(de ana (f ;; x vars body decvars)
+  (setq x (fval f)
+        vars (car x)
+        body (cadr x))
+  (let (e body) (cond
+        ((atom e))
+        ((member (car e) '(car cdr 1-))
+         (if (atom (cadr e))
+             (and (member (cadr e) vars)
+                  (or (member (cadr e) decvars)
+                      (newl decvars (cadr e))))
+             (self (cadr e))))
+        (t (self (nextl e)) (self e))))
+  (put f 'vars vars)
+  (put f 'body body)
+  (put f 'decvars decvars))
+
+(de vars (f) (get f 'vars))
+(de body (f) (get f 'body))
+(de decvars (f) (get f 'decvars))
+
+
+; ------------ evaluateur symbolique ----------------
+
+(de red (e al) (cond
+  ((atom e) (let (val (assoc e al)) (if val (cadr val) e)))
+  ((eq (car e) 'if)
+   (let (test (red (cadr e) al)) (cond
+      ((null test) (red (cadr (cddr e)) al))
+      ((or (eq test t) (eq (car test) 'cons))
+       (red (caddr e) al))
+      (t ['if test . (cddr e)]))))
+  (t (let ((largs (mapcar (cdr e) (lambda (e) (red e al))))
+               (fun (car e)))
+           (selectq fun
+             (car (cond ((eq (caar largs) 'cons) (cadar largs))
+                        ((eq (car largs) 'nil) nil)
+                        (t [fun . largs])))
+             (cdr (cond ((eq (caar largs) 'cons) (caddar largs))
+                        ((eq (car largs) 'nil) nil)
+                        (t [fun . largs])))
+             (1-  (if (eq (caar largs) '1+)
+                      (cadar largs)
+                      [fun . largs]))
+             (1+  [fun . largs])
+             (cons [fun . largs])
+             (zerop (cond ((zerop (car largs)) t)
+                          ((eq (caar largs) '1+) nil)
+                          (t [fun . largs])))
+             (null  (cond ((null (car largs)) t)
+                          ((eq (caar largs) t) nil)
+                          ((eq (caar largs) 'cons) nil)
+                          (t [fun . largs])))
+             (t (let (al1 (redpair fun (vars fun) largs))
+                  (if (eq al1 'no) [fun . largs]
+                      (red (body fun) (nconc al1 al))))))))))
+))))))
+
+; ---------- controleur de deploiement -----------
+
+(de redpair (fun vars largs ;; decvars res v l)
+  (setq decvars (decvars fun))
+  (while vars
+    (setq v (nextl vars) l (nextl largs))
+    (if (member v decvars)
+        (and l (neq l 0)
+               (neq (car l) 'cons) (neq (car l) '1+)
+               (exit 'no)))
+    (newl res [v l]))
+  res)
+
+; -------- quelques fonctions de test ------------
+
+        ; pour utiliser loop : faire (loop)
+        ; il dit "eval sym" repondre :
+        ; (cons x y)  ->  (cons x y)
+        ; (car (cons x y))  ->  x
+        ; (app (cons x y) z)  ->  (cons x (app y z))
+
+(de loop () (princ "eval sym : ") (print (red (read))) (loop))
+
+(de app (x y) (if (null x) y (cons (car x) (app (cdr x) y))))
+(ana 'app)
+
+(de rev (x) (if (null x) nil (app (rev (cdr x)) (cons (car x) nil))))
+(ana 'rev)
+
+(de len (l) (if (null l) 0 (1+ (len (cdr l)))))
+(ana 'len)
+
+(de p (x y) (if (zerop x) y (1+ (p (1- x) y))))
+(ana 'p)
+
+(de m (x y) (if (zerop x) 0 (p y (1- x) y))))
+(ana 'm)
+
+; -------------- le proof verifieur -------------
+
+(df theo (l)
+  (prove l 0))
+
+; ex: (theo (p m n) = (p n m))
+
+(de prove (th n ;; thh)         ; th = (* = **)
+  (pstar (nconc [n 'prove] th))
+  (cond
+    ((eq (setq thh (reduce th)) t))
+    ((equal th thh) (command))
+    (t (prove thh (1+ n))))
+  (pstar [n 'proved]))
+
+(de pstar (l)
+  (prin1 '**)
+  (apply 'print l))
+
+(de command (;; com pat remp nboc)
+  (print "command ?")
+  (setq com (read))
+  (selectq (car com)
+    (induct (cond ((eq (cadr com) 'list)
+                   (listinduct (caddr com) th))
+                  ((eq (cadr com) 'num)
+                   (numinduct (caddr com) th))
+                  (t (print "wrong type")
+                     (command))))
+    (indhyp (setq nboc (cadr com))
+            (if (eq (caddr com) '->)
+                (setq pat (car ih) remp (caddr ih))
+                (setq pat (caddr ih) remp (car ih)))
+            (prove (useindhyp th) (1+ n)))
+    (gen    (prove (let ((th th) (lsub (cdr com)))
+                     (if lsub
+                         (self (subst (nextl lsub) (nextl lsub) th)
+                               lsub)
+                         th))
+                    (1+ n)))
+    (look (print (eval (cadr com))) (command))
+    (t (print "unknown command")) (command))))
+
+(de reduce (thh ;; x y)
+  (setq x (red (car thh) nil)
+        y (red (caddr thh) nil))
+  (or (equal x y) [x '= y]))
+
+(de listinduct (var ih)         ; ih = hypothese d'induction
+  (pstar ['base])
+  (prove (subst nil var ih) (1+ n))
+  (pstar ['step])
+  (prove (subst ['cons (gensym) var] var ih) (1+ n)))
+
+(de numinduct (var ih)
+  (pstar ['base])
+  (prove (subst 0 var ih) (1+ n))
+  (pstar ['step])
+  (prove (subst ['1+ var] var ih) (1+ n)))
+
+(de useindhyp (th) (cond
+  ((atom th) (if (neq th pat) th
+                 (decr nboc)
+                 (if (= nboc 0) remp th)))
+  ((equal th pat) (decr nboc)
+                  (if (= nboc 0) remp
+                      [(useindhyp (nextl th)) . (useindhyp th)]))
+  (t [(useindhyp (nextl th)) . (useindhyp th)])))
+
+(de e () (sh "ed boy.vlisp") (lib boy))

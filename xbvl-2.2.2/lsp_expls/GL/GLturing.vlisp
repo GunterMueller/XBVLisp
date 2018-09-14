@@ -1,0 +1,401 @@
+(setq defvar 'setq defun 'de)
+; machine de turing selon H.Wertz (cf. son livre sur lisp p. 189-190)
+
+; définition de la bande en deux parties : BANDE_GAUCHE et BANDE_DROITE
+(defvar BANDE_GAUCHE nil)
+(defvar BANDE_DROITE nil)
+
+; définition de la machine de turing ...
+
+(defun turing (bande prog etat)
+  ; si la bande ne contiend pas de position pour la machine, on la place en tête
+  (or (memq t bande) (setq bande (cons t bande)))
+  ; construction des bandes gauche et droite
+  (setq BANDE_GAUCHE (construit_bande_gauche bande)
+	BANDE_DROITE (cdr (memq t bande))
+	; récupération de la liste des différents états présents dans la programme
+	; graphiquement, chaque état sera représenté par un matériau différent
+	ETATS (etats_differents prog))
+  ; initialisation de la partie graphique
+  (initialise_turing_3D)
+  ; exécution du programme Turing...
+  (turing_aux prog etat))
+
+					; ***************************************** ;
+					; gestion graphique de la machine de turing ;
+					; ***************************************** ;
+
+; ajout de la représentation graphique 3D de la machine de turing et de son exécution
+; la bande va contenir, en sus des caractères, les noms (openGL) correspondants à leur figure
+; graphique. 
+; La construction de la représentation nécessite aussi la conservation d'une POSITION (liée à une
+; liste TPOS de transformation graphique de la position) absolue sur la bande (uniquement pour le 
+; positionnement de la construction de nouvelles cases).
+
+; TGL          widget Open GL de La représentation de la machine de Turing
+; MAT_MACHINE  matériaux pour la machine
+; MAT_BANDE    matériaux pour la bande
+; MAT_CARACT   matériaux pour les caractères de la bande
+; MACHINE      liste GL de la machine
+; BANDE        liste GL d'un composant générique de la bande
+; ZERO         liste GL d'un caractère 0 présent sur la bande
+; UN           liste GL d'un caractère 1 présent sur la bande
+; ROOTL        root liste de TGL
+; LISTE_LISTE  listes GL à afficher
+
+(defun initialise_turing_3D ()
+  ; création de la hiérarchie de widgets
+  (if (not (boundp 'TGL))
+      (let (root (xCreateWidget 'a "ApplicationShell" "title" "Turing"))
+	(setq TGL (GLwinopen 'gl 'a "width" (* 140 (length bande)) "height" 200))
+	(xRealizeWaiting root)
+	(GLdrive TGL))
+    ; si existe déja, on efface le dessin précédent...
+    (GLrootlist -1)
+    (GLdellist MAT_MACHINE (1+ (- (car (last LISTE_LISTE)) MAT_MACHINE))))
+  ; la machine utilise des materiaux : initialisation des lumières, des matériaux et des composants
+  (initialise_lumiere)
+  (initialise_materiaux)
+  (initialise_composants)
+  ; dessin effectif des composants : création de la rootlist
+  (setq POSL (GLgenlist)) ; positionnement de la tête. 
+  (setq ROOTL (GLgenlist)) ; liste racine
+  ; la position initiale de la tête est fixée par la position dans la liste initiale
+  ; définissant la bande
+  (setq POSITION (- (length bande) (length (memq t bande))))
+  ; une fois le dessin des éléments présents intialement effectué, on créé la
+  ; liste racine.
+  (setq LISTE_LISTE (dessine_composants))
+  (cree_racine))
+
+
+; création de la liste racine (définissant les objets affichés):
+; appel des listes présentes dans LISTE_LISTE
+(defun cree_racine ()
+  (let (listes LISTE_LISTE)
+    (GLnewlist ROOTL)
+    (while listes (GLcalllist (nextl listes)))
+    (GLendlist))
+  (GLrootlist ROOTL)))
+
+; initialisation de la lumière (effectué une seule fois)
+; Les lumières sont au nombre de 8 (GL_LIGHT0 à GL_LIGHT7), pour placer OpenGL en mode 
+; d'utilisation des lumières il faut en premier lieu positionner (GLenable "GL_LIGHTING")
+; puis les lumières désirées (GLenable "GL_LIGHTn")
+; Les caractéristiques des lumières sont :
+;  pour les caractéristiques physiques :
+;   - la lumière émise (en R G B A) :
+;     - ambience (GL_ANBIENT) = lumière ajoutée à la scène
+;     - diffusion (GL_DIFFUSE) = lumière difusée directement par la source lumineuse
+;     - réfléchie (GL_SPECULAR) = lumière réfléchie par les objets
+;   - la position dans l'espace (en X Y Z W)    = GL_POSITION
+;     Si le dernier composant (W) est fixé à 0, la source lumineuse est dite directionnelle
+;     c.a.d. que leurs position à l'infini abouti à ce que chaque rayon de lumière touche
+;     les objets de manière parallèle (par ex. le soleïl).
+;   - facteurs d'atunéation de la lumière (en fonction de la distance entre l'objet et
+;     la source lumineuse (invalidé pour les sources directonnelles) :
+;     - facteur d'aténuation = 1 / (kc + kl*d + kq*d2), 
+;       d = distance(obj, lum)
+;       kc = GL_CONSTANT_ATTENUATION
+;       kl = GL_LINEAR_ATTENUATION
+;       kq = GL_QUADRATIC_ATTENUATION
+;   - dans le cas de la définition d'un spot :
+;     - angle entre l'axe directionel du spot et du cone de lumière : GL_SPOT_CUTOFF
+;     - direction de l'axe : GL_SPOT_DIRECTION
+;     - atténuation liée au spot (plus au centre = plus illuminé) : GL_SPOT_EXPONENT
+(defun initialise_lumiere ()
+  (GLpolymode "GL_FILL") ; les polygones seront dessinés plein
+  (GLenable "GL_LIGHTING")
+  (GLenable "GL_LIGHT0")) ; on utilise les valeurs de position par défaut (lumière blanche)
+
+; définition des caractéristiques des matériaux (à redéfinir avant chaque dessin d'objet) :
+; Les propriétés des matériaux sont définies suivant les paramètres suivants :
+; En premier lieu, à quelle face (devant GL_FRONT, derrière GL_BACK ou les deux
+; GL_FONT_AND_BACK) s'applique la propriété
+; En suite : 
+;   GL_AMBIENT : La partie de la lumière ambiente réfléchie 
+;   GL_DIFFUSE : La partie de la lumière diffusée réfléchie
+;   GL_SPECULAR : La partie de la lumière GL_SPECULAR des sources lumineuses réfléchie
+;   GL_SHININESS : à relier avec GL_SPECULAR, indique la manière dont cette lumière va être
+;                  réfléchie : les valeurs sont comprises entre 0.0 et 128.0, plus elle est
+;                  grande plus le reflet sera centré en direction de la source lumineuse.
+(defun initialise_materiaux ()
+  (setq MAT_BANDE (GLnewlist)) ; création du materiaux pour la machine
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_AMBIENT_AND_DIFFUSE" '(0.1 0.5 0.8 1.0)) ; elle sera bleue
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_SPECULAR" '(0.7 0.0 0.0 1.0)) ;  et refléchie du rouge 
+  ; GL_SHININESS : [0, 128] : plus la val est grande, + petite et concentrée est la reflexion
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_SHININESS" 0.8) ; de manière atténuée (proche de 1)
+  (GLendlist)
+  (setq MAT_CARACT (GLnewlist))
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_AMBIENT_AND_DIFFUSE" '(0.9 0.7 0.7 1.0)) ; elle sera rose
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_SPECULAR" '(0.0 0.0 0.7 1.0)) ; et refléchie du bleue
+  (GLmaterial "GL_FRONT_AND_BACK" "GL_SHININESS" 0.8)
+  (GLendlist)
+  ; construction des matériaux pour les différents états
+  (let ((etats ETATS) (n_etats (length ETATS)) (n 1))
+    (while etats
+      (rplaca etats (cons (car etats) (GLnewlist)))
+      ; même composantes en AMBIENT, DIFFUSE et SPECULAR...
+      (GLmaterial "GL_FRONT_AND_BACK" "GL_AMBIENT_AND_DIFFUSE" 
+		  `(,(/ n (* 1.0 n_etats))                ; n rouge
+		    ,(- 1 (/ n (* 1.0 n_etats)))          ; 1 - n vert
+		    0.5 1.0))                             ; 0.5 bleu
+      (GLmaterial "GL_FRONT_AND_BACK" "GL_SPECULAR" 
+		  `(,(/ n (* 1.0 n_etats))                ; n rouge
+		    ,(- 1 (/ n (* 1.0 n_etats)))          ; 1 - n vert
+		    0.5 1.0))                             ; 0.5 bleu
+      ; avec un SHININESS de 100.0 !!!!
+      (GLmaterial "GL_FRONT_AND_BACK" "GL_SHININESS" 100.0)
+      (GLendlist)
+      (nextl etats)
+      (incr n)))
+  (setq MAT_MACHINE (GLnewlist))
+  ; le matériau de la machine dépend de son état...
+  (GLcalllist (cdr (assq etat ETATS)))
+  (GLendlist))
+
+; dessin de la machine, d'un composant de la bande du Zéro et du Un (qui seront répétés)
+; on ne traite pas le pb du positionnement mais uniquement du dessin de la forme
+(defun initialise_composants () 
+  ; la machine est symbolisée par un cone pointant vers le bas
+  (setq MACHINE (GLnewlist))
+    (GLpushmatrix)
+      ; positionnement au dessus de la bande
+      (GLtranslate 30 80 30)  
+      ; et pointant vers le bas
+      (GLrotate 900 "X")
+      ; appel du matériaux de la machine
+      (GLcalllist MAT_MACHINE) 
+      ; et dessin du cone
+      (GLconeSolid 30 30)
+    (GLpopmatrix)
+  (GLendlist)
+  ; dessin d'un élément de la bande
+  (setq BANDE (GLnewlist))
+;    (GLcalllist MAT_BANDE)
+;    (GLbgn "GL_POLYGON")
+    ; le polygone et vers le haut
+;    (GLvertex 3  0 0 0  0 0 60  60 0 60  60 0 0)
+;    (GLend)
+  (GLendlist)
+  ; dessin d'un élément Zéro
+  (setq ZERO (GLnewlist))
+    (GLpushmatrix)
+      (GLtranslate 30 21 30)
+      (GLcalllist MAT_CARACT)
+      (GLsphereSolid 20)
+    (GLpopmatrix)
+  (GLendlist)
+  ; dessin d'un élément Un
+  (setq UN (GLnewlist))
+    (GLpushmatrix)
+      (GLtranslate 30 41 30)
+      (GLcalllist MAT_CARACT)
+      (GLcylinderSolid 20 40)
+    (GLpopmatrix)
+  (GLendlist))
+
+; dessin d'un nouvel élément de la bande (pour la bande initiale)
+(defun nouvel_element (position element reste)
+  (GLcalllist BANDE)
+  ; appel de l'élément graphique correspondant 
+  (GLcalllist liste)
+      (if reste (GLtranslate 61 0 0) (GLpopmatrix))
+  ; dessin de la bande
+    (GLendlist)
+    ; l'élément graphique dépend de l'élément présent sur la bande
+    (GLnewlist liste) ; ceci est la liste designant l'élément de la bande
+      (cond
+       ((= element 0) (GLcalllist ZERO))
+       ((= element 1) (GLcalllist UN)))
+    (GLendlist)
+    liste))
+  
+; affectation des listes aux éléments initiaux de la bande
+(defun affecte_liste (b)
+  (when b
+    (rplaca b (cons (car b) (GLnewlist)))
+    (cond
+     ((= (caar b) 0) (GLcalllist ZERO))
+     ((= (caar b) 1) (GLcalllist UN)))
+    (GLendlist)
+    (affecte_liste (cdr b))))
+
+; dessin de la bande initiale
+(defun dessine_composants ()
+  (GLnewlist POSL) ; dessin du positionnement de la machine
+  (GLtranslate (* 61 POSITION) 0 0)
+  (GLendlist)
+  ; en premier lieu on affecte les listes aux éléments de la bande
+  (affecte_liste BANDE_GAUCHE)
+  (affecte_liste BANDE_DROITE)
+  ; création de la liste initiale (contenant la machine et la bande)
+  (let (c_listes (GLnewlist)) 
+    ; on dessine la machine en premier...
+    (GLpushmatrix)
+    (GLcalllist POSL)
+    (GLcalllist MACHINE)
+    (GLpopmatrix)
+    (GLpushmatrix) ; ce pushmatrix est pour le dessin de la bande initialle
+    (let (pos 0)
+					; dessin de la partie gauche de la bande 
+      (if BANDE_GAUCHE
+	  ; les derniers éléments de BANDE_GAUCHE sont dessinés en premier
+	  (let (n_g (length BANDE_GAUCHE))
+	    (while (> n_g 0)
+	      (GLcalllist BANDE)
+	      ; appel de l'élément graphique correspondant 
+	      (GLcalllist (cdr (n_g BANDE_GAUCHE)))
+	      ; déplacement vers la droite
+	      (GLtranslate 61 0 0)
+	      (incr pos)
+	      (decr n_g))))
+					; dessine de la partie droite de la bande
+      (let (b_d BANDE_DROITE)
+	(while b_d
+	  (GLcalllist BANDE)
+	  ; appel de l'élément graphique correspondant 
+	  (GLcalllist (cdr (nextl b_d)))
+	  ; déplacement vers la droite
+	  (if b_d (GLtranslate 61 0 0))
+	  (incr pos)))
+      (setq END_POS (1- pos))      ; où ajouter à droite
+      (setq BGN_POS 0))       ; où ajouter à gauche
+    ; fin de la liste initiale
+    (GLpopmatrix)
+    (GLendlist)
+    [c_listes]))
+
+; ajout d'un élément à gauche ou à droite ?
+; retourne la liste GL correspondante
+(defun ajoute_element (a_gauche element)
+ (let ((pos (if a_gauche (decr BGN_POS) (incr END_POS)))
+       (n_liste (GLgenlist))) ; la nouvelle liste retournée
+   ; ajout d'une nouvelle liste dans LISTE_LISTE
+   (rplacd (last LISTE_LISTE) (cons (GLnewlist) nil))
+   (GLpushmatrix)
+   (GLtranslate (* 61 pos) 0 0)
+   (GLcalllist n_liste)
+   (GLpopmatrix)
+   (GLendlist)
+   ; dessin de l'élément
+   (GLnewlist n_liste)
+   (GLendlist)
+   (cree_racine)
+   n_liste))
+
+(defun remplace_element (p_elem n_elem)
+  ; ceci a un sens uniquement si les éléments sont différents
+  (when (not (= (car p_elem) n_elem))
+    ; on monte l'élément dans la machine, puis on redessent le nouveau
+    (if (or (= (car p_elem) 0) (= (car p_elem) 1))
+	(move_up_down (cdr p_elem) (car p_elem) t))
+    (rplaca p_elem n_elem)
+    (if (or (= (car p_elem) 0) (= (car p_elem) 1))
+	(move_up_down (cdr p_elem) (car p_elem)))))
+    
+(defun move_up_down (lst elem is_up)
+  (let (y (if is_up 10 80))
+    (while (or (and is_up (< y 80)) (and (null is_up) (> y -10)))
+      (GLnewlist lst)
+      (GLpushmatrix)
+      (GLtranslate 0 y 0)
+      (cond
+       ((= elem 0) (GLcalllist ZERO))
+       (t (GLcalllist UN)))
+      (GLpopmatrix)
+      (GLendlist)
+      (if is_up (incr y 10) (decr y 10)))))
+
+					; ************************************ ;
+					; gestion lisp de la machine de turing ;
+					; ************************************ ;
+
+(defun construit_bande_gauche (l bg)
+  (cond
+   ((null l) nil)
+   ((eq (car l) t) bg)
+   (t (construit_bande_gauche (cdr l) (cons (car l) bg)))))
+
+(defun etats_differents (programme)
+  (let ((prg programme) (ret nil))
+    (cond
+     ((null prg) ret)
+     ((member (caar prg) ret) (self (cdr prg) ret))
+     (t (self (cdr prg) (cons (caar prg) ret))))))
+
+(defun turing_aux (programme etat)
+  (escape fin_programme
+	  (let (instr (recup_instruction (caar BANDE_DROITE) etat programme))
+	    (execute instr)
+	    ; modification de l'état : on modifie aussi le matériau utilisé pour la machine
+	    (GLnewlist MAT_MACHINE)
+	    (GLcalllist (cdr (assq (car (last instr)) ETATS)))
+	    (GLendlist)
+	    (turing_aux programme (car (last instr))))))
+
+(defun recup_instruction (caractere etat prog)
+  (when (null caractere) (setq BANDE_DROITE (cons (cons 'B (ajoute_element nil)))
+			       caractere 'B))
+  (find_instr prog etat caractere))
+
+(defun find_instr (progr etat caract)
+  (cond
+   ((null progr) (fin_programme (append (reverse (mapcar BANDE_GAUCHE 'car )) (cons t (mapcar BANDE_DROITE 'car)))))
+   ((and (eq (caar progr) etat)
+	 (eq (cadar progr) caract)) (cddr (car progr)))
+   (t
+    (find_instr (cdr progr) etat caract))))
+
+(defun execute (instr)
+  (remplace_element (car BANDE_DROITE) (car instr))
+  (cond
+   ((eq (cadr instr) 'D)
+    (incr POSITION)
+    (setq BANDE_GAUCHE (cons (nextl BANDE_DROITE) BANDE_GAUCHE))
+    ; la bande droite est vide
+    (ifn BANDE_DROITE (setq BANDE_DROITE (cons (cons 'B (ajoute_element nil))))))
+   ((eq (cadr instr) 'G)
+    (decr POSITION)
+    (setq BANDE_DROITE (cons (nextl BANDE_GAUCHE) BANDE_DROITE))
+    (ifn BANDE_GAUCHE (setq BANDE_GAUCHE (cons (cons 'B (ajoute_element t) nil))))))
+  (GLnewlist POSL)
+  (GLtranslate (* 61 POSITION) 0 0)
+  (GLendlist))
+
+; premier test : passage de tous les zero en 1
+(de test ()
+    (turing '(t 0 0 1 1 B) '((q1 B B D q1) (q1 0 1 D q1) (q1 1 1 D q2) (q2 1 1 D q2) (q2 0 1 D q3) (q2 B 1 D q3)) 'q1))
+
+; deuxième test : multiplication d'un nombre par deux
+; le nombre est indiqué par une suite de un
+; on commence par le recopier en remplaçant chaque 1 par 0 et en le recopiant après le premier blanc
+; puis on revient et ont fait l'inverse : recopier chaque 0 et le remplacer par 1
+
+
+(de test1 ()
+    (turing '(t 1 1 1 B)
+	    '((q0 1 0 D q1)		; on remplace le un par zéro  et on vas le recopier à droite du premier blanc
+	      (q0 B B G q4)		; si on trouve un B cela signifie que l'on à fini la première copie : on lance la seconde
+	      (q1 1 1 D q1)		; recherche de l'emplacement de la copie
+	      (q1 0 B D q2)		; anomalie : on à trouvé un zéro, on le remplace par blanc et on lance la recopie
+	      (q1 B B D q2)
+	      (q2 1 1 D q2)		; recopie : après les uns déjà copiés
+	      (q2 0 1 G q3)
+	      (q2 B 1 G q3)
+	      (q3 1 1 G q3)		; on va maintenant recherche les un suivants
+	      (q3 B B G q3)
+	      (q3 0 0 D q0)
+	      (q4 1 1 G q4)		; second copie
+	      (q4 0 1 D q5)		; on a trouver de quoi copier
+	      (q4 B B D fini)		; on a fini...
+	      (q5 1 1 D q5)		; seconde recopie
+	      (q5 B B D q6)
+	      (q6 1 1 D q6)
+	      (q6 B 1 G q7)
+	      (q6 0 1 G q7)
+	      (q7 1 1 G q7)
+	      (q7 B B G q4))
+	    'q0))
+; le résultat de test1 devrait être
+; (t B 1 1 1 B 1 1 1 1 1 1 B)
