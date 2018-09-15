@@ -9,7 +9,8 @@
 # -------------------------------------------------------------
 
  
-OPT= -c -w -cckr
+#OPT= -c -w -cckr
+OPT= -c -w 
 
 llisp: main.o eval.o mem.o read.o print.o std.o
 	cc main.o eval.o mem.o read.o print.o std.o -o llisp 
