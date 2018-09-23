@@ -1,0 +1,99 @@
+; ;
+; Defilement graphique d'un programme avec conservation d'information ;
+; ;
+(de init-gstack-widgets ()
+    (setq tmp-root (xCreateWidget (gensym) "ApplicationShell"))
+    (setq tmp-form (xCreateWidget (gensym) "awForm" tmp-root))
+    (setq tmp-quit (xCreateCom tmp-form "Quit" ()))
+    (setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form
+				  "width" 200 "height" 200
+				  "allowVert" "True" "allowHoriz" "True"
+				  "top" 0 "left" 
+				  "vertDistance" (xGetVert tmp-quit)))
+    (put gstack-root 'draw (xCreateWidget (gensym) "awTree" tmp-view
+					  "hSpace" 0 "vSpace" 0))
+    (xAddCallback tmp-quit "callback" (strcat "(quit-gstack '" gstack-root ")"))
+    (xRealize tmp-root))
+
+(de quit-gstack (r)
+    (ifn (eq r gstack-root) (setq gstack-root r))
+    (mapc (get gstack-root 'tree)
+	  (lambda (f)
+	    (enleve-entree 'gstack-entree f)
+	    (enleve-sortie 'gstack-sortie f)))
+    (xRemoveWidget (xGetSupWidget (get gstack-root 'draw) "ApplicationShell")))
+
+(de get-epured (t)
+    (reverse (let ((l (flat t))
+		   (ret ()))
+	       (cond
+		((null l) ret)
+		((member (car l) ret) (self (cdr l) ret))
+		(t 
+		 (self (cdr l) (cons (car l) ret)))))))
+(df gstack (y)
+    (ifn (or y (member (car y) all_functions)) ()
+	 (setq flis ())
+	 (setq gstack-root (gensym))
+	 (put gstack-root 'tree
+	      (get-epured (cons (car y) (cons (%suprev (%indexx y (%find (ival (car y)) 4)))))))
+	 (put gstack-root 'parent (gensym))
+	 (init-gstack-widgets)
+	 (gstack-init)))
+
+
+(de gstack-init ()
+    (mapc (get gstack-root 'tree)
+	  (lambda (atFunc)
+	    (entree atFunc `(gstack-entree ',atFunc ',gstack-root))
+	    (sortie atFunc `(gstack-sortie ',atFunc ',gstack-root)))))
+
+(de gstack-entree (f root)
+    (ifn (equal root gstack-root) (setq gstack-root root))
+    (let (parent (get gstack-root 'parent))
+      (let (curent (xCreateWidget (gensym) "awCommand" (get gstack-root 'draw)
+				  "label" (strcat f)
+				  "treeParent" (if (iswidget parent) parent)))
+	(put curent 'parent parent)
+	(put curent 'func f)
+	(put curent 'var-values 
+	     (strcat "("
+	      (let ((g-var (%find (ival f) 1)) ; variables globales ;
+		    (ret ""))
+		(cond
+		 ((null g-var) ret)
+		 ((boundp `,(car g-var))
+		  (self (cdr g-var) (strcat ret "(" (car g-var) " " (strcat (eval (car g-var))) ") ")))
+		 (t
+		  (self (cdr g-var) ret))))
+	      (let ((a-var (car (fval f))) ; arguments ;
+		    (ret ""))
+		(ifn a-var ret
+		     (self (cdr a-var) (strcat ret "(" (car a-var) " " (strcat (eval (car a-var))) ") "))))
+	      ")"))
+	(put gstack-root 'parent curent)
+	(xAddCallback curent "callback" (strcat "(get " curent " 'var-values)")))))
+
+
+(de get-coresponding-parent (parent func)
+    (if (eq func (get parent 'func)) parent
+      (ifn (get parent 'parent) parent
+	   (get-coresponding-parent (get parent 'parent) func))))
+
+(de gstack-sortie (f root)
+    (ifn (equal root gstack-root) (setq gstack-root root))
+    (let ((parent-func (caar (reverse (frame 3)))) ; 3 a cause de gstack-sortie !!!! ;
+	  (frame-level 3)
+	  (parent (get gstack-root 'parent)))
+      (while (eq parent-func 'lambda) 
+	  (setq parent-func (caar (reverse (frame (setq frame-level (1+ frame-level))))))) 
+      (put gstack-root 'parent (get-coresponding-parent parent parent-func))))
+
+	
+
+
+
+	 
+
+					  
+				  

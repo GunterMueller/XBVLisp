@@ -1,0 +1,39 @@
+;
+; demostration de fonctions de manipulation d'interfaces
+;
+
+
+;(xcretortue 'titi 'titi 20 30)
+					;
+(de lines( win )
+    (let ((x 0)(y 0))
+      (repeat 50  (progn
+		    (xDrawLines  win  x y  x (+ 200 (incr y 10)))
+		    (xDrawLines   win  x y (+ 200 (incr x 10)) y )
+		    ))))
+
+
+(de arcs( win pas fois)
+    (let ((x 0)(y 0)(angle1 0)(angle2 (* 360 32)))
+      (repeat fois
+	      (if(> x 500) (progn (incr y 100)(setq x 0)))
+	      (if (= y 500)(setq y 50))
+	      (if (= y 550)(setq y 0))
+	      (xDrawArcs win x y 100 100 angle1  angle2)
+	      (incr x 100)(incr angle1 pas)
+	      (if(> angle1 angle2) (setq angle1 0))
+					;  (princ angle1)
+					;  (princ "("x y")")
+	      )))
+
+
+(de atome (win )
+    (ifn (iswidget win "Tortue" ) nil
+	 (let (n 0)
+	   (xSetValues win "x"  250)
+	   (xSetValues win "y" 250)
+	   (repeat 250                                  
+		   (AVANCE win  n (incr n)))
+	   )))
+					; (arcs 50 100)  une comfig. simpa
+

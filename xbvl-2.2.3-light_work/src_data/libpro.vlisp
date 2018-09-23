@@ -1,0 +1,112 @@
+;	une bibliotheque de fonctions lovlisp
+;	pour tester, comprendre, utiliser
+;		Patrick Greussay 27 Decembre 1982
+
+(assert ((conc nil $x $x))
+	((conc ($x1 . $x2) $y ($x1 . $z))
+	 (conc $x2 $y $z)))
+
+(assert ((rev nil nil))
+	((rev ($x1 . $x2) $z)
+	 (rev $x2 $y) (conc $y ($x1) $z)))
+
+(assert ((perm nil nil))
+	((perm $l ($h . $t))
+	 (conc $v ($h . $u) $l)
+	 (conc $v $u $w)
+	 (perm $w $t)))
+
+(assert
+  ((fact 0 1) (cut))
+  ((fact $n $r)
+   (fact (& (1- $n)) $r1)
+   (:= $r (* $r1 $n))
+  ))
+
+(assert
+  ((fib 0 1) (cut))
+  ((fib 1 1) (cut))
+  ((fib $n $r)
+   (fib (& (- $n 1)) $r1)
+   (fib (& (- $n 2)) $r2)
+   (:= $r (+ $r1 $r2))
+  ))
+
+(assert ((mutanimal)
+	 (mutation $x) (:= $nn (implode $x)) (print $nn) (fail))
+	((mutanimal)
+	 (print 'done)))
+
+(assert ((mutation $x)
+	 (animal $y) (:= $ny (explode $y)) (animal $z) (:= $nz (explode $z))
+	 (conc $y1 $y2 $ny) (lisp? $y1)
+	 (conc $y2 $z2 $nz) (lisp? $y2)
+	 (conc $y1 $nz $x))
+)
+
+(assert ((animal alligator))
+	((animal tortue))
+	((animal caribou))
+	((animal ours))
+	((animal cheval))
+	((animal vache))
+	((animal lapin))
+)
+
+(assert ((not $x) $x (cut) (fail))
+	((not $x)))
+
+(assert ((f $n $r) (lisp? (= $n 0)) (:= $r 1))
+	((f $n $r) (not (lisp? (= $n 0))) (f (& (1- $n)) $r1)
+	 (:= $r (* $r1 $n))))
+
+(assert ((gen1 0)) ((gen1 1)))
+
+(assert ((xor $x $x 0) (cut)) ((xor $ $ 1)))
+
+(de test-porte-2 (nom)
+  (prolog (:= $porte nom)
+	  (gen1 $x) (gen1 $y)
+	  ($porte $x $y $z)
+	  (print $porte $x $y "=" $z)))
+(assert	((twice $f $x $z) ($f $x $y) ($f $y $z)))
+
+(assert ((succ $x (& (1+ $x)))))
+
+(de test-twice ()
+  (prolog  (twice succ 0 $r)
+	   (print $r)))
+
+(assert ((lit nil $f $z $z))
+	((lit ($x . $y) $f $z $r) (lit $y $f $z $r1) ($f $x $r1 $r)))
+
+(assert ((cons $x $y ($x . $y))))
+
+(assert ((+ $x $y (& (+ $x $y)))))
+
+(assert ((lit-conc $x $y $z) (lit $x cons $y $z)))
+
+(assert ((lit-sum $l $n) (lit $l + 0 $n)))
+
+(assert ((p) (q) (r)))
+(assert ((q) (s))
+	((q) (t 1)))
+(assert ((r) (a) (b 1)))
+(assert ((s)))
+(assert ((a)))
+(assert ((b)))
+(assert ((t)))
+
+(de test-lit ()
+  (prolog (lit-conc (a b c) (d e f) $r) (print $r))
+  (prolog (lit-sum (1 2 3 4) $r) (print $r)))
+
+(de test ()
+  (prolog (f 4 $x) (print $x))
+  (prolog (fib 5 $x) (print $x))
+  (prolog (conc $x $y (a b c)) (print $x $y))
+  (test-porte-2 'xor)
+  (test-twice)
+  (test-lit)
+  (prolog (mutanimal))
+)

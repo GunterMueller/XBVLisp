@@ -1,0 +1,131 @@
+;;
+; Creation de  HIERARCHIES BOX ET FORM
+;;
+	    
+(de xHierarBox(nom)
+    (let (papune (print (xCreateWidget nom "ApplicationShell" nil)))
+      (let (box  (print (xCreateWidget nom "awBox" papune nil) ))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu" )))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	(print (setq ooo (xCreateWidget nom "awCommand" box "bitmap"  "./menu")))
+	)
+      (xRealize papune) ; derniere chose : afficher la hierarchie ;
+    ))
+;
+(de xHierarForm(nom)
+    (let (papune (print (xCreateWidget nom "ApplicationShell" )))
+      (let (form  (print (xCreateWidget (strcat "form-" nom )"awForm" papune ) ))
+	(print (setq oo1 (xCreateWidget (strcat "com-" nom )"awCommand" form
+				      "bitmap"  "./menu")))
+	(print (setq oo2 (xCreateWidget nom "awCommand" form 
+				      "bitmap"  "./menu"
+				      "fromHoriz"  oo1)))
+	(print (setq oo3 (xCreateWidget nom "awCommand" form
+				      "bitmap"  "./menu"
+				      "fromVert"  oo1)))
+	(print (setq oo4 (xCreateWidget nom "awCommand" form 
+				      "bitmap"  "./menu"
+				      "fromVert"  oo2)))
+	(print (setq oo5 (xCreateWidget nom "awCommand" form 
+				      "bitmap"  "./menu"
+				      "fromHoriz"  oo2)))
+	(print (setq oo6 (xCreateWidget nom "awCommand" form 
+				      "bitmap"  "./menu" 
+				      "fromVert"  oo5)))
+	)
+      (xRealize papune) ; derniere chose : afficher la hierarchie ;
+	))
+
+
+
+;;
+;;
+;
+; Noms des Icons a Afficher
+;
+;   A le Faire
+
+(setq clocks '("-Montres-" CLOCK1 CLOCK2 CLOCK3 CLOCK4 CLOCK5 CLOCK6 CLOCK7 ))
+
+(setq fleches '("-Fleches-" FLECHE17 FLECHE24 FLECHE31 FLECHE6 FLECHE10 FLECHE18 FLECHE25 FLECHE32 FLECHE7 FLECHE11 FLECHE19 FLECHE26 FLECHE33 FLECHE8 FLECHE12 FLECHE2  FLECHE27 FLECHE34 FLECHE9 FLECHE13 FLECHE20 FLECHE28 FLECHE35 ))
+
+(setq casiers '( "-casiers-"CASIER1 CASIER2 CASIER3 CASIER4 CASIER5 CASIER6 ))
+
+(setq carnets '("-carnets-" CARNET1  CARNET2  CARNET4  CARNET6  CARNET8 CARNET10 CARNET3  CARNET5  CARNET7  CARNET9 ))
+
+(setq graphes '("-graphes-" GRAPH1 GRAPH10 GRAPH2 GRAPH3 GRAPH4 GRAPH5 GRAPH6 GRAPH7 GRAPH8 GRAPH9 ))
+
+(setq livres '("-livres--"LIVRE1 LIVRE10 LIVRE2 LIVRE3 LIVRE4 LIVRE5 LIVRE6 LIVRE7 LIVRE8 LIVRE9))
+
+(setq reseaux '("-reseaux-"RESEAU1  RESEAU12 RESEAU2  RESEAU5  RESEAU8 RESEAU10 RESEAU13 RESEAU3  RESEAU6  RESEAU9 RESEAU11 RESEAU14 RESEAU4  RESEAU7))
+
+(setq verroux '("-verroux--" VERROU1 VERROU2 VERROU3 VERROU4))
+
+(setq trombons '("trombons:" TROMBON1 TROMBON3 TROMBON5 TROMBON7 TROMBON2 TROMBON4 TROMBON6))
+
+(setq claviers '("claviers "CLAVIER1 CLAVIER2 CLAVIER3 ))
+
+(setq clefs '(" -clefs- "CLE1 CLE2 CLE3 CLE4 ))
+
+(setq crayons '("-crayons-" CRAYON1 CRAYON2 CRAYON3 CRAYON4 CRAYON5 CRAYON6))
+
+(setq disques '("-disques-"DISQ1 DISQ10 DISQ11 DISQ2 DISQ3 DISQ4 DISQ5 DISQ6 DISQ8 DISQ9))
+(print "Pour regarder des bel icons (crBitmaps xxx) :")
+(print "vous avez: des clocks fleches casiers carnets graphes\n livres reseaux verroux trombons  claviers clefs\n  crayons et desdisques a afficher"  )
+
+;;
+; affiche un ensemble de bitmaps
+;;
+(de tous-bitmaps()
+    (crBitmaps casiers)
+    (crBitmaps carnets )
+    (crBitmaps graphes )
+    (crBitmaps livres )
+    (crBitmaps reseaux )
+    (crBitmaps verroux )
+    (crBitmaps trombons )
+    (crBitmaps claviers )
+    (crBitmaps clefs)
+    (crBitmaps crayons )
+    (crBitmaps disques )
+    )
+;;
+; pour creer les hierarchies d'affichage et le bitmaps a l'interieur
+;;
+(de crBitmaps (l-bitmaps)
+      (let (papune (print (xCreateWidget "app" "ApplicationShell" nil)))
+	(let (box  (print (xCreateWidget "box" "awBox" papune nil) ))
+	  (let (pele (car l-bitmaps))
+	    (cond 
+	     ((null l-bitmaps) "il faut des arguments")
+	     ((stringp pele) (xCreateWidget (car l-bitmaps ) "awLabel" box)
+	      (creeBitmaps box "./Icons/"  (cdr l-bitmaps)))
+	     ( t (creeBitmaps box "./Icons/"  l-bitmaps)))
+	    )
+	  )
+	(xRealize papune)
+	)
+      )
+
+;
+;
+
+;
+; pour creer des interrupteur simpatiques made apb.
+;
+(de crSwt()
+      (let (papune (print (xCreateWidget "app" "ApplicationShell" nil)))
+	(let (form  (print (xCreateWidget "form" "awForm" papune nil) ))
+	  (creeBitmaps form "./icons/" '( basc basc2)
+	  )
+	(xRealize papune)
+	)
+      )
+    )
+    

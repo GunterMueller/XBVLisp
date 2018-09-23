@@ -1,0 +1,23 @@
+;
+; premiere creation d'un hierarchie des widgets 
+;              plus complexe
+;
+;
+
+(de crDemoHierar()
+      (let (papune (print (xCreateWidget "app" "ApplicationShell" nil)))
+	(let (form  (print (xCreateWidget "form" "awForm" papune nil) ))
+	  (let (text (print (xCreateWidget "text" "awAsciiText" form
+					 "string" "String" "Bonjour\n au premier widget TEXT \ncree par\nxbvl:                  \n                                 "
+					 "width"              300
+					 "height"             300					 )))
+	    (let (box  (print (xCreateWidget "form" "awBox" form
+					   "fromHoriz"      text) ))
+	       (creeBitmaps box "./Icons/" fleches)
+	       )
+	    )
+	  )
+	(xRealize papune)
+	)
+      )
+

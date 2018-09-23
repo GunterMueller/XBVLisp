@@ -18,17 +18,14 @@ static CHAR *gcppn, *gcbstr, *gchstr; /* garbage chaine */
 Int erstr();
 #ifdef STDC_HEADERS
 void mark(Int *), strgci() ;
-/* void *malloc(UInt), *free(char *) ; */ /* GM */
-void *malloc(size_t);
-void *free(char *) ;
+void *malloc(UInt), *free(char *) ;
 #else
 void mark(), strgci() ;
 char *malloc(), *free() ;
 #endif
 
 # define at_ptr(x) ((struct atome *)x)
-/* # define strmark(x) { if(ismstr(x)) (Int *) (x) = savestr(x) ;  else mark(x); } */ /* GM */
-# define strmark(x) { if(ismstr(x)) (x) = savestr(x) ;  else mark(x); }
+# define strmark(x) { if(ismstr(x)) (Int *) (x) = savestr(x) ;  else mark(x); }
 # define unmark(x)   ((x) & ~markmask)
 # define ismarked(x) ((x) & markmask)
 # define ismstr(x)   ((CHAR *)(x) >= hdsysstr && (CHAR *)(x) < hstr)

@@ -1,0 +1,11 @@
+;
+(de double (l nbr)
+    (if (null l) ()
+      (princ nbr)
+      (cons (car l) 
+	    (cons (car l)
+		  (double (cdr l) (incr nbr))
+		  )
+	    )
+      )
+    )

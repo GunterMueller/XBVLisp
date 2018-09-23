@@ -1,0 +1,109 @@
+; Trace pas a pas d'une fonction... ;
+
+(setq --x-- careful careful nil)
+
+(package tfunc)
+
+(setq |f-trace-mode 'break)
+
+(df |f-trace (f) 
+    (if (and f (not (= (ftyp (car f)) 0)))
+	 (mapc f 	
+	       (lambda (x) (construitFTrace x )))
+	(print (car f) " not a function")))
+
+(de construitFTrace (f)
+    (setq cpt 0)
+    (let ((body (cdr (fval f))) (from-lst nil))
+      (cond
+       ((not (listp body t)))
+       ((listp (car body))
+	(if (listp (caar body)) nil
+	  (cond
+	   ((eq |f-trace-mode 'print)
+	    (test-entree body `(print '<-- ',(car body)))
+	    (test-sortie body `(print '--> ',(car body))))
+	   (t
+	    (test-entree body `(progn (print ',f '<-- ',(car body)) (break c)))
+	    (test-sortie body `(progn (print '--> ',(car body)) (break c))))))
+	(self (car body) nil)
+	(self (cdr body) nil))
+       ((or (numbp (car body))
+	    (stringp (car body))
+	    (null (car body))) (self (cdr body) nil))
+       (t
+	(cond
+	 ((eq |f-trace-mode 'print)
+	  (test-entree body `(print '<-- ',(car body)))
+	  (test-sortie body `(print '--> ',(car body))))
+         (t
+	  (test-entree body `(progn (print ',f '<-- ',(car body)) (break c)))
+	  (test-sortie body `(progn (print '--> ',(car body)) (break c)))))
+	(self (car body) nil)
+	(self (cdr body) nil)))))
+
+(df |enleve-f-trace (f) 
+    (ifn f () 
+         (mapc f 
+	       (lambda (x) (detruitFTrace x)))))
+
+(de detruitFTrace (f)
+    (let (body (cdr (fval f)))
+      (cond
+       ((null body) t)
+       ((atom body) t)
+       ((atom (car body)) (self (cdr body)))
+       (t
+	(rplacd (getcar body) ())
+	(self (car body))
+	(self (cdr body))))))
+
+
+; trace graphique
+(df |g-trace (f) 
+    (ifn (boundp 'construitGTrace)
+	 (progn
+	   (setq construitGTrace (xCreateWidget '--AS-- "ApplicationShell" "title" "Trace" "iconName" "Trace"))
+	   (let (bx (xCreateWidget '--BX-- "Drawxbvl" construitGTrace "background" "#95a" "width" 830 "height" 80))
+	     (put construitGTrace 'next (xCreateWidget '--AC-- "awCommand" bx "label" "Next" "x" 10 "y" 10))
+	     (put construitGTrace 'brk  (xCreateWidget '--AC-- "awCommand" bx "label" "Break" "x" 70 "y" 10))
+	     (put construitGTrace 'func  (xCreateWidget '--AC-- "awLabel" bx "label" (car f) "x" 150 "y" 10))
+	     (put construitGTrace 'cmd  (xCreateWidget '--AC-- "awLabel" bx "x" 10 "y" 40 "label" 
+		       "                                                                                ")))
+	   (xRealize construitGTrace)))
+    (if (and f (not (= (ftyp (car f)) 0)))
+	 (mapc f 	
+	       (lambda (x) (construitGTrace x)))
+	(print (car f) " not a function")))
+
+(de construitGTrace (f)
+    (let (body (cdr (fval f)))
+      (cond
+       ((null body) t)
+       ((atom body) t)
+       ((atom (car body)) (self (cdr body)))
+       (t
+	(test-entree body `(GTrace-In ',f ',(car body)))
+	(test-sortie body `(GTrace-Out ',f ',(car body)))
+	(self (car body))
+	(self (cdr body))))))
+
+(de GTrace-In (f instr)
+    (xSetValues (get construitGTrace 'func) "label" (strcat "--> " f) )
+    (xSetValues (get construitGTrace 'cmd) "label" (strcat instr))
+    (GTrace-Continue))
+
+(de GTrace-Out (f instr)
+    (xSetValues (get construitGTrace 'func) "label" (strcat "<-- " f))
+    (xSetValues (get construitGTrace 'cmd) "label" (strcat instr))
+    (GTrace-Continue))
+
+(de GTrace-Continue ()
+    (let (cont)
+      (if (xCheckEvent (get construitGTrace 'next) "ButtonPress") t
+	(if (xCheckEvent (get construitGTrace 'brk) "ButtonPress") (break))
+	(self t))))
+
+(package)
+
+(setq careful --x--)

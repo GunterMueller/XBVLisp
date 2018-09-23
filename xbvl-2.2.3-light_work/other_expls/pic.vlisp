@@ -1,0 +1,252 @@
+;;
+; a litle PIC using X from xbVLISP... ;
+;;
+; list-de-commandes : (com1 com2 com3 ... comn) ;
+; ;
+; Les commandes ont la syntaxe suivante : (<com-Name> <args>) ;
+; Ou :
+;      <com-Name> : box      : dessine une boite ;
+;                 | circle   : dessine un cercle ;
+;                 | ellipse  : dessine une ellipse ;
+;                 | arc      : dessine un arc ;
+;                 | arrow    : dessine une fleche ;
+;                 | line     : dessine une ligne ;
+;                 | east     : position gauche de l'argument ;
+;                 | west     : position droite de l'argument ;
+;                 | north    : position haut de l'argument ;
+;                 | south    : position bas de l'argument ;
+;                 | down     : deplacement vers le bas ;
+;                 | up       : deplacement vers le haut ;
+;                 | left     : deplacement vers la gauche ;
+;                 | right    : deplacement vers la droite ;
+;                 | type     : fixe le type de la ligne : ;
+;                              dashed    : pointillee ;
+;                              <val_num> : fixe l'epaisseur ;
+;                              #nnn      : fixe la couleur (RGB) ;
+;                 | repeate  : repete dernier argument fois le premier      ;
+;                              si le second est un atome non value :        ;
+;                                 devien une variable dans l'expression     ;
+;                              si le troisieme est un nombre :              ;
+;                                 devien l'increment du second (si-non = 1) ;
+;                 | at       : place le second argument a la position donnee par le troisieme ;
+;                 | name     : affecte a la variable l'eval de l'argument ;
+;                 | widget   : fixe la widget de dessin (par defaut main-bVLISP)
+;;
+
+(setq --x-- careful careful nil)
+
+(setq 2PI (* 64 360))
+(setq pic-values 'PIC
+      PIC_WIDTH 20       ; valeurs par defaut ;
+      PIC_HEIGHT 20
+      PIC_X 0
+      PIC_Y 0)
+
+(put pic-values 'widget 'main-bVLISP)    ; widget destinataire ;
+(put pic-values 'x PIC_X)                ; pic est positition-conservative ;
+(put pic-values 'y PIC_Y)
+(put pic-values 'dir 'right)
+(put pic-values 'width PIC_WIDTH)
+(put pic-values 'height PIC_HEIGHT)
+(put pic-values 'p-width 0)
+(put pic-values 'p-height 0)
+(put pic-values 'arrow-size 5)
+(put pic-values 'place ())
+
+
+					; gestion des directions ;
+
+
+(defmacro isleft ()   '(eq (get pic-values 'dir) 'left))
+(defmacro isright ()  '(eq (get pic-values 'dir) 'right))
+(defmacro istop ()    '(eq (get pic-values 'dir) 'top))
+(defmacro isbottom () '(eq (get pic-values 'dir) 'bottom))
+
+(defmacro left ()   '(change-direction 'left))
+(defmacro right ()  '(change-direction 'right))
+(defmacro top ()    '(change-direction 'top))
+(defmacro bottom () '(change-direction 'bottom))
+
+(de change-direction (direction)
+    (cond
+     ; rien a faire ;
+     ((eq direction (get pic-values 'dir)) t)
+     ; passage de l'horizontal au vertical ;
+     ((and (or (eq direction 'top) (eq direction 'bottom))
+	       (or (isleft) (isright)))
+      (put pic-values 'x (- (get pic-values 'x) (get pic-values 'width)))
+      (put pic-values 'y (+ (get pic-values 'y) (get pic-values 'height))))
+     ; passage du vertical a l'horizontal  ;
+     ((and (or (eq direction 'left) (eq direction 'right))
+	   (or (istop) (isbottom)))
+      (put pic-values 'x (+ (get pic-values 'x) (get pic-values 'width)))
+      (put pic-values 'y (- (get pic-values 'y) (get pic-values 'height)))))
+    (put pic-values 'dir direction))
+    
+
+					; gestion de la widget d'affichage et du context ;
+
+(de widget (w)
+    (ifn (iswidget w) ()
+	 (put pic-values 'widget w)
+	 t))
+
+(de get-context ()
+    (let ((vals (cdr pic-values)) (ret ()))
+      (cond 
+       ((null vals) ret)
+       ((eq (car vals) 'eval) (self (cddr vals) ret))
+       (t
+	(self (cddr vals) 
+	      (append ret `(,(car vals) ,(cadr vals))))))))
+
+(de set-context (c)
+    (let (vals c)
+      (cond
+       ((or (atom vals) (null vals)) t)
+       (t
+	(put pic-values (car vals) (cadr vals))
+	(self (cddr vals))))))
+		
+					; gestion du placement et du deplacement ;
+
+(de above () (put pic-values 'place 'above))
+(de below () (put pic-values 'place 'below))
+
+(de move ()
+    (cond
+     ((or (isright) (isleft)) 
+      (put pic-values 'x (+ (get pic-values 'x) (get pic-values 'width))))
+     ((or (isbottom) (istop)) 
+      (put pic-values 'y (+ (get pic-values 'y) (get pic-values 'height))))
+    (put pic-values 'place ()))
+    `(set-context '(x ,(get pic-values 'x) y ,(get pic-values 'y))))
+      
+
+					; eval des arguments pour box, circle, arrow, ... ;
+					; le type d'eval peut etre : 'string : recherche les chaines ;
+					;                                  'number : recherche les nombres ;
+
+(de pic-eval (args eval-type)
+    (let ((arg-evals args)
+	  (y-size (if (eq eval-type 'string) 3 (get pic-values 'height)))
+	  (x-size (get pic-values 'width))
+	  (returned ()))
+      (cond
+       ((null arg-evals)
+	(put pic-values 'width x-size)
+	(put pic-values 'height y-size)
+	(reverse returned))
+       ((and (eq eval-type 'string) (stringp (car arg-evals)))
+	(self (cdr arg-evals) 
+	      (+ y-size (cdr (xGetStringDimension (get pic-values 'widget) (car arg-evals))))
+	      (let (s-size (car (xGetStringDimension (get pic-values 'widget) (car arg-evals))))
+		(if (> s-size x-size) s-size x-size))
+	      (cons (car arg-evals) returned)))
+       ((and (eq eval-type 'number) (numbp (car arg-evals)))
+	(self (cdr arg-evals y-size x-size (cons (car arg-evals) returned))))
+       ((not (or (numbp (car arg-evals)) (stringp (car arg-evals))))
+	(put pic-values 'eval 
+	     `(,@(mcons (mapcar (cond
+				 ((atom (car arg-evals)) `((,(car arg-evals))))
+				 ((atom (caar arg-evals)) `(,(car arg-evals)))
+				 (t (car arg-evals)))
+				'eval)
+			(get pic-values 'eval))))
+	(self (cdr arg-evals) y-size x-size returned)))))
+
+
+					; procedures de dessin ;
+
+(de drawline (is-arrow)
+    (setq pic-sx (+ (get pic-values 'x) (if (or (istop) (isbottom)) (/ (get pic-values 'p-width) 2) 0)))
+    (setq pic-sy (+ (get pic-values 'y) (if (or (isright) (isleft)) (/ (get pic-values 'p-height) 2) 0)))
+    (setq pic-ex (+ pic-sx (if (or (isleft) (isright)) (get pic-values 'width) 0)))
+    (setq pic-ey (+ pic-sy (if (or (istop) (isbottom)) (get pic-values 'height) 0)))
+    (setq pic-as (get pic-values 'arrow-size))
+    (if (or (istop) (isleft))
+	(progn 	
+	  (setq tmp pic-sx) (setq pic-sx pic-ex) (setq pic-ex tmp)
+	  (setq tmp pic-sy) (setq pic-sy pic-ey) (setq pic-ey tmp)))
+    (let ((a1x (if (or (isleft) (istop)) (+ pic-ex pic-as) (- pic-ex pic-as)))
+	  (a2x (if (or (isleft) (isbottom)) (+ pic-ex pic-as) (- pic-ex pic-as)))
+	  (a1y (if (or (isbottom) (isleft)) (- pic-ey pic-as) (+ pic-ey pic-as)))
+	  (a2y (if (or (isbottom) (isright)) (- pic-ey pic-as) (+ pic-ey pic-as))))
+      (xDrawLines (get pic-values 'widget) pic-sx pic-sy pic-ex pic-ey)
+      (if is-arrow 
+	  (xDrawLines (get pic-values 'widget) pic-ex pic-ey a1x a1y pic-ex pic-ey a2x a2y)))
+    t)
+		
+
+(df arrow (args)
+    (let (strings (pic-eval args 'string))
+      (drawline t)
+      (setq pic-sx (if (> pic-sx pic-ex) pic-sx pic-ex))
+      (setq pic-sy (if (> pic-sy pic-ey) pic-sy pic-ey))
+      (ifn strings t
+	   (let (dim (xGetStringDimension (get pic-values 'widget) (car strings)))
+	     (cond
+	      ((eq (get pic-values 'place) 'above)
+	       (setq pic-sy (- pic-sy (* (cadr dim) (length strings)))))
+	      ((eq (get pic-values 'place) 'below)
+	       (setq pic-sy (+ pic-sy (cadr dim))))
+	      (t
+	       (seyq pic-sy (- pic-sy (* (cadr dim) (/ (length strings) 2))))))
+	     (let (out-str strings)
+	       (ifn out-str 
+		    (xDrawString (get pic-values 'widget) pic-sx pic-sy (car out-str))
+		    (setq pic-sy (+ pic-sy (cadr dim)))
+		    (self (cdr out-str)))))))
+    `(arrow ,@args))
+
+(df box (args) 
+    (let ((strings (pic-eval args 'string))
+	  (s-height (cdr (xGetStringDimension (get pic-values 'widget) "H"))))
+      (xDrawRectangles (get pic-values 'widget)
+		       (get pic-values 'x)      (get pic-values 'y)
+		       (get pic-values 'width)  (get pic-values 'height))
+      (let ((x-str (+ (get pic-values 'x) 3))
+	    (y-str (+ (get pic-values 'y) s-height))
+	    (str strings))
+	(ifn str ()
+	     (xDrawString (get pic-values 'widget) x-str y-str (car str))
+	     (self x-str (+ y-str s-height) (cdr str)))))
+    `(box ,@args))
+
+(df circle (args)
+    (let ((string (pic-eval args 'string))
+	  (w (get pic-values 'widget))
+	  (ray 0))
+      (if string
+	  (let ((t-str (cdr string))
+		(d-str (xGetStringDimension w (car string)))
+		(max-x 0)
+		(cum-y 0))
+	    (cond
+	     ((null t-str)
+	      (setq ray (if (> (/ (* max-x 3) 2) (/ (* cum-y 2) 3))
+			       (/ (* max-x 3) 2)
+			     (/ (* cum-y 2) 3)))
+	      (xDrawArcs w (get pic-values 'x) (get pic-values 'y) ray ray 0 2PI)
+	      (let ((p-str (reverse string))
+		    (pic-in (/ ray (+ (length string) 1)))
+		    (pic-sx (+ (get pic-values 'x) (/ max-x 3)))
+		    (pic-sy (+ (get pic-values 'y) ray)))
+		(ifn p-str ()
+		     (setq pic-sy (- pic-sy pic-in))
+		     (xDrawString w pic-sx pic-sy (car p-str))
+		     (self (cdr p-str) pic-in pic-sx pic-sy pic-in))))
+	     (t
+	      (self (cdr t-str)
+		    (if (cdr t-str) (xGetStringDimension w (cadr t-str)))
+		    (if (> max-x (car d-str)) max-x (car d-str))
+		    (+ cum-y (cdr d-str))))))
+	(let (ray (if (> (get pic-values 'width) (get pic-values 'height)) (get pic-values 'width)
+		       (get pic-values 'height)))
+	  (xDrawArcs w (get pic-values 'x) (get pic-values 'y) ray ray 0 2PI)))
+      (set-context `(width ,ray height ,ray)))
+    `(circle ,@args))
+      
+
+
+      

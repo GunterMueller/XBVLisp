@@ -1,0 +1,37 @@
+Installation procedure for XBVL
+
+XBVL is free to be copied and to be modifyed (see LICENSE). 
+It is maintained at IA lab of University Paris 8 at St Denis
+mainly by Damien Ploix. email : damien@ia.univ-paris8.fr
+
+This version of xbvl contains help files in french...
+maybe one day.... in english.
+
+This package have be succesfully compiled and runned under :
+
+	HP under News-OS R4.1C
+	Sun Spark / SunOS 4 / MesaGL
+	SGI Indy and Indigo / Irix 5.2 and 4.0.5 / OpenGL
+	Alpha - P5 / Linux / XFree86 / MesaGL
+
+To install please run ./configure, make and make install
+
+This package contains :
+
+XbVLISP : X11/app-defaults file for xbvl in color
+configure.in : sources of actual ./configure by autoconf
+lsp_expls : a set of lisp examples for xbvl
+src_data : system lisp libraries and Help files
+include : .h files of xbvl
+src_lisp : sources of xbvl
+src_open_gl : open_gl related sources files
+src_hershey : open_gl hershey fonts sources files
+src_x : X Windows interface sources files
+
+If you want to install xbvl with OpenGL/MesaGL extension, please
+first install Mesa (if needed). In case Mesa libraries doesn't stand
+in a regular X path, first set environment variable MESADIR which will
+indicate Xbvl where to scan for them. In anycase don't forget to set
+LD_LIBRARY_PATH to where needed if using Mesa.
+
+

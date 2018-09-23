@@ -1,0 +1,578 @@
+;		le Grand Pretty et Cross-Reference		;
+;			Harald Wertz				;
+;		adapte du pretty/cross de J. Chailloux		;
+
+(setq -x- careful careful nil)
+
+(princ "je charge prtt.vlisp")
+(package prt)
+
+(de e ()(sh "emacs /people/hw/lisp/src/prtt.vlisp"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+(or (boundp 'PASEXT)(setq PASEXT nil))
+(setq pile ())
+
+(de push (x)(setq pile (cons x pile)))
+
+(de pop ()(nextl pile))
+
+(de spaces (n)(if (le n 1) (princh " " 1)(princh " " 1)(spaces (1- n))))
+
+(or (boundp 'index)(setq index nil))
+(or (boundp 'TERPRI)(setq TERPRI nil))
+(or (boundp 'PTVRG)(setq PTVRG ";"))
+(or (boundp 'formfeed)(setq formfeed (itoa 12)))
+(or (boundp 'header)(setq header nil))
+(or (boundp 'versatec)(setq versatec nil))
+(or (boundp 'maxline)(setq maxline 58))
+(or (boundp 'ncline)(setq ncline 0))
+(or (boundp 'nbpage)(setq nbpage 0))
+
+(de %tab (col) (setq lmargin (+ col lmargin)))
+
+(de addn (x)(and (< %t (setq %n x))(exitt)) t)
+
+(de flatsize (%l ;; %n)(cond
+	((stringp %l)(+ 2 (plength %l)))
+	((atom %l)(plength %l))
+	((and (eq (car %l) quote)(null (cddr %l)))
+		(1+ (flatsize (cadr %l))))
+	((eq (car %l) 'list)(flatsize (cdr %l)))
+	((eq (car %l) 'COMMENT)(+ 2 (length (cdr %l))))
+	((addn (+ 2 (flatsize (nextl %l))))
+		(while (listp %l)
+			(addn (+ %n (1+ (flatsize (nextl %l))))))
+		(and %l (addn (+ %n 3 (flatsize %l))))
+		%n)))
+
+(de sarentre (%e ;; %t)
+	(escape exitt
+		(setq %t (- rmargin (+ (outpos) 5)))
+		(> %t (flatsize %e))))
+
+(de sortl (l ;; resl n q l2 ll)
+   (if (null l)()
+	(setq resl [nil])
+	(push (length l))(push l)
+	(let ((l1))
+		(setq l1 (pop) n (pop))
+		(if (eq n 1)(exit l1))
+		(setq q (logshift n -1))
+		(push q)(push l1)
+		(setq l1 (nth q l1))
+		(push (+ (logand n 1) q))(push (cdr l1))
+		(rplacd l1 nil)
+		(setq l1 (self) l2 (self) ll (rplacd resl l1))
+		(while l1
+		  (if (> (strcmp (car l1)(car l2)) 0)
+			(setq n l1 l1 l2 l2 n n (rplacd ll l1)))
+		  (setq ll l1 l1 (cdr l1)))
+		(rplacd ll l2)
+		(cdr resl))))
+
+(de %eol ()
+	(if (> (outpos) lmargin)(%terpri)(outpos lmargin)))
+
+(de %page ()
+   (setq ncline 0)
+   (if versatec () ; progn (terpri)(print ".SK"))
+   (push (status print))
+   (push lmargin)
+   (setq lmargin 0)
+   (status print 2)
+   (terpri)
+   (princh formfeed)
+   (ifn header ()
+	(prin1 "bvlisp " (date) " ")
+	(if (atom filin)(prin1 filin))
+	(spaces (- rmargin (+ (outpos) (+ 8 (plength (incr nbpage))))))
+	(print "Page " nbpage)
+	(outpos 0)
+	(princh (if versatec "\\-" "-") (- rmargin 4)))
+   (ifn header ()(terpri)(terpri))
+   (setq lmargin (pop))
+   (eval (list 'status 'print (pop))))
+   (outpos lmargin))
+
+(de TERpri (%n)
+  (if (le %n 0)()
+      (ifn TERPRI ()
+	(prin1 "\\v'1v'\\h'|0u'\\c")(setq TERPRI nil))
+	(terpri)
+	(TERpri (1- %n))))
+
+(de %terpri (%n)
+ 	(ifn  %n (setq %n 1))
+	(or (numbp %n)(setq %n 1))
+	(if (ge (setq ncline (+ ncline %n)) maxline)
+	    (%page)(TERpri %n))
+	(if index 
+	    (progn (outpos 0)
+		(if (< nbline 9)(prin1 "   ")
+		    (if (< nbline 99)(prin1 "  ")
+		      (if (< nbline 999) (prin1 " "))))
+		(prin1 (incr nbline))(outpos lmargin))))
+
+(df %pc (%l)
+	; imprime le commentaire ;
+	(%terpri)
+	(ifn versatec ()
+	(prin1 "\\fI"))
+	(princh PTVRG 1)
+	(eprogn %l)
+	(spaces 1)
+	(princh PTVRG 1)
+		(ifn versatec ()
+	(prin1 "\\fR"))
+	(%terpri 2))
+
+(de %la_chaine (a)(cond
+	((null a)())
+	((equal (car a) '\ )
+	 (prin1 (car a))(prin1 (car a))
+		(if versatec (progn (prin1 (car a))(prin1 (car a))))
+		(%la_chaine (cdr a)))
+	(t (prin1 (car a))(%la_chaine (cdr a))))))
+
+(de %prin1 (%l)
+	; simule un PRIN1 et fabrique l'index ;
+	(if (stringp %l)(progn (status print 3)
+		(prin1 %l)
+		(status print 2))
+		(prin1 %l))
+	(if (null index) %l
+	  (if (and %l (litatom %l)
+		(or crossall (isuser %l)))
+	      (let ((xx (explode %l)))
+	          (if (equal (car xx) "|")
+	            (let ((xx (implode (cdr xx))))
+			(put xx 'CROSS [nbline . (get xx 'CROSS)]))	
+	      (put %l 'CROSS [nbline . (get %l 'CROSS)]))))
+	  %l))
+
+(de xprdot ()(princh "." 1)(spaces 1) (%prin1 %e))
+
+(de xsuiv ()
+  (and (atom %e)
+	(exitt (princh "." 1)(spaces 1)(%prin1 %e)(princh ")" 1)))
+  (nextl %e))
+
+(de %pptc ()
+   ; edite le commentaire sur la meme ligne (s'il existe)
+   ; en tete de %e et met a jour %e
+   (if (eq (caar %e) 'COMMENT) (%p1)))
+
+(de %p1 ()
+   ; imprime sur la meme ligne l'objet %e
+;   (%pptc)
+   (cond
+	((sarentre (car %e))
+	    	(spaces 1)
+		(cond
+		  ((car %e)(superb (nextl %e)))
+		  ((princh "(" 1)(princh ")" 1)(nextl %e))))
+	(t (%tab 1)(spaces 1)(%eol)(superb (nextl %e))(%tab -1)))
+(if TERPRI (%terpri))
+;   (%pptc); )
+
+(de %pp (%e)
+  ; imprime un prog, do, load ...
+  (%tab 7)
+  (|mapc %e (lambda (%e)(cond
+	((atom %e)
+		(%terpri)
+		(outpos (- lmargin 7))
+		(%prin1 %e)
+		(%eol))
+	((eq (car %e) 'COMMENT)
+		(if (sarentre %e)(spaces 1)(%terpri))
+		(superb %e))
+	(t (%eol)(superb %e)))))
+  (princh ")" 1)
+  (%tab -7))
+
+(de xprtty ()
+  ; edite les elements de %e normalement
+  (cond
+	((sarentre %e)(while %e (spaces 1)(superb (xsuiv %e))))
+	((spaces 1)(%tab 3)
+		(|mapc %e (lambda (%e)(%eol)(superb %e)))
+		(%tab -3)))
+  (princh ")" 1))
+
+(de xprtty1 ()
+  ; edite 1 element sur la meme ligne et le reste normalement
+  (%p1)
+  (xprtty))
+
+(de xprtty2 ()
+  ; edite des clauses de COND ou de SELECT ..
+  (%tab 3)
+  (|mapc %e (lambda (%e)
+	(%eol)
+	(if (eq (car %e) 'COMMENT)
+		(exit (superb %e))
+		(princh "(" 1)
+		(%tab 1)
+		(superb (nextl %e))
+		(%pptc)
+		(%tab -1)(xprtty))))
+  (%tab -3)
+  (princh ")" 1))
+
+(de superb (%e ;; %l %f %t)
+  (if (atom %e)(exit (%prin1 %e)))
+  ; c'est donc une liste
+  ; %f = le type de la fonction
+  (setq %f (or
+	(and (litatom (car %e))(get (car %e) '|PRETTY))
+	(car %e)))
+  (escape exitt (cond
+	((eq %f 'quasiquote)
+		(setq %e (cdr %e) PASEXT t)
+;		(and (not (sarentre %e))(%terpri))
+		(princh "`" 1)(superb %e)(setq PASEXT ()) %e)
+	((and (eq %f '*unquo*)(null (cddr %e)))
+		(setq %e (cadr %e))
+		(and (atom %e)(not (sarentre %e))(%terpri))
+		(princh "," 1)(superb %e))
+	((and (eq %f '*splice*)(null (cddr %e)))
+		(setq %e (cadr %e))
+		(and (atom %e)(not (sarentre %e))(%terpri))
+		(princh "," 1)
+		(princh "@" 1)
+		(superb %e))
+	((and (eq %f quote)(null (cddr %e)))
+		(setq %e (cadr %e) PASEXT t)
+		(and (atom %e)(not (sarentre %e))(%terpri))
+		(princh "'" 1)(superb %e)(setq PASEXT nil) %e)
+	((and (listp (car %e))(eq (caar %e) lambda) (null PASEXT))
+		(setq %l (cadar %e) %t (cdr %e))
+		(superb ['|let
+		   (|mapcar %l (lambda (x) [x (nextl %t)]))
+		   . (cddar %e)]))
+	((and (eq %f '|mcons)(null (cdr (last %e))))
+		(princh "[" 1)(nextl %e)(cond
+			((sarentre %e)
+			    (while (listp (cdr %e))
+				(superb (nextl %e))(spaces 1)))
+			(t (%tab 1)
+			    (while (listp (cdr %e))
+				(superb (nextl %e))(%terpri))
+			   (%tab -1)))
+		(princh "." 1)(princh " " 1)(superb (car %e))
+		(princh "]" 1))
+	((and (eq %f 'cons)(null (cdr (last %e)))(null (cdr (cddr %e))))
+		(superb ['|mcons . (if (cddr %e) (cdr %e)[(cadr %e) nil])]))
+	((and (eq %f '|ncons)(null (cddr %e)))
+		(superb ['list . (cdr %e)]))
+	((and (eq %f 'list)(null (cdr (last %e))))
+		(princh "[" 1)(nextl %e)(cond
+			((sarentre %e)
+				(while (listp %e)
+				   (superb (nextl %e))
+				   (and %e (spaces 1))))
+			(t (%tab 1)
+				(while (listp %e)
+				   (superb (nextl %e))
+				   (and %e (%terpri)))
+			   (%tab -1)))
+		(and %e (xprdot))(princh "]" 1))
+	((eq %f 'COMMENT)
+		(and (equal (cdr %e) '(|p |a |g |e))(exitt (%page)))
+		(ifn versatec ()
+		(prin1 "\\fI"))
+		(princh PTVRG 1)
+		(%tab (setq %t (- (outpos) lmargin)))
+		(|mapc (cdr %e) (lambda (x)
+		    (if (ge (outpos) (- rmargin 2))
+		     (progn (princh PTVRG 1)(%terpri)(outpos (1- (outpos)))
+			    (princh PTVRG 1)(spaces 1)))
+			(princh x 1)))
+		(%tab (- 0 %t))
+		(princh PTVRG 1)
+		(ifn versatec ()
+		(prin1 "\\fR")))
+	((every %e 'atom)
+		(princh "(" 1)
+		(%tab (setq %t (- (outpos) lmargin)))
+		(while (listp %e)
+			(or (sarentre (car %e)) (%terpri))
+			(%prin1 (nextl %e))
+			(and %e (spaces 1)))
+		(and %e (xprdot))(princh ")" 1)
+		(%tab (- 0 %t)))
+	(t 
+	   (ifn (and (null PASEXT)(memq %f '(de df dm dmo dmc dml |defmacro)))
+		()
+                (push lmargin)(setq lmargin 0)
+		(status print 2)(terpri)
+         	(prin1 "'FN " 
+		  (let ((xx (explode (cadr %e))))
+		      (if (equal (car xx) "|")(implode (cdr xx))(cadr %e))))
+		(setq TERPRI t)
+		(setq lmargin (pop))
+		(terpri))
+		(princh "(" 1)(while %e (setq %l (xsuiv %e))(cond
+		((null %e))
+		((or (memq %l %s)
+		     (memq %f '(or and list mcons append  nconc + -
+				unwind-protect
+				* / explode gensym exit progn prog1)))
+		   (%prin1 %l)(exitt (xprtty)))
+		((memq %f '(set setq))
+		   (%prin1 %l)(cond
+			((sarentre %e)(while %e (spaces 1)(superb (nextl %e))))
+			((%tab 3)(while %e (%terpri)
+					(superb (nextl %e))
+					(if %e (%p1)
+					    (exitt (princh ")" 1)(%tab -3))))
+				  (%tab -3)))
+		   (exitt (princh ")" 1) ))
+		((memq %l '(escape))
+		   (%prin1 %l)(setq %s [(car %e) . %s])
+		   (exitt (xprtty1)(nextl %s)))
+		((and (null PASEXT)(memq %f '(de df dm dmo dmc dml |defmacro)))
+		   (%prin1 %l)
+		   (spaces 1)
+		 (if versatec (progn
+  		   (prin1 "\\fB")))
+		   (%prin1 (car %e))
+		 (if versatec (progn
+  		   (prin1 "\\fR")))
+		   (if (memq %f '(dmc dml)) (put %l 'cross %f))
+		   (if (or (litatom (car %e))(stringp (car %e)))
+		       (progn (nextl %e)(exitt (xprtty1)))
+		       (nextl %e)(exitt (xprtty))))
+		((memq %f 
+			'(lambda while until put if repeat |map |mapc
+			    |mapcar let ifn when unless))
+		   (%prin1 %l)(exitt (xprtty1)))
+		((eq %f '|prog)
+		   (%prin1 %l)(spaces 1)(superb (nextl %e))
+		   (exitt (%pp %e)))
+		((memq %f '(|select selectq repeat))
+		   (%prin1 %l)(spaces 1)(%p1)
+		   (exitt (xprtty2)))
+		((and (null PASEXT)(eq %f 'cond))
+			(%prin1 %l)(exitt (xprtty2))))
+	    (%tab 1)(or (sarentre %l)(%eol))
+	    (superb %l)
+	    (and %e (spaces 1))(%tab -1))
+	(princh ")" )))))
+
+(de prettynit ()
+   ; initialisation des status, margins etc
+   (push lmargin)(push rmargin)
+   (setq lmargin (if index 8 1))
+   (setq rmargin (if versatec 95 PRETTYSIZE))
+   (status print 2))
+
+(de prettyfin ()
+   (|mapc '(rmargin lmargin) '(lambda (x)(set x (pop))))
+   (status print 0)(terpri))
+
+(de |prettyp (%e ;; %s)
+   (prettynit)
+   (superb %e)(prettyfin) %e)
+
+(df |prt (%l ;; %x)
+   (%terpri)
+   (|mapc %l (lambda (%l) (%terpri) (cond
+	((> (ftyp %l) 6)
+		(setq %x 
+			[(cdr (assoc (ftyp %l) '((7 . de) (8 . df) (9 . dm)
+				(11 . dmo) )))
+			  %l . (fval %l)])
+		(if (and (eq (plength %l) 1)(get %l 'cross))
+		    (rplaca %x (get %l 'cross)))
+		(|prettyp %x))
+      	((boundp %l)(|prettyp (car %l)))
+	(t (print "*** prt : C'est quoi ?" %l)))
+      (%terpri))))
+
+(de every (x f) (cond
+  ((null x) t)
+  ((atom x) (f x))
+  (t (and (f (car x)) (every (cdr x) f)))))
+
+(or (boundp 'PRETTYSIZE)(setq PRETTYSIZE 71))
+
+(de |prettyfile (filout filin ;; %s lu lastprtcom caref)
+	; lastprtcom pour supprimer les lignes blanches
+	; entre deux commentaires
+  (de EOF ()
+	(fval 'EOF 0)(ftyp 'EOF 0)
+	(if (and index versatec)(progn (setq lmargin 0)(terpri)
+		(print ".ds =f " filin)
+		(print ".SK")))
+	(prettyfin)
+	(ifn index nil (setq lmargin 0)(%page)
+		(crossprint))
+	(%pc (prin1 "end of file : " filin))
+	(redmc ";" 1)
+	(redmc "|")
+	(setq ANTISL nil)
+	(status print 0)
+	(output)
+	(input)
+	(setq careful caref)
+	(ifn versatec ()(print "pour imprimer sur la versatec faites :")
+		(print "\t" "tbl" filout ">tmp")
+		(print "\t" "vtroff /people/hw/lisp/src/tmac.m tmp"))
+	(ppp filout))
+  (de topl ()
+      (escape ppp
+      (setq ANTISL (if versatec 1 t))
+      (while t
+	(setq lu (read))(cond
+	((atom lu)(print lu))
+	((and (eq (car lu) 'pour)(eq (cadr lu) 'pretty))
+		(eprogn (cddr lu)))
+	((neq (car lu) 'COMMENT)
+		(and lastprtcom (%terpri))
+		(if (and index (memq (car lu) '(de df dm dmc dml dmo defmacro)))
+		 (let ((xx (explode (cadr lu))))
+		   (setq xx 
+		      (if (equal (car xx) "|")(implode (cdr xx)) (cadr lu)))
+		 (setq nbfnt [[xx (car lu) nbline] . nbfnt])))
+		(superb lu)
+		(setq lastprtcom)
+		(%terpri))
+	(t (setq lastprtcom t)(superb lu)))
+	(%terpri))))
+  (setq PTVRG ";" formfeed (itoa 12))
+  (undmc "|")
+  (dmc ";"  (%l %c %t)
+	(setq %l ['COMMENT])
+	(let ((x (readch)))
+		(if (or (equal x PTVRG) (equal x "\n"))()
+		     (setq %l [x . %l])(self (readch))))
+	(reverse %l))
+  (setq maxline (if versatec 999999 56) ncline 0 nbpage 0)
+  (ifn versatec (output filout)(progn 
+(setq lmargin 0)(status print 2)(terpri)(output filout)
+(print ".S 10 D")
+(print ".po 2c")
+(print ".ds al \"" filin)
+(print ".PH \"'\\\\\\\\*(al'- Page \\\\\\\\nP -'\\\\\\\\fI\\\\\\\\*(=f\\\\\\\\fR'\"")
+(print ".EH \"'\\\\\\\\l'\\\\\\\\n(.lu''''\"")
+(print ".OH \"'\\\\\\\\l'\\\\\\\\n(.lu''''\"")
+(print ".EF \"'\\\\\\\\l'\\\\\\\\n(.lu''''\"")
+(print ".OF \"'\\\\\\\\l'\\\\\\\\n(.lu''''\"")
+(print ".PF \"''- \\\\\\\\*(DT -''\"")
+(print "'de FN")
+(print "\\v'-1v'\\f2\\s14\\h'\\\\n(.lu-\\w'\\\\$1'u'\\\\$1\\fP\\s0\\h'|0u'\\c")
+(print "'ds =f \"\\&...\\\\$1")
+(print "..")
+(print ".SK")
+(print ".SA 1")
+(print ".P")
+(print ".nf")
+(print ".ps 10")
+   (setq lmargin (if index 6 1))))
+  (prettynit)
+  (%page)
+  (%pc (prin1 (date) " file : " filin))
+  (input filin)
+  (setq caref careful)
+  (careful nil)
+  (%terpri)
+  (topl))
+
+(df |prettyf (filin)
+   ; pretty-print un fichier standard 
+   (|prettyfile (strcat (car filin) ".prt") (car filin)))
+
+(de |prettysize (%n)
+   ; initialise la largeur d'impression du pretty
+   (setq PRETTYSIZE (if (numbp %n) %n 71)))
+
+(de |prettyend (;; x)
+    ; recupere la place de pretty-print
+   (|mapc '(%tab addn flatsize sarentre %eol xprdot xsuiv %p1 %pp
+		xprtty xprtty1 xprtty2 superb |prettyp |prettyfile 
+		|prettyend crossprint |cross |crossfile)
+	(lambda (x)(fval x 0)(ftyp x 0)(remob x)))
+   (gc) 'done)
+
+(de crossprint (;; nb x yy)
+  (setq index () nb 0)
+  (ifn versatec (progn (outpos 17)(print "Cross Reference"))
+   (status print 2)(terpri)
+   (print ".ps 12")
+   (print ".ce 1")
+   (print "\\fBCross Reference\\fR")
+   (print ".ps 10")
+   (status print 0))
+   (%terpri 3)
+   ; impression de la liste de fonction ;
+   (|mapc (sortl (|mapcar nbfnt (lambda (z) (car z))))
+       (lambda (l)(setq yy nil)(|mapc (let ((x nbfnt))(cond
+	   ((null x) nil)
+	   ((and (listp x)(equal (caar x) l))(car x))
+	   (t (self (cdr x)))))
+	(lambda (x)(if yy (prin1 x)(prin1 "\\fB" x "\\fR")(setq yy t))))
+       (%terpri)))
+  (%terpri)
+  (setq yy 0)
+  (ifn versatec (%terpri)(status print 2)(%terpri)(print ".fi")
+  (print ".TS")(print "expand;")(print "lw(1.5c) lB lw(3.7i)."))
+  (mapc (sortl (mapct (cddr (oblist))(lambda (l)
+	(and (get l 'CROSS) l))))
+	(lambda (l)
+		(setq x (get l 'CROSS))
+		(remprop l 'CROSS)
+		(ifn versatec (setq lmargin 0))(%terpri)
+		(prin1 (incr nb))
+		(ifn versatec (outpos 4)(princh "\t" 1))
+		(prin1 l)
+		(ifn versatec (progn (setq lmargin 18)(outpos 17))
+			(princh "\t" 1)(print "T{"))
+		(|mapc (nreverse x) (lambda (y)
+		   (prin1 y)(if versatec (princh " " 1))))
+		(%terpri)
+		(ifn versatec ()(print "T}")); (print ".sp")
+		  (if (< (incr yy) 20)()(print ".TE")
+			(setq yy 0)(print ".sp -1")
+  			(print ".TS")(print "expand;")
+			(print "lw(1.5c) lB lw(3.7i)."))
+  ))
+  (ifn versatec (setq lmargin 0) (prin1 ".TE")(status print 2)(%terpri))
+  (%terpri))
+ 
+(df |cross (f ;; crossall index nbline nbfnt)
+	(setq nbline 0 index t crossall (cadr f))
+	(setq lmargin 9)
+	(eval ['|prt (car f)])
+	(crossprint))
+
+(de |crossfile (filout filin header versatec crossall index nbline nbfnt)
+	(setq nbline 0 index t)
+	(setq PRETTYSIZE (+ PRETTYSIZE 9))
+	(or filout (setq filout "cross.cro"))
+	(|prettyfile filout filin)
+	(setq PRETTYSIZE (- PRETTYSIZE 9))
+	filout)
+
+(df |crossf (filin)
+	(|crossfile (strcat (car filin) ".cro") (nextl filin)(nextl filin)
+		(nextl filin)(nextl filin)))
+
+(print "prtt.vlisp loaded")
+(package)
+
+(setq careful -x-)
+

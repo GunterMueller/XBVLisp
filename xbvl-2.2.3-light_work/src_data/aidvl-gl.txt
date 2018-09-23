@@ -1,0 +1,865 @@
+^^Interface avec Open GL
+^
+GL
+	Implémentation d'une interface entre OPEN GL (Graphic Library) et Xbvl.
+	Les fonctions définies sont pour :
+
+La création des fenêtres d'interaction entre Xbvl et Gl :
+	GLwinopen, GLwinset, GLcallback.
+	
+	La gestion des dessins affiche : 
+	GLrootlist, GLnewlist, GLendlist, GLgenlist, GLdellist
+
+	La couleur : GLcolor 
+
+	Les attributs : GLpushAttrib, GLpopAttrib, GLcopyAttrib
+	
+	La gestion du mode d'affichage :
+	GLortho, GLwindow, GLperspective, GLlookat
+
+	La gestion de l'apparence des objets ou de l'image :
+	GLscale, GLtranslate, GLrotate, GLaspect, GLimscale, GLimtranslate, GLimrotate,
+
+	Fonctions annexes : GLgetXYangulaire, GLgetXYZ
+	Fonctions particulières à Xbvl : MESAreadlist, MESAgetlist, MESAwritelist
+^
+GLpushAttrib
+(GLpushAttrib "Nom de L'attribut")
+
+	Push, dans la fenêtre courante, les valeurs des attributs donnes en arguments.
+
+	les attributs peuvent être :
+		GL_CURRENT_BIT
+		GL_POINT_BIT
+		GL_LINE_BIT
+		GL_POLYGON_BIT
+		GL_POLYGON_STIPPLE_BIT
+		GL_PIXEL_MODE_BIT
+		GL_LIGHTING_BIT
+		GL_FOG_BIT
+		GL_DEPTH_BUFFER_BIT
+		GL_ACCUM_BUFFER_BIT
+		GL_STENCIL_BUFFER_BIT
+		GL_VIEWPORT_BIT
+		GL_TRANSFORM_BIT
+		GL_ENABLE_BIT
+		GL_COLOR_BUFFER_BIT
+		GL_HINT_BIT
+		GL_EVAL_BIT
+		GL_LIST_BIT
+		GL_TEXTURE_BIT
+		GL_SCISSOR_BIT
+		GL_ALL_ATTRIB_BITS (défaut)
+^
+GLpopAttrib
+
+(GLpopAttrib) 
+
+	Restaure les valeurs des attributs.
+
+^
+GLcopyAttrib
+(GLcopyAttrib win1 win2 mask)
+
+Copie les attributs (spécifiés avec mask (cf. GLpushAttrib)) de la fenêtre GL win1
+	vers la fenêtre GL win2
+^
+GLwinopen
+(GLwinopen nom pere [partage de listes] [ressources]) NSUBR
+
+	Création d'un widget de dessin donnant accès a la libraire 
+	graphique de l'IRIS. Ce widget ne peut avoir de widget fils.
+	L'accès aux callbacks de ce widget se fait par la fonction
+	GLcallback. Au moment de la création d'un widget de dessin
+	celui-ci devient le widget actif. GLwinset permet de rendre
+	actif un widget.
+	Dans le cas du partage de listes graphiques entre plusieurs
+	fenêtres, le nom du widget correspondant doit être spécifié
+	en troisième argument.
+^
+GLdrive
+(GLdrive <fenetre-GL>)
+
+	Installe l'interface de conduite des transformations globales
+	pour la fenêtre donnée en argument.
+^
+GLwinset
+(GLwinset widget) SUBR1
+
+	Rend actif pour les routines de la librairie GL le widget 
+	donne en argument.
+^
+GLcallback
+(GLcallback "Type-D'evenement" "expression-Lisp")
+
+	Ajoute pour le type d'événement spécifié l'expression lisp 
+	donnée en argument comme callback.
+	Les callbacks GL possèdent un certain nombre de macros qui sont 
+	remplacés par des informations sur l'objet qui active le callback :
+
+	1) $X = position en X de la souris
+	2) $Y = position en Y de la souris
+	3) $B = bouton presse au moment de l'événement
+	4) $C = le caractère saisi au clavier
+	5) $G = l'objet graphique utilisateur sélectionné par la souris
+
+^
+GLloadTiff
+(GLloadTiff X Y Z Fichier [ZoomX [ZoomY]])
+	
+	Charge (et affiche) un fichier au format TIFF. X Y Z défini la position
+	du coin bas gauche de l'image. Il est possible de spécifier une modification
+	de la taille de l'image par un Zoom en X et en Y.
+^
+GLdump
+(GLdump fichier [largeur hauteur])
+
+	Permet de sauvegarder le contenu de la fenêtre courante dans un fichier. Le
+	format du fichier généré est un fichier TIFF.
+^
+GLislist
+(GLislist n)
+
+	retourne t si n correspond à une liste définie dans la fenêtre
+	GL active.
+^
+GLrootlist
+(GLrootlist [n] [widget])
+
+	Fixe ou demande la liste actuellement dessinée dans la widget courante ou spécifiée.
+
+^
+GLnewlist
+(GLnewlist [n])
+
+	Création ou modification d'une liste. Si n n'est pas spécifié un numéro de liste
+	non encore utilisé sera retourné
+^
+GLendlist
+(GLendlist)
+
+	Termine la création d'une liste
+^
+GLgenlist
+(GLgenlist [range])
+
+	Retourne un numéro de liste non encore utilise, si range est spécifié, le numéro retourne
+	permet la création de range nouvelles listes (par simple incrémentation).
+^
+GLdellist
+(GLdellist n [range])
+
+	Efface la liste n ou les listes comprisent entre n et n+range.
+^
+GL-LIGHTING
+GL-LIGHTING
+
+	Pour utiliser la lumière les opérations suivantes doivent être
+	effectuées :
+
+	1) Créez une source de lumière avec GLlight
+	2) Sélectionnez un model d'illumination avec GLmodel
+	3) Définir les propriétés de la matière avec GLmaterial
+
+	Optionnellement : définissez le model de transparence avec GLblend
+^
+GLlight
+(GLlight Light Prop Value) SUBR3
+
+	GLlight permet la création de sources lumineuses :
+
+	Light = "GL_LIGHT0" ou "GL_LIGHT1" ... "GL_LIGHT7"
+	
+^%T2
+		Propriété                     	 Défaut
+		"GL_AMBIENT"                  	 (0, 0, 0, 1)
+		"GL_DIFFUSE"                  	 (1, 1, 1, 1)
+		"GL_SPECULAR"                 	 (1, 1, 1, 1)
+		"GL_POSITION"                 	 (0, 0, 1, 0)
+		"GL_SPOT_DIRECTION"           	 (0, 0, -1)
+		"GL_SPOT_EXPONENT"            	 0
+		"GL_SPOT_CUTOFF"              	 180
+		"GL_CONSTANT_ATTENUATION"     	 1
+		"GL_LINEAR_ATTENUATION"       	 0
+		"GL_QUADRATIC_ATTENUATION"    	 0
+^
+GLmodel
+(GLmodel Prop Value)
+
+	Définition du model d'illumination
+
+^%T2
+		Propriété			Défaut
+		"GL_LIGHT_MODEL_AMBIENT"	
+		"GL_LIGHT_MODEL_LOCAL_VIEWER"	"GL_FALSE"
+		"GL_LIGHT_MODEL_TWO_SIDE"	
+
+	Voir aussi GLenable et GLdisable
+^
+GLenable
+(GLenable Value)
+
+	Activation d'une source lumineuse: 
+	Value = "GL_LIGHTING" ou "GL_LIGHT0" ... "GL_LIGHT7"
+
+^
+GLdisable
+(GLdisable Value)
+
+	Désactivation d'une source lumineuse: 
+	Value = "GL_LIGHTING" ou "GL_LIGHT0" ... "GL_LIGHT7"
+
+^
+GLmaterial
+(GLmaterial Type Prop Value)
+	
+	Définition et activation d'un matériel de dessin
+	
+	Type = GL_FRONT ou GL_BACK ou GL_FRONT_AND_BACK
+
+^%T2
+		Propriété		  Défaut
+		"GL_AMBIENT"		  (0.2 0.2 0.2 1.0)
+		"GL_DIFFUSE"		  (0.8 0.8 0.8 1.0)
+		"GL_AMBIENT_AND_DIFFUSE"	
+		"GL_SPECULAR"		  (0 0 0 1)
+		"GL_SHININESS"		  0
+		"GL_EMISSION"		  (0 0 0 1)
+		"GL_COLOR_INDEXES"	  (0 1 1)
+^
+GLblend
+(GLblend Facteur-Source Facteur-Destination)
+
+	Spécification de la fonction de  calcul de la transparence dans la
+	superposition de  deux  pixels   :  la  source   désigne  l'image
+	précédemment  affiché et la  destination  la  nouvelle image.  Les
+	valeurs peuvent être :
+
+	La position indique le traitement effectué sur la  couleur  source
+	ou destinataire (s = source, d = destination).
+
+^%T3
+	Valeur				Pos.	Facteur de combinaison
+	"GL_ZERO"               	s/d	0 0 0 0
+	"GL_ONE"                	s/d	1 1 1 1
+	"GL_DST_COLOR"          	s	Rd Gd Bd Ad
+	"GL_SRC_COLOR"           	d	Rs Gs Bs As
+	"GL_ONE_MINUS_DST_COLOR"       	s	1-Rd 1-Gd 1-Bd 1-Ad
+	"GL_ONE_MINUS_SRC_COLOR"       	d	1-Rs 1-Gs 1-Bs 1-As
+	"GL_SRC_ALPHA"                 	s/d	As As As As
+	"GL_ONE_MINUS_SRC_ALPHA"	s/d	1-As 1-As 1-As 1-As
+	"GL_DST_ALPHA"			s/d	As As As As
+	"GL_ONE_MINUS_DST_ALPHA"	s/d	1-As 1-As 1-As 1-As
+	"GL_SRC_ALPHA_SATURATE"		s	f f f 1; f=min(As, 1-Ad)
+
+^
+GLcolor
+(GLcolor type r g b [a])
+
+	Spécification de la couleur en mode Red Green Blue.
+	La présence du coéficient de transparence (a = alpha) est indiqué
+	par le type (3 ou 4) de la couleur donnée.
+	Les valeurs des différents composants doivent être compris entre
+	0 (absence de la couleur) et 255 (la couleur est à son intensité
+	maximale).
+	Voir aussi GLColor.
+^
+GLColor
+(GLColor r g b [a])
+
+	 Spécification de la couleur en mode RGB, la différence
+	 est que le type n'est plus spécifié et que les valeurs
+	 des différentes couleurs sont comprises entre 0 et 65535.
+^
+GLautopersp
+(GLautopersp) subr0
+
+	 Construit une projection en perspective correspondante à l'aspect
+	 de la fenetre de dessin, considérant l'utilisateur posté à 75cm
+	 de l'écran.
+^
+GLortho
+(GLortho x1 x2 y1 y2 [z1 z2])
+
+	Spécification d'un type de projection orthographique pour la 
+	fenêtre de dessin courante. x1 y1 z1 correspondent aux coordonnées
+	du point gauche bas près et x2 y2 z2 au point droit haut éloigné 
+	de la projection.
+^
+GLperspective
+(GLperspective FOVY z1 z2)
+
+	Spécification d'une projection en perspective pour la fenêtre
+	de dessin courante.
+	FOVY correspond a l'angle du champ de vue sur les abscisses 
+	(field-of-view angle in the Y direction).
+	z1 et z2 indiquent la distance entre l'oeil et le plan de clip
+	le plus proche (z1) et le plus éloigné (z2).
+	Pour concerverla visualisation du point d'origine, la définition
+	d'une perspective avec cette primitive entraine une translation
+	négative sur l'axe des Z de valeur zmin et l'aspect de la
+	projection est calculée en fonction de la taille de la fenêtre
+	active.
+	Pour pouvoir définir une vue en perspective plus finement il
+	est nécessaire d'utiliser la primitive GLfrustum.
+^
+GLfrustum
+(GLfrustum gauche droite bas haut proche éloigné)
+
+	Définition d'une projection en perspective pour la fenêtre
+	de dessin courante. Le point de vue initial de la projection
+	est donnée par la distance proche et éloigné (definissant
+	ainsi les limites sur l'axe de Z des objets visibles). Les
+	quatres autres paramêtres spécifient les coordonnées du plan
+	situé à la distance proche.
+^
+GLlookat
+(GLlookat vx vy vz px py pz [ux uy uz])
+
+	Positionne l'œil  en vx vy vz, dirige le regard vers
+	px py pz. ux uy et uz permettent de fixer la direction vers le
+	haut de la fenêtre de visualisation (par défaut 0 1 0 : axe de
+	Y vers le Haut).
+	Si aucune valeur n'est donnée en arguement le mode lookat est hinibé.
+^
+GLloadname
+(GLloadname num)
+	
+	Position num sur la pile des nom.
+	Les nom sont accessibles par callbacks avec l'opérateur $G dans l'appel du callback
+^
+GLpushname
+(GLpushname num)
+
+	Push la pile des nom et y place num
+^
+GLpopname
+(GLpopname)
+
+	Pop de la pile des nom
+^
+GLpushmatrix
+(GLpushmatrix)
+
+	Cette routine permet d'effectuer un push sur la pile des matrices
+	de transformation de l'image.
+^
+GLpopmatrix
+(GLpopmatrix)
+	
+	Cette routine permet d'effectuer un pop sur la pile des matrices de 
+	transformation de l'image.
+^
+GLscale
+(GLscale x y z)
+
+	Ajoute dans la matrice de transformation courant un scaling de x y 
+	et z.
+^
+GLrotate
+(GLrotate angle axe)
+
+	Ajoute dans la matrice de transformation courant une rotation de angle 
+	autour de l'axe donne en argument.
+^
+GLtranslate
+(GLtranslate x y z)
+
+	Ajoute dans la matrice de transformation courant une translation 
+	de x y et z.
+^
+GLimscale
+(GLimscale x y z)
+
+	Effectue un scaling de x y z toute l'image.
+^
+GLimrotateOrder
+(GLimrotateOrder X Y Z)
+
+	Fixe l'ordre d'exécution des rotations de l'image. Les valeurs
+	attendues en argument sont 0, 1 et 2. Par défaut X=0, Y=1 et
+	Z=2 (rotation de l'image en X, puis en Y, puis en Z).
+^
+GLimrotate
+(GLimrotate angle axe)
+
+	Effectue une rotation de l'angle donne autour de l'axe donne de toute 
+	l'image.
+^
+GLimtranslate
+(GLimtranslate x y z)
+
+	Effectue une translation de x y et z de toute l'image.
+^
+GLaspect
+(GLaspect [t|nil])
+	
+	Spécifie que lors d'un changement de taille de la fenêtre courante, 
+	un scaling correspondant a la variation de la taille sera effectue 
+	sur l'image affiche (si t).
+
+
+^
+GLgetMatrix
+(GLgetMatrix atom)
+
+	Sauvegarde dans l'atome donne en argument la valeur de la matrice de Model actuelle
+^
+GLloadMatrix
+(GLloadMatrix atom)
+
+	Remplace la matrice de Model actuelle par la matrice présente dans l'atome
+^
+GLgetMatrixValue
+(GLgetMatrixValue atom row col)
+
+	Retourne la valeur row, col dans la matrice contenue dans l'atome
+^
+GLsetMatrixValue
+(GLsetMatrixValue atom row col value)
+
+	Remplace la valeur row, col de l'atome par value
+^
+GLfreeMatrix
+(GLfreeMatrix atom)
+
+	Libère la mémoire utilisée pour stocker la matrice dans l'atome
+^
+GLclear
+(GLclear)
+	
+	Efface l'image présente dans la fenêtre courante.
+^
+GLlineWidth
+(GLlineWidth n)
+
+	Fixe l'épaisseur du trace de ligne (n peut être flottant)
+^
+GLlineStipple
+(GLlineStipple Stipple [Factor])
+
+	Fixe l'allure de trace de ligne suivant le pattern * facteur
+	donne en argument. Les patterns sont des "unsigned short",
+	par exemple : FFFF trace une ligne continue, 1111 une ligne
+	pointillée.
+^
+GLbgn
+(GLbgn type)
+
+	Cette routine permet de spécifier la définition d'une forme. Selon
+	le type de forme, les donnes seront spécifier avec GLvertex.
+	Les types de formes définissables sont:
+
+^%T2
+		"GL_POINTS"		Points
+		"GL_LINES"		1 ligne par vertex
+		"GL_LINE_STRIP"		lignes liées
+		"GL_LINE_LOOP"		lignes fermées
+		"GL_TRIANGLES"		triangles
+		"GL_TRIANGLE_STRIP"	triangles lies
+		"GL_TRIANGLE_FAN"	triangles connectes
+		"GL_QUADS"		quadrilatères
+		"GL_QUAD_STIP"		quadrilatères connectes
+		"GL_POLYGON"		polygones
+^
+GLend
+(GLend)
+
+	Cette routine clos la définition d'une forme.
+^
+GLpolygonStipple
+(GLpolygonStipple fichier_bitmap)
+
+	Spécification d'un motif de remplissage des polygones (soit
+	par un (GLbgn "GL_POLYGON") avec l'option (GLpolymode "GL_FILL")
+	soit par un (GLrectf)) par un fichier bitmap (de taille 32x32).
+^
+GLpolymode
+(GLpolymode face mode)
+	
+	Cette routine permet de spécifier le mode de dessin
+	des polygones (dans leur face avant arrière ou les deux).
+	Les valeurs possibles pour les arguments sont :
+
+	face :
+		GL_FRONT_AND_BACK
+		GL_FRONT
+		GL_BACK
+
+	mode :
+		GL_POINT
+		GL_LINE
+		GL_FILL
+^
+GLvertex
+(GLvertex nombre_de_donnees d1 d2 [d3 [d4]])
+
+	Cette routine permet la Spécification des donnes pour des formes. Le 
+	premier argument spécifie la dimension des donnes.
+^
+GLrect
+(GLrect x0 y0 x1 y1)
+
+	Affiche un rectangle compris entre x0, y0 et x1, y1.
+^
+GLrectf
+(GLrectf x0 y0 x1 y1)
+
+	Affiche un rectangle compris entre x0, y0 et x1, y1.
+^
+GLUsetvalue
+(GLUsetvalue what value)
+
+	Fixe les attributs pour le dessins des sphères et des cylindres:
+
+^%T2
+		normal			type de normales utilise pour le dessin.
+			GLU_NONE	pas de normales générées.
+			GLU_FLAT	une normale généré par facettes.
+			GLU_SMOOTH	une normale généré par vertex (défaut).
+		drawstyle		style de dessin utilise.
+			GLU_FILL	utilisation de polygones.
+			GLU_LINE	utilisation de lignes (défaut).
+			GLU_SILHOUETTE	dessin de la silhouette de l'objet.
+			GLU_POINT	utilisation de points.
+		orientation		Spécification de l'orientation intérieur/ext.
+			GLU_OUTSIDE	les normales sont dirigées vers l'extérieur.
+			GLU_INSIDE	les normales sont dirigées vers l'intérieure.
+		texture			utilisation des textures.
+			GL_TRUE		génération de coordonnes de textures.
+			GL_FALSE	pas de texture utilise.
+
+	Voir aussi: GLsphere, GLcylindre, GLdisk
+^
+GLsphere
+(GLsphere rayon [tranches-H] [tranches-V])
+
+	Dessin de sphère (les attributs sont spécifies par GLUsetvalues) :
+
+	rayon = rayon de la sphère.
+	tranches-H = nombre de subdivisions autour de l'axe des Z (lignes de
+	longitude)
+	tranches-V = nombre de subdivisions le long de l'axe des Z (lignes
+	de latitude)
+^
+GLcylindre
+(GLcylindre rayon-base rayon-top hauteur [tranches-H] [tranches-V])
+
+	Dessin de cylindres (les attributs sont spécifies par GLUsetvalues) :
+
+	rayon-base = rayon de la base du cylindre.
+	rayon-top  = rayon du sommet du cylindre.
+	hauteur    = hauteur du cylindre.
+	tranches-H = nombre de subdivisions autour de l'axe des Z (lignes de
+	longitude)
+	tranches-V = nombre de subdivisions le long de l'axe des Z (lignes
+	de latitude)
+	
+^
+GLdisk
+(GLdisk rayon-interieur rayon-exterieur [tranches-H] [anneaux])
+
+	Dessin d'un Disc. Si rayon intérieur est diff de 0, un trou sera
+	present.
+^
+GL-STRINGS
+GL-STRINGS
+
+	Dessin de chaînes de caractères graphiques sous Open GL.
+
+	Pour pouvoir utiliser le dessin de caractères graphique un font doit
+	en premier lieu être spécifié.
+
+	Routines spécifiques:
+		GLfont
+		GLfontpath
+		GLlistfont
+		GLchar
+		GLstr ou GLstring
+		GLboxtext
+		GLboxfit
+		GLtextsize
+		GLfixedwidth
+		GLcentertext
+		GLrigthjustify
+		GLleftjustify
+^
+GLstring
+(GLstring x y z string)
+(GLstr    x y z string)
+
+	Affiche une chaîne de caractères a la position spécifiée
+^
+GLfont
+(GLfont Nom)
+
+	Positionne le font actif
+^
+GLfontpath
+(GLfontpath path)
+	
+	Chemin d'accès aux font
+^
+GLlistfont
+(GLlistfont)
+
+	Liste des fonts définis
+^
+GLchar
+(GLchar x y z c)
+	
+	Dessin du caractère c a x,y,z
+^
+GLboxtext
+(GLboxtext x y w h str)
+
+	Dessin de str dans la boite délimitée par x,y -> x+w, y+h
+^
+GLboxfit
+(GLboxfit w h n)
+
+	Fixe l'échelle de dessin pour que n caractères tiennent dans w * h
+^
+GLtextsize
+(GLtextsize w h [ratio])
+
+	Fixe la taille des caractères a w/ratio, h/ratio
+^
+GLfixedwidth
+(GLfixedwidth t|nil)
+
+	Texte de taille fixe
+^
+GLcentertext
+(GLcentertext t|nil)
+
+	Affiche le texte centre sur la position donnée
+^
+GLrigthjustify
+(GLrigthjustify t|nil)
+
+	Affiche le texte justifie a droite
+^
+GLleftjustify
+(GLleftjustify t|nil)
+
+	Affiche le texte justifie a gauche
+^
+GLnurbs
+(GLnurbs pts_de_control points)
+
+	Dessin de courbes avec la routine nurbscurve:
+
+	pts_de_control = liste de liste contenant les données pour
+	chaque point de contrôle, le nombre de donnée par point donnant le
+	type de la courbe, et le nombre de points_de_control le nombre de
+	points attendus dans la liste des points.
+	
+	points = liste des valeurs pour chaque point.
+
+	Le type de la courbe peut être :
+
+		"N_P2D"   : courbe polynomiale trim (u v)
+		"N_P2DR"  : courbe rationelle trim (wu wv w) 
+		"N_V3D"   : courbe polynomiale trim (x y z)
+		"N_V3DR"  : courbe rationelle trim (x y z w) 
+
+^
+GLhershey
+
+	Utilisation des font de la librairie Hershey
+
+		GLfont     : positionne le font
+		GLfontpath : path de recherche des fonts
+		GLchar     : affichage d'un caractère
+		GLstr      : affichage d'une chaîne de caractères
+		GLboxtext  : affichage d'une chaîne de caractères dans une boite
+		GLboxfit   : positionnement de la taille par calcul
+		GLtextangl : positionnement de l'angle d'affichage
+		GLfixedwidth : positionnement de la taille
+		GLcentertext : justification au centre
+		GLrigthjustify : justification a droite
+		GLleftjustify  : justification a gauche
+
+	
+^
+GLsphereWire
+(GLsphereWire size)
+	
+	Dessin d'une sphère en fil de fer
+	
+	size = taille de la sphère
+
+^
+GLcubeWire
+(GLcubeWire size)
+
+	Dessin d'un cube en fil de fer
+
+	size = taille du cube
+
+^
+GLboxWire
+(GLboxWire largeur hauteur profondeur)
+
+	Dessin d'une boite en fil de fer
+
+	largeur = largeur de la boite
+	hauteur = hauteur de la boite
+	profondeur = profondeur de la boite
+
+^
+GLtorusWire
+(GLtorusWire angleInterieur angleExterieur)
+
+	Dessin d'un tore en fil de fer
+
+	angleInterieur = angleInterieur du tore
+	angleExterieur = angleExterieur du tore
+
+^
+GLcylinderWire
+(GLcylinderWire angle hauteur)
+
+	Dessin d'un cylindre en fil de fer
+	
+	angle = angle de l'arc du cylindre 
+	hauteur = hauteur du cylindre
+
+^
+GLicosahedraWire
+(GLicosahedraWire angle)
+
+	Dessin d'un icosaèdre en fil de fer
+
+	angle = angle de l'arc de l'icosaèdre
+
+
+^
+GLoctahedraWire
+(GLoctahedraWire angle)
+
+	Dessin d'un octaèdre en fil de fer
+^
+GLtetrahedraWire
+(GLtetrahedraWire angle)
+
+	Dessin d'un tétraèdre en fil de fer
+
+
+^
+GLdodecahedraWire
+(GLdodecahedraWire angle)
+
+	Dessin d'un dodécaèdre en fil de fer
+
+
+^
+GLconeWire
+(GLconeWire base height)
+
+	Dessin d'un cône en fil de fer
+
+
+^
+GLsphereSolid
+(GLsphereSolid size) 
+
+	Dessin d'une sphère pleine
+
+^
+GLcubeSolid
+(GLcubeSolid size) 
+
+	Dessin d'un cube plein
+
+^
+GLboxSolid
+(GLboxSolid width height depth) 
+
+	Dessin d'un box plein
+
+^
+GLtorusSolid
+(GLtorusSolid angleInterieur angleExterieur) 
+
+	Dessin d'un tors plein
+
+^
+GLcylinderSolid
+(GLcylinderSolid angle hauteur) 
+
+	Dessin d'un cylindre plein
+
+^
+GLicosahedraSolid
+(GLicosahedraSolid angle) 
+
+	Dessin d'un icosaèdre plein
+
+^
+GLoctahedraSolid
+(GLoctahedraSolid angle) 
+
+	Dessin d'un octaèdre plein
+
+^
+GLtetrahedraSolid
+(GLtetrahedraSolid angle) 
+
+	Dessin d'un tétraèdre plein
+
+^
+GLdodecahedraSolid
+(GLdodecahedraSolid angle) 
+
+	Dessin d'un dodécaèdre plein
+
+^
+GLconeSolid
+(GLconeSolid base height) 
+
+	Dessin d'un cône plein
+^
+MESAcopylist
+(MESAcopylist source dest [flatten])
+
+	Copie le contenu de la liste graphique source dans la nouvelle
+	liste graphique dest. Si flatten est à t, les appels à GLcalllist
+	contenus dans source sont remplacés par le contenu des listes 
+	appelées (applatissement de la liste graphique).
+
+	ATTENTION: Cette fonction est particulière à Xbvl et requière
+	une version modifiée de MESA-GL.
+^
+MESAgetlist
+(MESAgetlist fdes)
+
+	Retourne la liste des listes graphiques contenues dans le fichier
+	désigné par fdes (descripteur de fichier ouvert avec open).
+
+	ATTENTION: Cette fonction est particulière à Xbvl et requière
+	une version modifiée de MESA-GL.
+^
+MESAreadlist
+(MESAreadlist fdes [liste])
+
+	Lit la définition de liste dans le fichier désigné par fdes (ouvert
+	avec open). Si liste est omis, MESAreadlist défini comme nouvelle
+	liste la liste définie dans le fichier.
+
+	Retourne nil si le fichier ne contiend plus de liste ou le numéro
+	de la liste définie
+
+	ATTENTION: Cette fonction est particulière à Xbvl et requière
+	une version modifiée de MESA-GL.
+^
+(MESAwritelist fdes liste [flatten])
+
+	Ecrit le contenu de la liste dans le fichier désigné par fdes (ouvert
+	avec open). Si flatten est à t les GLcalllist contenus dans la liste
+	seront remplacés par le contenu des listes appelées.
+
+	ATTENTION: Cette fonction est particulière à Xbvl et requière
+	une version modifiée de MESA-GL.
+

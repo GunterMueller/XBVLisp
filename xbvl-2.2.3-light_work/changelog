@@ -1,0 +1,10 @@
+2004-06-22 16:23  djedi
+
+	* AUTHORS: Ajout de pg, hw et autres.
+
+2004-06-22 16:14  djedi
+
+	* .in, AUTHORS, ChangeLog, INSTALL.0, LICENSE, Makefile.am, README,
+	  XbVLISP, autogen.sh, configure.in, foobar, newfuncs: Version
+	  initialle
+

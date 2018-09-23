@@ -1,0 +1,410 @@
+
+       
+   1    ;Jeudi 7 Juin 1990 12:9:29 file : vcg ;
+        
+   2    
+   3    ;(print ;
+   4    ;"un Generateur de Condition de Verification, d'apres C.A.R. Hoare,;
+   5    ;                 par Harald Wertz ");
+   6    
+   7    
+'FN vcg
+        (de vcg (prog pre post vcs)\v'1v'\h'|0u'\c
+   8     (vcg1 prog regles pre post vcs regl1))
+   9    
+  10    
+'FN vcg1
+        (de vcg1 (prog regl pre post vcs regg)\v'1v'\h'|0u'\c
+  11       (cond
+  12          ((null regl) (print "erreur dans le programme"))
+  13          ((spefiltre (caar regl) prog) 
+  14            ; le CAR de la regle est le filtre ; 
+  15             (p-p-p)
+  16             (eval (cadar regl))
+  17             ; le CDR est l'action ;)
+  18          ((vcg1 prog (cdr regl) pre post vcs (cdr regg)))))
+  19    
+  20    
+'FN filtrage
+        (de filtrage (filtre donnee xxx)\v'1v'\h'|0u'\c
+  21       (cond
+  22          ((null filtre) (null donnee))
+  23          ((null donnee) nil)
+  24          ((setq xxx (varp (car filtre))) 
+  25             (nextl filtre)
+  26             (set xxx (nextl donnee))
+  27             (filtrage filtre donnee))
+  28          ((eq (car filtre) (car donnee)) 
+  29             (filtrage (cdr filtre) (cdr donnee)))
+  30          ((setq xxx (varp filtre)) (set xxx donnee))
+  31          ((atom (car filtre)) nil)
+  32          ((filtrage (car filtre) (car donnee)) 
+  33             (filtrage (cdr filtre) (cdr donnee)))))
+  34    
+  35    ; predicat pour tester si X est une variable ;
+  36    
+  37    
+'FN varp
+        (de varp (x)\v'1v'\h'|0u'\c
+  38     (if (and (listp x) (equal (car x) "!")) (cadr x) nil))
+  39    
+  40    ; filtrage specialement adapte au filtre de la forme: (a ...) ;
+  41    ; ou "a" est tout sauf le dernier element                     ;
+  42    
+  43    
+'FN spefiltre
+        (de spefiltre (filtre prog)\v'1v'\h'|0u'\c
+  44       (if (eq (car filtre) 'a) 
+  45          (when (filtrage (cdr filtre) [(car (reverse prog))]) 
+  46             (setq a (reverse (cdr (reverse prog))))
+  47             t)
+  48          (filtrage filtre prog)))
+  49    
+  50    ; prefix des variables ;
+  51    
+  52    
+'FN (! nil)
+        (dmc (! nil) ['(! (read))])\v'1v'\h'|0u'\c
+  53    
+  54    ; FIND cherche les assertions de la definition d'une procedure ;
+  55    ; et construit dans U et W les instantiations de ces assertions;
+  56    
+  57    
+'FN find
+        (de find (f l)\v'1v'\h'|0u'\c
+  58       (escape out 
+  59          (mapc l 
+  60             '(lambda (x) 
+  61                (if (eq f (cadr x)) 
+  62                   (out 
+  63                      (progn 
+  64                         (setq
+  65                            as (caddr x)
+  66                            u (subs vs (car x) as)
+  67                            w (subs vs (cadddr x) as))
+  68                         (if (eq f (cadar rec)) 
+  69                            nil
+  70                            (setq
+  71                               u (subs (caddddar rec) u (caddddr x))
+  72                               w (subs (caddddar rec) w (caddddr x))
+  73                               as (caddar rec)))
+  74                         t)))))))
+  75    
+  76    
+'FN caddddr
+        (de caddddr (x)\v'1v'\h'|0u'\c
+  77     (caddr (cddr x)))
+  78    
+  79    
+'FN caddddar
+        (de caddddar (x)\v'1v'\h'|0u'\c
+  80     (cadddr (cdar x)))
+  81    
+  82    
+'FN subs
+        (de subs (appel condition vars)\v'1v'\h'|0u'\c
+  83       (if (null vars) 
+  84          condition
+  85          (subst (car appel) (car vars) 
+  86           (subs (cdr appel) condition (cdr vars)))))
+  87    
+  88    
+'FN subst
+        (de subst (val var bod)\v'1v'\h'|0u'\c
+  89       (cond
+  90          ((eq var bod) val)
+  91          ((atom bod) bod)
+  92          ((eq (car bod) '#) 
+  93             [(car bod) . [(cadr bod) . (subst val var (cddr bod))]])
+  94          ([(subst val var (nextl bod)) . (subst val var bod)])))
+  95    
+  96    ; impression (pour faire jolie) ;
+  97    
+  98    
+'FN pr
+        (de pr (l)\v'1v'\h'|0u'\c
+  99       (let ((l l) (c 1)) 
+ 100          (if (null l) 
+ 101             (print "ca y est")
+ 102             (terpri)
+ 103             (print "theoreme" c ":")
+ 104             (print (nextl l))
+ 105             (self l (1+ c)))))
+ 106    
+ 107    ; entree (ca boucle jusqu'a ce qu'on verifie le programme NIL) ;
+ 108    
+ 109    
+'FN vc
+        (de vc (rec)\v'1v'\h'|0u'\c
+ 110       (terpri)
+ 111       (terpri)
+ 112       (print "donnez le programme s.v.p.")
+ 113       (setq prog (read))
+ 114       (if (null prog) 
+ 115          "ok"
+ 116          (print "donnez l'assertion d'entree s.v.p.")
+ 117          (setq pre (read))
+ 118          (print "donnez l'assertion de sortie s.v.p.")
+ 119          (setq post (read))
+ 120          (princ "voulez-vous une trace? (si oui, tapez 'y')")
+ 121          (if (eq (tyi) 121) (setq -trace- t) (setq -trace- nil))
+ 122          (pr (vcg prog pre post))
+ 123          (print '(tyi))
+ 124          (tyi)
+ 125          (vc rec)))
+ 126    
+ 127    
+'FN ncons
+        (de ncons (el)\v'1v'\h'|0u'\c
+ 128     [el . nil])
+ 129    
+ 130    (setq
+ 131       regles 
+ 132        '(; regle de consequence ; (nil [[pre "=>" post] . vcs]) 
+ 133         ; regle de definition de procedure ; 
+ 134         ((procedure (! f) (! as) (! es) ! k) 
+ 135          (progn 
+ 136             (setq rec [[pre f as post es] . rec])
+ 137             (vcg k pre post vcs))) ; regle d'affectation ; 
+ 138         ((a (setq (! x) (! e))) (vcg a pre (subst e x post) vcs)) 
+ 139         ; regle de consequence (2) ; 
+ 140         ((a (assert-if: (! b))) (vcg a pre [b "=>" post] vcs)) 
+ 141         ; regle de consequence (3) ; 
+ 142         ((a (assert: (! b))) (vcg a pre b [[b "=>" post] . vcs])) 
+ 143         ; regle de l'iteration ; 
+ 144         ((a (assert: (! r) (while (! s) ! b))) 
+ 145          (vcg a pre r 
+ 146           (vcg b [r "et" s] r [[r "et" ["non" s] "=>" post] . vcs]))) 
+ 147         ; regle du conditionnel ; 
+ 148         ((a (if (! r1) (! b) ! c)) 
+ 149          (vcg (append a [['assert-if: r1] b]) pre post 
+ 150           (vcg (append a [['assert-if: ["non" r1]] . c]) pre post vcs))) 
+ 151         ; regle de l'appel de procedure ; 
+ 152         ((a ((! f) ! vs)) 
+ 153          (if (find f rec) 
+ 154             (vcg a pre ["^" as u "et" [w "=>" post]] vcs)
+ 155             nil))))
+ 156    
+ 157    (setq
+ 158       regl1 
+ 159        '(
+ 160         ("regle de consequence (1):" 
+ 161          "               P => Q
+                            ----------
+                            P {NULL} Q") 
+ 162         ("regle de definition de procedure:" 
+ 163          "       P {q (x; v)} R |-- P {A} R
+                      --------------------------
+                       P {proc. q (x; v); A} R" (P q A R)) 
+ 164         ("regle d'affectation:" 
+ 165          "               P {A} Q(e)
+                          ------------------
+                          P {A; x <- e} Q(x)") 
+ 166         ("regle de consequence (2):" 
+ 167          "            P {A} Q => R
+                          -------------
+                          P {A; Q-if} R") 
+ 168         ("regle de consequence (3):" 
+ 169          "             P {A} Q, Q => R
+                            ---------------
+                              P {A; Q} R") 
+ 170         ("regle de l'iteration:" 
+ 171          "             P {A} R, R et S {B} R, R et (non S) => Q
+                            ----------------------------------------
+                                    P {A; R; while S do B} Q") 
+ 172         ("regle du conditionnel:" 
+ 173          "             P {A; Q-if; B} R, P {A; (non Q-if); C} R
+                            ----------------------------------------
+                                   P {A; if Q then B else C} R") 
+ 174         ("regle de l'appel de procedure:" 
+ 175          "       U (x; v) {q (x; v)} W (x; v)
+                              P {A} U (a; e) et # a (W (a; e) => R)
+                      |--     -------------------------------------
+                                        P {A; q (a; e)} R")))
+ 176    
+ 177    
+'FN p-p-p
+        (de p-p-p ()\v'1v'\h'|0u'\c
+ 178       (if (null -trace-) 
+ 179          nil
+ 180          (terpri)
+ 181          (print "au programme")
+ 182          ;  (pretty)(status print 3);
+ 183          ;  (p-p prog)(status print 0);
+ 184          (print prog)
+ 185          (terpri)
+ 186          (print "avec la precondition" pre)
+ 187          (print "et la postcondition" post)
+ 188          (print "s' applique la" (caar regg))
+ 189          (print (cadar regg))))
+ 190    
+ 191    
+'FN cadddr
+        (de cadddr (x)\v'1v'\h'|0u'\c
+ 192     (caddr (cdr x)))
+ 193    
+ 194    
+'FN caddar
+        (de caddar (x)\v'1v'\h'|0u'\c
+ 195     (caddr (car x)))
+ 196    
+ 197    (print " a lancer par (vc) ")
+ 198    
+ 199    
+
+                 Cross Reference
+
+
+
+ \fB (! nil) \fR dmc 52
+ \fB caddar \fR de 194
+ \fB caddddar \fR de 79
+ \fB caddddr \fR de 76
+ \fB cadddr \fR de 191
+ \fB filtrage \fR de 20
+ \fB find \fR de 57
+ \fB ncons \fR de 127
+ \fB p-p-p \fR de 177
+ \fB pr \fR de 98
+ \fB spefiltre \fR de 43
+ \fB subs \fR de 82
+ \fB subst \fR de 88
+ \fB varp \fR de 37
+ \fB vc \fR de 109
+ \fB vcg \fR de 7
+ \fB vcg1 \fR de 10
+
+
+
+ 1   #            92
+                  
+ 2   -trace-      121 121 178
+                  
+ 3   A            163
+                  
+ 4   P            163
+                  
+ 5   R            163
+                  
+ 6   a            44 46 138 138 140 140 142 142 144 145 148 149 150 152 154
+                  
+ 7   appel        82 85 86
+                  
+ 8   as           65 66 67 73 134 136 154
+                  
+ 9   assert-if:   140 149 150
+                  
+ 10  assert:      142 144
+                  
+ 11  b            140 140 142 142 142 144 146 148 149
+                  
+ 12  bod          88 90 91 91 92 93 93 93 94 94
+                  
+ 13  c            99 103 105 148 150
+                  
+ 14  caddar       73 194
+                  
+ 15  caddddar     71 72 79
+                  
+ 16  caddddr      71 72 76
+                  
+ 17  cadddr       67 80 191
+                 
+ 18  condition    82 84 86
+                  
+ 19  donnee       20 22 23 26 27 28 29 30 32 33
+                  
+ 20  e            138 138
+                   .TE
+                   .sp -1
+                   .TS
+                   expand;
+                   lw(1.5c) lB lw(3.7i).
+                  
+ 21  el           127 128
+                  
+ 22  es           134 136
+                  
+ 23  f            57 61 68 134 136 152 153
+                  
+ 24  filtrage     20 27 29 32 33 45 48
+                  
+ 25  filtre       20 22 24 25 27 28 29 30 31 32 33 43 44 45 48
+                  
+ 26  find         57 153
+                  
+ 27  k            134 137
+                  
+ 28  l            57 59 98 99 99 100 104 105
+                  
+ 29  ncons        127
+                  
+ 30  out          58 62
+                  
+ 31  p-p-p        15 177
+                  
+ 32  post         7 8 10 18 119 122 132 136 137 138 140 142 146 149 150 154 187
+                  
+ 33  pr           98 122
+                  
+ 34  pre          7 8 10 18 117 122 132 136 137 138 140 142 145 149 150 154 186
+                  
+ 35  procedure    134
+                  
+ 36  q            163
+                  
+ 37  r            144 145 146 146 146
+                  
+ 38  r1           148 149 150
+                  
+ 39  rec          68 71 72 73 109 125 136 136 153
+                  
+ 40  regg         10 18 188 189
+                   .TE
+                   .sp -1
+                   .TS
+                   expand;
+                   lw(1.5c) lB lw(3.7i).
+                  
+ 41  regl         10 12 13 16 18
+                  
+ 42  regl1        8 158
+                  
+ 43  regles       8 131
+                  
+ 44  s            144 146 146
+                  
+ 45  spefiltre    13 43
+                 
+ 46  subs         66 67 71 72 82 86
+                  
+ 47  u            66 71 71 154
+                  
+ 48  val          88 90 93 94 94
+                  
+ 49  var          88 90 93 94 94
+                  
+ 50  varp         24 30 37
+                  
+ 51  vars         82 83 85 86
+                  
+ 52  vc           109 125
+                  
+ 53  vcg          7 122 137 138 140 142 145 146 149 150 154
+                  
+ 54  vcg1         8 10 18
+                  
+ 55  vcs          7 8 10 18 132 137 138 140 142 146 150 154
+                  
+ 56  vs           66 67 152
+                  
+ 57  w            67 72 72 154
+                  
+ 58  x            37 38 38 38 60 61 65 66 67 71 72 76 77 79 80 138 138 191 192
+                   194 195
+                  
+ 59  xxx          20 24 26 30 30
+                  
+
+; end of file :  vcg ;
+

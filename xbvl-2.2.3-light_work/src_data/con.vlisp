@@ -1,0 +1,266 @@
+
+
+;(setq --x-- careful careful nil)
+;(package conn)
+(de e ()(sh "edith /usr/vlisp80/hw/lisp/src/match.vlisp"))
+(ctrlz t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(de |match (pat dat alist 3arg)
+  [
+   (if (match1 (vor (subst1 nil "~~%%~~" pat))
+	      (vor (subst1 nil "~~%%~~" dat))) '|ok '|ko)
+      (subst1 "~~%%~~" nil (|mapcar alist 'nach1))])
+
+(de match1 (pat dat ;; x alist2 pat2 xx)
+   (escape exit (cond
+	((null pat) ; fin du pattern ; (null dat))
+	((atom pat) (equal pat dat))
+	((and dat (atom dat)) ())
+	((eval (car 3arg)) ; pour des activites user defined ;
+		(eprogn (cdr 3arg)))
+	((atom (car pat))
+		(if (equal (nextl pat)(nextl dat))(match1 pat dat)()))
+	((equal (caar pat) "!") ; y'a un element a matcher ;
+	  (if (null dat)(exit nil))
+	  (if (setq x (assq (cadar pat) alist))
+		(match1 (if (atom (cdr x)) [(cdr x) . (cdr pat)]
+					(append (cdr x)(cdr pat))) dat)
+	 	(setq x (nextelem) alist2 alist)
+		(ifn (equal (cadar pat) "-")
+		     (setq alist [[(cadar pat) . x] . alist]))
+		; eventuellement des contraintes sur les valeurs ;
+		(or (prep1 (cddar pat))(exit (nextl alist) nil))
+		(or (match1 (cdr pat) dat)(progn (setq alist alist2) nil))))
+	((equal (caar pat) "@")
+	   ; y'a choix entre plusieurs constantes ;
+	   (setq x (cdr (nextl pat)) alist2 alist)
+	   (while x
+	      (and (match1 [(nextl x) . pat] dat)(exit t))
+	      (setq alist alist2)))
+	((equal (caar pat) "&") ; un segement ;
+	   (if (setq x (assq (cadar pat) alist))
+		(match1 (append (cdr x)(cdr pat)) dat)
+		(setq x (nextl pat) pat2 [(cadr x)])
+		(cond
+		  ((null pat) ; si c'est le dernier segement ;
+			(if (equal (cadr x) "-") t
+			    (setq alist [[(cadr x) . dat] . alist])
+			    (or (prep1 (cddr x))(exit (nextl alist)()))))
+		  (t ; y'a des essais a faire ;
+		    (if (equal (car pat2) "-") () (setq alist [pat2 . alist]))
+		    (setq alist2 alist)
+		    (while dat ; boucle des essais successifs ;
+			(escape ex (or (prep1 (cddr x))(ex))
+				   (and (match1 pat dat) (exit t)))
+			(setq alist alist2)
+			(if (equal (car pat2) "-")(nextelem)
+				(setq xx (nextelem))
+				(nconc pat2 (if (atom xx) [xx] xx))))
+			(ifn (equal (car pat2) "-")
+				(setq alist (cdr alist2))) 
+			nil)))))))
+
+; pour l'evaluation des contraintes ;
+
+(de prep1 (x)(eval ['and . (prep x)]))
+
+(de prep (x)(cond
+	((atom x) x)
+	((member (car x) '("&" "!"))
+		(if (cddr x)
+		  [[quote (cdr (assq (cadr x) alist))] . (prep (cddr x))]
+		  [quote (cdr (assq (cadr x) alist))]))
+	(t [(prep (car x)) . (prep (cdr x))])))
+
+; pour enlever les parentheses ;
+
+(de vor (x)(cond
+	((atom x) x)
+	((atom (car x))[(car x) . (vor (cdr x))])
+	((member (caar x) '("&" "!" "@")) [(car x) . (vor (cdr x))])
+	(t (append (append ['%%% . (vor (car x))] '%%1)(vor (cdr x))))))
+
+; pour remettre les parentheses ;
+
+(de nach1 (x)(nach))
+
+(de nach ()(cond
+	((atom x) x)
+	((eq (car x) '%%1)(nextl x) ())
+	((eq (car x) '%%%)(nextl x)[(nach) . (nach)])
+	(t [(nextl x) . (nach)])))
+
+; pour avancer dans dat ;
+
+(de nextelem ()
+   (if (neq (car dat) '%%%) (nextl dat)(nextelem1 0)))
+
+(de nextelem1 (x)(cond
+	((eq (car dat) '%%1)
+	  (if (eq x 1) [(nextl dat)][(nextl dat) . (nextelem1 (1- x))]))
+	((eq (car dat) '%%%)
+	  [(nextl dat) . (nextelem1 (1+ x))])
+	([(nextl dat) . (nextelem1 x)])))
+
+; pour eviter les problemes avec nil
+
+(de subst1 (x y z)(cond
+	((atom z) z)
+	((equal (car z) x)[y . (subst1 x y (cdr z))])
+	([(subst1 x y (car z)) . (subst1 x y (cdr z))])))
+
+
+(de |present (:1x :1c)
+	(|:try-next (|fetch :1x :1c)))
+
+(de |absent (:1x :1c)
+	(null (|present :1x :1c)))
+
+(df |if-added (:1x)(:method '|if-added))
+
+(df |if-removed (:1x)(:method '|if-removed))
+
+(df |if-needed (:1x)(:method '|if-needed))
+
+(de |add (:1dat :1c)
+  (setq :1dat (:preparer :1dat))
+  (or :1c (setq :1c '|:context))
+  (cond 
+	((atom :1dat)(set :1c (cons ['|:method (get :1dat '|:method) :1dat]
+				(car :1c))))
+	((:try-method '|if-added)
+		(set :1c (cons ['|:item :1dat] (car :1c)))))
+  :1dat)
+
+(de |remove (:1dat :1c)
+  (setq :1dat (:preparer :1dat))
+  (or :1c (setq :1c '|:context))
+  (:try-method '|if-removed)
+  (set :1c (:cdelete (car :1c)(cond
+	((atom :1dat)['|:method (get :1dat '|:method) :1dat])
+	(['|:item :1dat]))))
+  :1dat)
+
+(de :method (:1d)
+  (setq :1p (nextl :1x))
+  (put :1p :1d '|:method)
+  (put :1p (nextl :1x) ':1pat)
+  (put :1p :1x ':1body))
+
+(de fetch (:1sq :1c :item :method :1alist :1dat)
+  (or :1c (setq :1c '|:context))
+  (setq :1sq (:preparer :1sq))
+  (|mapc (car :1c)(lambda (:1c)(cond
+	((atom :1c))
+	((eq (car :1c) '|:item)(cond
+	   ((neq '|ko (car (setq :1alist (|match :1sq (cadr :1c)))))
+		(setq :item (nconc :item [':|item (cadr :1c) :1alist])))))
+	((and (eq (car :1c) '|:method)(eq (cadr :1c) '|if-needed))(cond
+	 ((neq '|ko (car (setq :1alist (|match (get (cadr :1c) ':1pat) :1sq))))
+		(setq :method (nconc :method ['|:method (caddr :1c) 
+						:1alist :1sq]))))))))
+  (nconc :item :method))
+
+(df |for-each (:1sq :2x :current)
+  (setq :2x (fetch (nextl :1sq)))
+  (while :2x (setq :current (:try-next :2x))(eprogn :1sq)))
+
+(df |assuming (:1sq :2x)
+	(setq :2x :context)
+	(add (nextl :1sq))
+	(eprogn :1sq)
+	(setq :context :2x)
+	t)
+
+(de :try-method (:2x)
+  (|mapc (car :1c)(lambda (:1c)(cond
+	((atom :1c))
+	((and (eq (car :1c) '|:method)(eq (cadr :1c) :2x)
+	      (neq '|ko (car (setq :1alist (|match (get (caddr :1c) ':1pat)
+						:1dat)))))
+		(:run-method (get (caddr :1c) ':1body))))))
+ t)
+
+(de :run-method (:1body :1dat)
+  (|mapc (cadr :1body)(lambda (:1x)(cond
+	((atom :1x)(:1save :1x)
+	   (set :1x (or (cassoc :1x :1alist) ':unassigned)))
+	((:1save (car :1x))(set (car :1x)(eval (cadr :1x)))))))
+  (escape adieu (eprogn (cddr :1body)))
+  (while :1dat (setq :1c (nextl :1dat))
+		(set (car :1c)(cdr :1c))))
+
+(de :cdelete (:1d :1p)(cond
+	((null :1d)())
+	((equal (car :1d) :1p)(cdr :1p))
+	((cons (car :1d)(:cdelete (cdr :1d) :1p)))))
+
+(de :1save (:0x)
+  (setq :1dat (cons (cons :ox (car :ox)) :1dat)))
+
+(de note (:1x :0x)
+  (setq :proposals (nconc :proposals (cond
+	(:1x)
+	(t (|mapc :1pat (lambda (:1p)
+		(setq :0x (nconc :0x (cond
+			((atom :1p) :1p)
+			((cadr :1p)))))))
+	   ['|:item :0x (cadr (|match :1patcaller :0x)))))))
+
+(df :try-next (:1l :proposals :1dat :1alist :1pat :1atsp :1patcaller)
+ (escape :exit
+   (setq :1dat (nextl :1l))
+   (while t (cond
+	((atom :1dat)(cond
+		((null (car :1dat))(:exit (eprogn :1l)))
+		(t (setq :0x (caar :1dat) :1dat (cdar :1dat)))))
+	((null (setq :0x (nextl :1atsp)))(:exit (eprogn :1l)))
+	((setq :0x (nextl :1atsp) :1dat ':1atsp)))
+      (cond
+	((eq (car :0x) '|:item)
+		(|mapc (caddr :0x)(lambda (:1x)
+			(set (car :1x)(cdr :1x))))
+		(:exit (cadr :0x)))
+	((eq (car :0x) '|:method)
+		(setq :1alist (caddr :0x) 
+			:1pat (get (cadr :0x) ':1pat)
+			:1patcaller (cadr (cddr :0x)))
+		(:run-method (get (cadr :0x) ':1body))
+		(set :1dat (nconc :proposals (car :1dat))))
+	((:exit :0x))))))
+
+; macro-caractere de segement
+
+(dmc "&" (x)(setq x (read))(if (atom x) ["&" x]["&" . x]))
+
+; macro-caractere d'element
+
+(dmc "!" (x) (setq x (read))(if (atom x) ["!" x]["!" . x]))
+
+; macro-caractere de constantes multilples
+
+(dmc "@" (x) (setq x (read))(if (atom x) ["@" x]["@" . x]))
+
+;(package)
+
+(print "conn.vlisp charge")
+
+;(careful --x--)

@@ -1,0 +1,192 @@
+; -------------------------------------------------
+;
+;	Interpreteur de L-systemes
+;		derivation
+;		automate d'execution
+;
+;	F. BALMAS			25/03/96
+;
+; -------------------------------------------------
+
+; 
+(de l-syst (n axiome rd deg len)
+	(when axiome (setq AXIOME axiome))
+	(when n (setq N n))
+	(when rd (setq RD rd))
+	(when deg (setq DEG deg))
+	(when len (setq LEN len))
+	(print AXIOME)
+	(print RD)
+	(print "nb iter" N "degres" DEG "length" LEN)
+	(reinit-lsyst)
+	(print 'X (xGetValues tortue "x") 'Y (xGetValues tortue "y") 'DIR
+		(xGetValues tortue "orientation"))
+	(cache-tortue)
+	(automate (deriver AXIOME N)) 
+	(montre-tortue))
+
+; la derivation de la chaine
+; ---------------------------
+
+; les regles de derivation
+;(setq RD '(
+;	(<symbole> (<chaine de substitution>))
+;	...
+;	))
+
+; un exemple particulier
+(setq RD '(
+	(F (F + F - F + F))
+	))
+
+; un autre
+(setq RD2 '(
+	(X (F - < < X > + X > + F < + F X > - X))
+	(F (F F))
+	))
+
+; l'axiome a deriver
+;(setq AXIOME '( <chaine de symboles> ))
+
+; un exemple particulier
+(setq AXIOME '(F - F - F))
+
+; un autre
+(setq AX2 '(X))
+
+; le nb d'iteration pour la derivation
+;(setq N <nb>)
+
+; un exemple particulier
+(setq N 3)
+
+; deriver n fois une chiane initiale
+(de deriver (string n) (cond
+	((= n 0) string)
+	(t (deriver (remplacer string) (1- n)) )))
+
+; remplacer une chaine selon les regles de substitution
+(de remplacer (string acc)
+    (if (null string) (nreverse acc)
+	  (remplacer (cdr string)
+		     (if (assq (car string) RD) 
+			 (append (reverse (cadr (assq (car string) RD))) acc)
+		       (cons (car string) acc)))))
+
+
+; l'automate d'affichage
+; ----------------------
+
+; les etats et donnees globales de l'automate
+(setq LEN '<nb>)		; la longueur du segment
+(setq DEG '<nb>)		; le nb de degre pour les changt de dir.
+
+; un exemple particulier
+(setq LEN 5)
+(setq DEG 60)
+
+; pile pour memoriser la position/direction
+(setq PILE nil)
+
+; l'automate d'interpretation
+(de automate (string pos dir) (cond
+	((null string) nil)
+	((= (car string) 'F)
+		(droite LEN)
+		(automate (cdr string)) )
+	((= (car string) '+) 
+		(tourne DEG)
+		(automate (cdr string)) )
+	((= (car string) '-) 
+		(tourne (- 0 DEG))
+		(automate (cdr string)) )
+	((= (car string) '\<)
+		(memoriser-automate)
+;		(print PILE)
+;		(read)
+		(automate (cdr string)) )
+	((= (car string) '\>)
+;		(print PILE)
+		(restitue-automate)
+;		(print PILE)
+;	(print 'X (xGetValues tortue "x") 'Y (xGetValues tortue "y") 'DIR
+;		(xGetValues tortue "orientation"))
+;		(read)
+		(automate (cdr string)) )
+	(t (automate (cdr string)) )))
+
+; ---------------------------------------------------------
+; interface pour l'affichage
+; = utilisation de la tortue LOGO
+; -------------------------------
+
+(if (boundp 'tortue) (xRemove tortue))
+; la tortue
+(setq tortue 'undef)
+
+
+; initialisation des widget
+(de init-lsyst ()
+   (let (root (xCreateWidget 'root "ApplicationShell"))
+	(let (draw (xCreateWidget 'draw "Drawxbvl" root 
+			"width" 600 "height" 600))
+		(xRealize root)
+		(setq tortue (xCreateWidget 'tortue "Tortue" draw 
+				"x" 400 "y" 400)) 
+		(AVANCE tortue 0 90) )) )
+
+; effacement de la fenetre
+(de efface-lsyst ()
+	(xClearArea (xGetValues tortue "parent") 0 0 600 600)
+	(xSetValues tortue "x" X "y" Y)
+	(AVANCE tortue 0 (- DIR (xGetValues tortue "orientation"))) )
+	
+
+; (re)-initialisation de la fenetre
+(de reinit-lsyst ()
+	(ifn tortue
+		(init-lsyst)
+		(efface-lsyst) ))
+
+; deux fonctions pour manipuler la tortue
+(de droite (x)
+	(AVANCE tortue x 0))
+
+(de tourne (x)
+	(AVANCE tortue 0 x))
+
+; globales pour fixer la position/direction en debut d'affichage
+(setq X 400)
+(setq Y 400)
+(setq DIR 90)
+
+; fonction pour fixer la position et la direction de la tortue
+(de position (x y dir)
+	(setq X x)
+	(setq Y y)
+	(setq DIR dir)
+	(xSetValues tortue "x" X "y" Y)
+	(AVANCE tortue 0 (- DIR (xGetValues tortue "orientation"))) )
+
+; montre/cacher la tortur
+(de montre-tortue ()
+	(xSetValues tortue "pencil" 1))
+
+(de cache-tortue ()
+	(xSetValues tortue "pencil" 0))
+
+; memoriser/restituer les position/direction
+(de restitue-automate ()
+	(xSetValues tortue "x" (car PILE) "y" (cadr PILE))
+	(AVANCE tortue 0 (- (caddr PILE) (xGetValues tortue "orientation")))
+	(setq PILE (cdddr PILE)) )
+
+(de memoriser-automate ()
+	(setq PILE (mcons (xGetValues tortue "x")
+			  (xGetValues tortue "y")
+			  (xGetValues tortue "orientation")
+			  PILE)) )
+
+; -----------------------------------------------------------------------------
+
+	

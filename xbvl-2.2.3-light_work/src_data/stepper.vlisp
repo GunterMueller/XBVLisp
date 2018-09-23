@@ -1,0 +1,277 @@
+(setq --x-- careful careful ())
+(princ "je charge stepper.vlisp")
+(package stepper)
+(de e ()(ssh "emacs"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+; ici se developpera au fur et a mesure de mes loisirs le stepper 
+; interactif. Celui-ci est suppose (un fois tous tourne!) d'afficher 
+; dans le fenetre fixe soit l'arbre des appels (si l'on veux stepper 
+; a travers differentes fonctions), soit le pretty-print compacte 
+; d'une fonction, si l'on veux stepper a l'interieur d'une fonction.
+; les indications d'a partir d'ou on veux stepper, se feront 
+; interactivement en deplacant le curseur (avec des commandes 
+; similaires aux commandes de deplacement de rogues).
+;
+; rappelons-nous, que la representation interne de l'arbre des 
+; appels se trouve dans la variable 'ARBRE'. La meme chose devra 
+; etre valide pour le pretty-print compacte! (qui pose des problemes 
+; supplementaire : faut-il une possibilite d'expansion locale de la 
+; representation? etc).
+
+;
+; pour changer la fenetre courante et la position du pointeur
+;
+;(de changewin (w)(xChangeWin w 0)
+
+; (xChangeWin atom 0) change la widgete courante et le pointeur;
+
+
+(de intern-index (y)
+	(setq |flis ())
+	(setq |ARBRE 	
+	   (cons y 
+		 (cons (|%suprev (|%indexx y (|%find (ival y) 4)))))))
+
+(setq last-line 14) ; la ligne ou on va tapper des commandes
+
+(df |steptr (ftn)(cond
+  ((null (car ftn)) "faudrait peut-etre donner un argument!") 
+  ((cdr ftn) "une seule fonction s.v.p.")
+  ((not (fval (car ftn))) (prin1 "c'est quoi?")(car ftn))
+  ((listp (car ftn))
+	 "donnez en argument juste le nom de la fonction, s.v.p.")
+  (t	(intern-index (car ftn))
+	(setq la-vraie-window (xwinp))
+	(setq le-vrai-fenetre  (caddr (xCreateXbvlisp '|-Stepper-Widget 17 74 0 0 1)))
+        (repeat 4 (xflush))
+        (menu-list)
+        ;(xDisable)  le focus est controle par programme seulement ;
+        (xChangeWin le-vrai-fenetre 0 )
+	(eval (cons '|%a ftn))
+	(poscur 1 2)
+	(interaction)
+	(xChangeWin la-vraie-window 0)
+        ;(xEnable);
+        ))))
+
+
+; et, naturellement, un petit menu ;
+
+
+(de |stepmenu ()
+(make-menu
+"h,j,k,l deplacemts, (s)step, (u)ndo step, (e)dite, (p)retty, (stp) reactiver")(menu))
+
+; un peut d'interface X
+(de menu-list ()
+    (ifn (iswidget '|-Stepper-List "awList")
+      (|InsertMenuList '|-Stepper-Widget 
+         '(|h |j |k |l  |s |u |e |p )))))
+
+
+; une fois l'arbre affiche, on sait que ca commence en colonne 1 de la ligne 3
+
+
+(df interaction ()
+   (|stepmenu)
+   (rplacd '%LIGNE% nil)
+   (setq %LIGNE% 1)
+   (%position% |ARBRE 4)
+   (setq %ligne% 1 %col% 2 ) ; %LIGNE% (car (cursorpos (xwinp))))
+   (inter nil (car |ARBRE)))
+
+; calculons d'abord les positions de chacune des fonctions ;
+
+(de %position% (l col)
+     	(when (and (car l)(atom (car l)))
+	   (put '%LIGNE% %LIGNE% (cons [(car l) col](get '%LIGNE% %LIGNE%)))
+  	; provisoire ;
+	   (and (null (equal (car (get (car l) '%POSITION%)) %LIGNE%))
+	   (put (car l) '%POSITION% [%LIGNE% col]))
+	   (|entree (car l) ['%POS-entree [quote (car l)]])
+	   (|sortie (car l) ['%POS-sortie [quote (car l)]]))
+	(cond
+	  ((null l)())
+	  ((atom (cadr l))(incr %LIGNE%) (%position% (cdr l) col))
+	  (t (%position% (cadr l) (+ col 12))
+	     (if (cddr l)(%position% (cddr l) col)))))
+
+; petite fonction auxiliaire pour trouver la fonction correspondant ;
+; ramene, dans %fonction%, le nom de la fonction correspondant	    ;
+
+(de %chftn (lig col)
+    (let ((aux (get '%LIGNE% lig)))
+    	(unless (null aux)
+	    (if (eq (cadr (car aux)) col)
+		(setq %fonction% (car (car aux)))
+		(self (cdr aux))))))
+
+; pour re-entrer dans le stepper ... ;
+
+(de |stp ()
+     (escape oo
+	(let ((x (get '%LIGNE% %ligne%)))
+	    (if (null x) (oo (print "problemes, problemes..."))
+	   	(if (equal (cadar x) (+ 2 %col%))(setq %fonction% (caar x))
+			(self (cdr x)))))
+;        (if (or (not (boundp 'le-vrai-fenetre))
+;	        (and (atom le-vrai-fenetre)
+;		     (or (not (boundp le-vrai-fenetre))
+;		         (null (eval le-vrai-fenetre))
+;	        	 (not (windowp (eval le-vrai-fenetre))))))
+;		(oo "problemes, problemes .... "))
+	(inter nil %fonction%)))
+
+(de grafik () (xChangeWin  le-vrai-fenetre 1))
+(de no-grafik () (xChangeWin la-vraie-window 1))
+
+; inter est l'interprete de commande ;
+
+(de inter (%x% %fonction%)
+    (grafik)
+    (let ((x (cursorpos )))
+      (poscur last-line 1)
+      (princ "commande: ")
+      (poscur (car x)(cadr x)))
+    (setq %x% (tyi))
+    (selectq (itoa %x%)
+	     ("e" ; (poscur (1+ %LIGNE%) 1)
+	      (eval ['|edit %fonction%])
+	     (inter nil %fonction%)	)
+	("p" ; (poscur (1+ %LIGNE%) 1)
+	     (no-grafik)
+	     (eval ['|pretty %fonction%])
+	      (inter nil %fonction%))
+	     ("s" ; (poscur (1+ %LIGNE%) 1)
+	     (no-grafik)
+	     (print "je step la fonction" %fonction%)
+	     (grafik)
+	     (poscur %ligne% (1- %col%))(tyo (atoi ">"))
+	     (step %fonction% nil t)
+	     (inter nil %fonction%))
+	("u" ; (poscur (1+ %LIGNE%) 1)
+	     (no-grafik)
+	     (print "je sorte du step de" %fonction%)
+	     (grafik)
+	     (poscur %ligne% (1- %col%))(tyo (atoi "_"))
+	     (eval ['unstep %fonction%])
+	     (inter nil %fonction%))
+	("l" (if (%chftn %ligne% (+ 14 %col%))
+		 (poscur %ligne% (setq %col% (+ 12 %col%))))
+	     (inter nil %fonction%))
+	("h" (if (%chftn %ligne% (- %col% 10))
+		 (poscur %ligne% (setq %col% (- %col% 12))))
+	     (inter nil %fonction%))
+	("k" (unless (equal %ligne% 1)
+	     (decr %ligne%)
+	     (if (%chftn %ligne% (+ 2 %col%))
+		 (poscur %ligne% %col%)
+		 (let ((-a- (%trv (get '%LIGNE% %ligne%) %col%)))
+		  (let ((aux (%chftn %ligne% 
+			  	(-a- %col% (if (eq -a- '+) 14 10))))
+		       (col (-a- %col% 12)))
+		   (if aux (poscur %ligne% (setq %col% col))
+		       (self (%chftn %ligne% 
+			     (-a- col (if (eq -a- '+) 14 10)))
+			     (-a- col 12)))))))
+	     (inter nil %fonction%))
+	("j" (unless (null (get '%LIGNE% (1+ %ligne%))) 
+	     (if (%chftn (1+ %ligne%) (+ 2 %col%))
+		 (poscur (incr %ligne%) %col%)
+		 (incr %ligne%)
+		 (let ((-a- (%trv (get '%LIGNE% %ligne%) %col%)))
+		  (let ((aux (%chftn %ligne% 
+			  	(-a- %col% (if (eq -a- '+) 14 10))))
+		       (col (-a- %col% 12)))
+		   (if aux (poscur %ligne% (setq %col% col))
+		       (self (%chftn %ligne% 
+			     (-a- col (if (eq -a- '+) 14 10)))
+			     (-a- col 12)))))))
+	     (inter nil %fonction%))
+	(t 
+	   ; (let ((x (cursorpos (eval (xwinp)))))
+	   ; (poscur last-line 0)(cleos)(poscur (car x)(cadr x)))
+	   ; (no-grafik)
+	   ; (princ "voulez-vous une trace video (n/y) ?")
+	   ; (if (null (equal (itoa (tyi)) "y")) 
+	   ;		(progn (setq %POSITION% nil)(terpri))
+	   ;	(setq %POSITION% t)
+	    (poscur (1+ %LIGNE%) 1)
+            (princ "voulez-vous une trace video (n/y) ?")
+            (if (null (equal (itoa (tyi)) "y"))
+                        (progn (setq %POSITION% nil)(terpri))
+                (setq %POSITION% t)
+;           (poscur (1- %LIGNE%) 1)
+	    (terpri)
+	    (print "n'oubliez pas ensuite d'inhiber la trace par (end-step)")
+		nil))
+	))
+
+
+; deux petites fonctions ordinaires ;
+
+(de %trv (l col ;; dir)
+   (let ((aux (|mapcar l (lambda (x)(cadr x)))))
+	(let ((aux1 (max aux -1)))
+	   (if (< col aux1) '+ '-))))
+	
+(de max (l y)(cond
+   ((null l) y)
+   ((> (car l) y)(max (cdr l)(car l)))
+   (t (max (cdr l) y))))
+
+; faut bien arreter la trace d'une maniere ou d'une autre ;
+
+(de |end-step (x)
+	(if x (xRemoveWidget (xGetSupWidget stepper|le-vrai-fenetre "ApplicationShell")))
+	(set le-vrai-fenetre nil))
+	(setq %POSITION% nil))
+
+; petite fonctions pour avoir une trace video ;
+
+(de %POS-entree (-x- -y-)
+    (unless (or (null (boundp '%POSITION%))
+	    (null %POSITION%))
+	    (grafik)	
+	    (let ((-x- (get -x- '%POSITION%)))
+	      (let ((-a- (car -x-))(-b- (cadr -x-)))
+		(poscur -a- (- -b- 3))
+		(tyo (atoi "*"))
+		(xChangeWin la-vraie-window 0)))))
+
+(de %POS-sortie (-x- -y-)
+    (unless (or (null (boundp '%POSITION%))
+	    (null %POSITION%)) 
+	    (grafik)	
+	    (let ((-x- (get -x- '%POSITION%)))
+	      (let ((-a- (car -x-))(-b- (cadr -x-)))
+		(poscur -a- (- -b- 3))
+		(tyo (atoi "_"))
+		(xChangeWin la-vraie-window 0)))))
+
+(package)
+
+(print "stepper.vlisp charge")
+
+(careful --x--)
+
+
+

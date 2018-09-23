@@ -1,0 +1,211 @@
+;
+; Constructeur de methodes graphiques : partie fonctionnelle
+;
+;
+; Fonctions definies ici :
+;
+;
+; Do-Selection-Menu : Lancement d'un menu selectionnable avec creation/destruction de fenetres
+; Selection-Menu    : menu de selection pour 1 ou plusieurs choix
+;
+; Methode-Menu      : menu generaux compose de champs de titre, de champs selectable avec ou sans valeur apparente
+; Menu-Present      : retourne t si le menu est present...
+; Remove-All-Methode-Menu : effacement de tous les Methode-Menu lie a un objet
+; Remove-Menu-If-Present : effacement du Methode-Menu lie a un objet si il est present
+; Remove-Methode-Menu    : effacement du Methode-Menu lie a un objet
+;
+; Yes-No-Menu : Menu oui-non avec actions
+;
+; Font par defaut
+(setq defun 'de deff 'df
+      default-font "-b&h-lucida-medium-r-normal-sans-12-0-75-75-p-*-iso8859-1"
+      bitmap-directory "/usr/people/damien_local/work/bitmap/"   ; repertoire des bitmaps
+      help-event nil                                         ; evennement lie au Help
+      help-file nil)                                         ; fichier d'aide a lancer
+
+(defun Method-Get-Value (obj elem)
+  (cond
+   ((atom obj) (get obj elem))
+   ((listp obj) (cdr (assoc elem obj)))))
+;
+; Si help-event ET help-file ont une valeur (par ex. "<Btn2Dwn>" et "(my-help)"), lors de 
+; l'avenement de l'evenement help-event dans un widget, l'action my-help sera mise en route.
+;
+(defun X-Aide (topic file)
+  (if topic (aide topic nil file)))
+;
+; Do-Selection-Menu : menu de selection pour 1 ou plusieurs choix
+;
+; Parametres :
+;  obj    = variable a modifier
+;  field  = champ ou placer les information
+;  w-info = widget a reactualiser lors de la sortie du menu
+;  title  = titre de la fenetre de choix
+;  data   = choix
+;  action = action post-selection
+;
+(defun Do-Selection-Menu (obj field w-info title data r-instr . w-values)
+    (let (root (xCreateWidget '--OS-- "OverrideShell" (xwinp)
+			      "x" (- (car (xGetPosPointer)) 10) "y" (- (cadr (xGetPosPointer)) 10)))
+      (let (bx (xCreateWidget '--BX-- "awBox" root))
+	(let ((l data) (new-w))
+	  (if (null l) t
+	    (setq new-w (eval `(xCreateWidget '--SM-- "awCommand" bx "font" default-font "label" (cdar l) ,@w-values)))
+	    (rplacd new-w `(Selection-Componant ',obj ',field ',root  ',w-info 
+						',r-instr ',(caar l)))
+	    (xAddCallback new-w "callback" (strcat "(eval (cdr '" new-w "))"))
+	    (if (and help-event help-file) 
+		(xAugment new-w help-event (strcat "(X-Aide '" (caar l) " help-file)")))
+	    (self (cdr l)))))
+      (xPopup root)))
+;
+; Callback des selections
+;
+(defun Selection-Componant (obj field w w-info feed-back val)
+    (xPopdown w)
+    (if (and obj field) (put obj field val))
+    (if w-info (xSetValues w-info "label" val))
+    (if feed-back (eval `(,feed-back ',obj ',field ',w-info))))
+;
+;
+; Construction des Menus des methodes
+;
+; Parametres :
+;  obj     = objet
+;  w       = widget pere
+;  x0, y0  = position initiale
+;  menu    = contenant du menu
+;  package = package d'origine du menu
+;
+(deff Methode-Menu (params)
+  (let ((obj (eval (1 params)))
+	(w (eval (2 params)))
+	(x (eval (3 params)))
+	(nom-menu (5 params))
+	(data (eval (5 params)))
+	(pkg  (6 params))
+	(w-values (nth 7 params))
+	(w-create))
+    (setq w-create `(xCreateWidget '--MI-- "awCommand" w "font" default-font  "x" x "y" y ,@w-values))
+    (ifn w (setq w (Methode-Menu-Window nom-menu (length data))))
+    (setq x0 x)
+    (if (member nom-menu (get obj 'Methode-Menu)) nil
+      (let ((l data) (y (eval (4 params))) (wl) (isbmp))
+	(if isbmp
+	    (cond
+	     ((listp (caar l)) (setq x (+ x (+ 4 (xGetValues (car wl) "width")))))
+	     (t 		 (setq x x0 y (+ y (+ (xGetValues (car wl) "height") 7))))))
+	(cond
+	 ((null l) 
+	  (put obj 'Methode-Menu (cons nom-menu (get obj 'Methode-Menu)))
+	  (put obj nom-menu wl))
+	 ((stringp (car l))
+	  (setq wl `(,(xCreateWidget '--ML-- "awLabel" w "font" default-font 
+				     "label" (car l) "x" x "y" y
+				     "background" "#33f" "foreground" "#fff") ,@wl))
+	  (self (cdr l) (+ y 25) wl))
+	 ((null (cadar l))
+	  (setq wl `(,(eval w-create) ,@wl))
+	  (when (cddar l)
+		(if pkg
+		    (xAddCallback (car wl) "callback" (strcat "(" pkg "|" (cddar l) " '" pkg "|" obj " '|" w " '|" (car wl) ")"))
+		  (rplacd (car wl) `(,(cddar l) ',obj ',w ',(car wl)))
+		  (xAddCallback (car wl) "callback" (strcat "(eval (cdr '" (car wl) "))")))
+		(if (and help-event help-file) 
+		    (xAugment (car wl) help-event (strcat "(X-Aide '" (cddar l) " help-file)"))))
+	  (cond
+	   ((stringp (caar l))  
+	    (xSetValues (car wl) "label" (caar l))
+	    (self (cdr l) (+ y 25) wl))
+	   (t
+	    (xSetValues (car wl) "bitmap" (strcat bitmap-directory (car (caar l))))
+	    (self (cdr l) y wl t))))
+	 (t
+	  (let ((tmp-c (eval w-create))
+		(tmp-l))
+	    (if (stringp (caar l)) (xSetValues tmp-c "label" (caar l))
+	      (xSetValues tmp-c "bitmap" (strcat bitmap-directory (car (caar l)))))
+	    (if (atom (cadar l)) (setq tmp-l (xCreateWidget '--ML-- "awLabel" w "label" 
+							    (strcat (Method-Get-Value obj (cadar l)))))
+	      (setq tmp-l (xCreateText '--MT-- w (strcat (Method-Get-Value obj (car (cadar l)))) t)))
+	    (xSetValues tmp-l  "font" default-font  
+			"x" (+ x (+ 10 (xGetValues tmp-c "width"))) "y" y)
+	    (setq wl `(,tmp-c ,tmp-l ,@wl))
+	    (if (and help-event help-file) 
+		(xAugment tmp-c help-event (strcat "(X-Aide '" (cadar l) " help-file)")))
+	    (if (cddar l)
+		(if pkg
+		    (xAddCallback tmp-c "callback" (strcat "("  pkg "|" (cddar l) " '" pkg "|" obj 
+							   " '" pkg "|" (cadar l) " '|" (cadr wl) "'|" w
+							   " " (+ x 250) " " y ")"))
+		  (rplacd tmp-c `(,(cddar l) ',obj ',(cadar l) ',(cadr wl) ',w ,(+ x 250) ,y))
+		  (xAddCallback tmp-c "callback" (strcat "(eval (cdr '" tmp-c "))")))))
+	  (self (cdr l) (+ y 25) wl (listp (caar l)))))))))
+
+; Creation du widget du menu si besoin
+(defun Methode-Menu-Window (title n-y-objs)
+  (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" title "iconName" title))
+    (let (drw (xCreateWidget '--AD-- "Drawxbvl" root "background" "#4a2" 
+			     "width" (+ 8 (* 25 n-y-objs)) "height" (+ 8 (* 25 n-y-objs))))
+      (xRealize root)
+      drw)))
+
+; Y a t'il un menu "menu" pour l'objet "obj"
+(defun Menu-Present (obj menu) (member menu (get obj 'Methode-Menu)))
+    
+; effacement des menus lies a un objet
+(defun Remove-All-Methode-Menu (obj)
+    (mapc (get obj 'Methode-Menu) 
+	  (lambda (x) (Remove-Methode-Menu obj x))))
+
+; effacement d'un menu si present
+(defun Remove-Menu-If-Present (obj nom-menu)
+    (if (member nom-menu (get obj 'Methode-Menu)) (Remove-Methode-Menu obj nom-menu)))
+
+; effacement d'un menu lie a un objet
+(defun Remove-Methode-Menu (obj nom-menu)
+    (mapc (get obj nom-menu) 'xRemoveWidget)
+    (remprop obj nom-menu)
+    (let (x (delete-one (get obj 'Methode-Menu) nom-menu))
+      (ifn x (remprop obj 'Methode-Menu)
+	   (put obj 'Methode-Menu x))))
+
+
+; reaffectation des valeurs affichees dans un menu
+(deff Fill-Methode-Menu-Values (values)
+    (ifn (cadr values) nil
+	 (let ((obj (eval (car values)))
+	       (nom-menu (cadr values))
+	       (menu (eval (cadr values))))
+	   (ifn (member nom-menu (get obj 'Methode-Menu)) nil
+		(let ((vals (reverse menu)) (ws (get obj nom-menu)))
+		  (cond
+		   ((null vals) t)
+		   ((or (stringp (car vals)) (null (cadar vals))) (self (cdr vals) (cdr ws)))
+		   (t
+		    (xSetValues (cadr ws) "label" (strcat (Method-Get-Value obj (cadar vals))))
+		    (self (cdr vals) (cddr ws)))))))))
+
+;
+;
+; Menu oui non : arguments = label, action si oui, action si non.
+;
+(defun Yes-No-Menu (label act-yes act-no)
+    (let (root (xCreateWidget '--AS-- "OverrideShell" (xwinp) 
+			      "x" (- (car (xGetPosPointer)) 10) "y" (- (cadr (xGetPosPointer)) 10)))
+      (let (bx (xCreateWidget '--AB-- "awBox" root))
+	(xCreateWidget '--AL-- "awLabel" bx "label" label)
+	(put root 'yes act-yes)
+	(put root 'no  act-no)
+	(xAddCallback (xCreateWidget '--AC-- "awCommand" bx "label" "Oui" "foreground" "#fff" "background" "#666")
+		      "callback" (strcat "(Yes-No-Return '" root " 'yes)"))
+	(xAddCallback (xCreateWidget '--AC-- "awCommand" bx "label" "Non" "foreground" "#fff" "background" "#666")
+		      "callback" (strcat "(Yes-No-Return '" root " 'no)" )))
+      (xPopup root)))	
+
+(defun Yes-No-Return (w act)
+    (xPopdown w)
+    (if (get w act) (eval (get w act)))
+    (rplacd w nil))
+
+    

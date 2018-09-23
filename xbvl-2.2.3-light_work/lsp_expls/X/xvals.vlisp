@@ -1,0 +1,51 @@
+; demo du changement de pressentation d'une fenetre d'interface
+; par modification interactive de ressource.
+(de xvals(fois)
+    (progn
+      (xcretop 'essai)
+     (xcrelispwin 'essai 'essai 10 50 1 1 4)
+	; ressources de la Widgette d'interface
+     (xsetvalw 'resizable 'False 'essai 'essai nil )
+	; ressources pour la communication avec le Window Manager
+      (xsetvalw 'geometry "+1+1" 'essai nil)
+      (xsetvalw 'minHeight 25 'essai nil)
+      (xsetvalw 'minWidth 300 'essai nil)
+      (xrealize 'essai)
+;      (xflush)
+      ;(xsetvalw 'x 0 'essai)(xsetvalw 'y 0 'essai)
+      (xwst (strcat "iteractions: " fois "\n") 'main)
+      (if (> fois 500)(setq fois 500))
+      (repeat fois
+	      (let ((xx (xgetvalw 'x 'essai)) (yy (xgetvalw 'y 'essai))(nn 1)(bb 3))
+		(xsetvalw 'x (incr xx) 'essai)
+		(xsetvalw 'y (incr yy) 'essai)
+		(if(= (rem (incr nn) 2) 0)(xsetvalw 'borderWidth (incr bb) 'essai))
+		(xsetvalw 'borderColor (rem xx 16) 'essai)
+		)
+	      (let ((ww (xgetvalw 'width 'essai))(ll (xgetvalw 'height 'essai))(nn 0))
+		(xsetvalw 'width (incr ww) 'essai)
+		(xsetvalw 'height (incr ll) 'essai)
+		)
+	      )
+      (xwst "on retourne ?\n" 'essai 'essai)
+      (xflush)
+      (sleep 2)
+      (xwst "OUI !\n" 'essai 'essai)
+      (xflush)
+      (repeat fois
+	      (let ((xx (xgetvalw 'x 'essai)) (yy (xgetvalw 'y 'essai))(nn 1)(bb 3))
+		(xsetvalw 'x (decr xx) 'essai)
+		(xsetvalw 'y (decr yy) 'essai)
+		(if(= (rem (decr nn) 2) 0)(xsetvalw 'borderWidth (decr bb) 'essai))
+		(xsetvalw 'borderColor (rem xx 16) 'essai)
+		)
+	      (let ((ww (xgetvalw 'width 'essai))(ll (xgetvalw 'height 'essai))(nn 0))
+		(xsetvalw 'width (decr ww) 'essai)
+		(xsetvalw 'height (decr ll) 'essai)
+		)
+	      )
+      (xwst "FAIT !\n" 'essai 'essai)
+      )
+    )
+
+		

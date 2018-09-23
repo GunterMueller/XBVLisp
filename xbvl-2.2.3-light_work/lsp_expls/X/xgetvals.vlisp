@@ -1,0 +1,53 @@
+; des fonction pour trouver la veleur des ressources
+;
+(de allowShellResize? ( widget )
+    (xGetValues widget "allowShellResize" "Int")
+    )
+(de xGetWidgetDims ( widget )
+    (cons   (xGetWidgetWidth widget)
+	    ( cons (xGetWidgetHeight widget)
+		   (cons (xGetWidgetBorder widget) ())
+		   )
+	    )
+    )
+					;
+(de xGetWidgetWidth (widget)
+    (xGetValuesDim  widget "width"))
+					;
+(de xGetWidgetHeight (widget)
+    (xGetValuesDim widget "height"))
+					;
+(de xGetWidgetBorder (widget)
+    (xGetValuesDim widget "borderWidth" ))
+					;
+(de xGetValuesDim (widget dim)
+    (xGetValues widget dim "Dimension" "Int" ))
+					;   
+(de xGetWidgetDims ( widget )
+    (cons   (xGetWidgetWidth widget)
+	    ( cons (xGetWidgetHeight widget)
+		   (cons (xGetWidgetBorder widget) ())
+		   )
+	    )
+    )
+					;
+(de xGetWidgetPos ( widget )
+    (cons   (xGetWidget-x widget)
+	    ( cons (xGetWidget-y widget) ())
+	    )
+    )
+
+					;
+(de xGetWidget-x (widget)
+    (xGetValuesPos widget "x")
+    )
+					;
+(de xGetWidget-y (widget)
+    (xGetValuesPos widget "y")
+    )
+					;
+(de xGetValuesPos (widget pos)
+    (xGetValues widget pos "Position" "Int")
+    )
+	       
+	    

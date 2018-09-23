@@ -1,0 +1,15 @@
+; l'usage des dictionnaires en lisp
+;
+(de traduc(dico phrase)
+    (letdic (car dico) (cdr dico) ( evlis phrase))
+    )
+;
+;
+(setq francais_anglais
+      '((le la chien chat souris fromage arbre gentil vilain monte mange)
+	the the dog cat mouse cheese tree nice hugly climbs-up eats)
+      francais_italien 'to-do
+      )
+;
+(print "faire qqch comme:\n (traduc francais_anglais '(le chat))\n"
+       "ou bien\n   (traduc  francais_anglais

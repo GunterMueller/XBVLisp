@@ -190,9 +190,7 @@ Int linput(){/* subr 1, (input nom_de_fichier), si nom_de_fichier = () */
 
 Int lopen()
 {/* fsubr, (open fichier mode), ramene le fdes */
-  /* register CHAR *pch1,*pch2, mode[2]; */
-  register CHAR *pch1,*pch2;
-  CHAR mode[2];
+  register CHAR *pch1,*pch2, mode[2];
   FILE *fp;
 	       
   mode[1] = 0;

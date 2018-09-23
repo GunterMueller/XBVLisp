@@ -1,0 +1,162 @@
+; x Toolkits : 
+; chargement d'un fichier par une liste sous X : xGetFileName
+; gestion de l'aide par sections : xaide
+
+;
+; recuperation du nom d'un fichier a partir d'un repertoire
+;
+(de xGetFileName2 (dir exec-on-ok)
+    (setq xGetFileNameClbk exec-on-ok)
+    (let (root (xCreateWidget '--AS-- "ApplicationShell" "title" "File" "iconName" "File"))
+      (let (bx (xCreateWidget '--BX-- "awForm" root "height" 300))
+	(let ((dia (xCreateWidget '--DB-- "awDialog" bx "label" "File Name" "value" (if dir dir "./")))
+	      (vp  (xCreateWidget '--VP-- "awViewport" bx "allowHoriz" "True" "allowVert" "True"
+				  "vertDistance" 90 "width" 600 "height" 200)))
+	  (let ((lst (xCreateWidget '--LST-- "awList" vp "list" (ls dir) "columnSpacing" 1))
+		(cmd-ok (xCreateWidget '--CW-- "awCommand" dia "label" "OK"))
+		(cmd-dir (xCreateWidget '--CW-- "awCommand" dia "label" "Open Directory"))
+		(cmd-cl (xCreateWidget '--CW-- "awCommand" dia "label" "Cancel")))
+	    (ifn dir (put dia 'set "./")
+		 (put dia 'set dir))
+	    (xAddCallback lst "callback"     (strcat "(xGetFileNameClbk 'up '" bx " \"$O\")"))
+	    (xAddCallback cmd-ok "callback"  (strcat "(xGetFileNameClbk 'ok '" bx ")"))
+	    (xAddCallback cmd-dir "callback" (strcat "(xGetFileNameClbk 'dir '" bx ")"))
+	    (xAddCallback cmd-cl "callback"  (strcat "(xGetFileNameClbk 'cl '" bx ")")))))
+      (xRealize root)))
+
+(de xGetFileName (dir exec-on-ok label)
+    (ifn dir (setq dir "./")
+	 (ifn (eq '/ (car (last (explode dir)))) 
+	      (setq dir (strcat dir "/"))))
+    (let (root (xCreateWidget '--AS-- "ApplicationShell"
+			      "title" (if label label "File") 
+			      "iconName" (if label label "File")))
+      (let (bx (xCreateWidget '--BX-- "awForm" root "width" 600 "height" 300))
+	(let ((cmd-cl (xCreateWidget '--CW-- "awCommand" bx "label" "Cancel" "vertDistance" 10 ))
+	      (lbl-w  (xCreateWidget '--LB-- "awLabel" bx "label" dir 
+				     "vertDistance" 10 "horizDistance" 80
+				     "width" 525 "height" 22))
+	      (vp (xCreateWidget '--VP-- "awViewport" bx "allowHoriz" "True" "allowVert" "True"
+				 "vertDistance" 40 "width" 600 "height" 200)))
+	  (let (lst (xCreateWidget '--LST-- "awList" vp "list" (ls dir) "columnSpacing" 1))
+	    (setq xGetFileNameClbk (cons exec-on-ok (cons dir lbl-w)))
+	    (xAddCallback lst "callback"     (strcat "(xGetFileNameClbk 'clb '" bx " \"$O\" '$W)"))
+	    (xAddCallback cmd-cl "callback"  (strcat "(xGetFileNameClbk 'cl '" bx ")")))
+	  (xRealize root)))))
+
+(de xGetFileNameClbk (cmd bx obj wdg)
+    (cond
+     ((eq cmd 'cl) (xRemove bx))
+     ((eq cmd 'clb)
+      (cond
+       ((equal obj "./") nil)
+       ((eq '/ (car (last (explode obj))))
+	(rplaca (cdr xGetFileNameClbk) (strcat (cadr xGetFileNameClbk) obj))
+	(xSetValues (cddr xGetFileNameClbk) "label" (cadr xGetFileNameClbk))
+	(let (new-dir (ls (cadr xGetFileNameClbk)))
+	  (ifn new-dir nil
+	       (xRemoveWidget (xGetValues wdg "parent"))
+	       (let (lst (xCreateWidget '--LST-- "awList" 
+					(xCreateWidget '--VP-- "awViewport" bx "allowHoriz" "True" 
+						       "vertDistance" 40 "allowVert" "True" "width" 600 "height" 200)
+					"list" new-dir "columnSpacing" 1))
+		 (xAddCallback lst "callback" (strcat "(xGetFileNameClbk 'clb '" bx " \"$O\" '$W)"))))))
+       (t
+	(rplaca (cdr xGetFileNameClbk)
+		(strcat (cadr xGetFileNameClbk) obj))
+	(xRemove bx) (eval `(,(car xGetFileNameClbk) ,(cadr xGetFileNameClbk))))))
+     (t
+      (let ((dia (car (xGetValues bx "children")))
+	    (vp  (cadr (xGetValues bx "children"))))
+	(let (f-name (xGetValues dia "value"))
+	  (cond
+	   ((eq cmd 'ok) (xRemove bx)        (eval `(,xGetFileNameClbk ,f-name)))
+	   ((eq cmd 'up) (put dia 'file obj) (xSetValues dia "value" (strcat (get dia 'set) obj)))
+	   ((eq cmd 'dir) 
+	    (let (new-dir (ls f-name))
+	      (ifn new-dir nil
+		   (put dia 'set (strcat (get dia 'set) (get dia 'file)))
+		   (xSetValues dia "value" (get dia 'set))
+		   (xRemoveWidget vp)
+		   (let (lst (xCreateWidget '--LST-- "awList" 
+					    (xCreateWidget '--VP-- "awViewport" bx "allowHoriz" "True" 
+							   "vertDistance" 90 "allowVert" "True" "width" 600 "height" 200)
+					    "list" new-dir "columnSpacing" 1))
+		     (xAddCallback lst "callback"     (strcat "(xGetFileNameClbk 'up '" bx " \"$O\")"))))))))))))
+	      
+	  
+(de xInclude () (xGetFileName () 'include))
+
+; Gestion de l'aide par section
+
+(de xaide_cree_widgets (fichier)
+    (setq xaide (xCreateWidget 'xaide "ApplicationShell" "title" (strcat "Aide " (if fichier fichier "Xbvl"))))
+    (let (pan1 (xCreateWidget '--AP-- "awPaned" xaide))
+      (let (bx (xCreateWidget '--AB-- "awBox" pan1 "width" 300 "showGrip" "False"))
+	(let ((c1 (xCreateWidget '--AC-- "awCommand" bx "label" "Quiter" "x" 4 "width" 90))
+	      (c2 (xCreateWidget '--AC-- "awCommand" bx "label" "Section" "x" 100 "width" 90))
+	      (c3 (xCreateWidget '--AC-- "awCommand" bx "label" "Rechercher" "x" 195)))
+	  (xAddCallback c1 "callback" "(xaide_quiter)")
+	  (xAddCallback c2 "callback" (strcat "(xaide_section '" fichier ")"))
+	  (xAddCallback c3 "callback" (strcat "(xaide_rechercher '" fichier ")"))))
+      
+      (let (pan2 (xCreateWidget '--AP-- "awPaned" pan1))
+	(let (bx (xCreateWidget '--AB-- "awViewport" pan2 "width" 300 "height" 100 
+				"allowVert" "True" "allowHoriz" "True"))
+	  (put xaide 'text (xCreateWidget '--XB-- "Xbvlisp" pan2 "width" 300 "height" 200))
+	  (put xaide 'list-parent bx))))
+      (xRealizeWaiting xaide))
+	
+
+(de xaide_quiter () 
+    (when (iswidget xaide)
+      (xChangeWin (get xaide 'main-i))
+      (xRemoveWidget xaide) (setq xaide 'undef) 
+      t))
+
+(de xaide_section (fichier) 
+    (let (lst (xCreateList "Sections" (sections fichier) nil nil 450 175))
+      (xAddCallback lst "callback" (strcat "(xaide_affiche_section '$W '" fichier " $I)"))))
+
+(de xaide_affiche_section (wdg fichier index x y)
+    (if wdg (xRemove wdg))
+    (mapc (get xaide 'list) 'xRemoveWidget)
+    (let (lst (xCreateWidget '--AL-- "awList" (get xaide 'list-parent) "list" (listesection index fichier)))
+      (xAddCallback lst "callback" 
+		    (strcat "(xaide_affiche_aide '$O '" (get xaide 'text) " '" fichier ")"))
+      (put xaide 'list lst)))
+
+(de xaide_rechercher (fichier)
+    (let (r-dial (xCreateWidget '--AS-- "ApplicationShell" "title" "Aide/Recherche"))
+      (let (dial (xCreateWidget '--AD-- "awDialog" r-dial "label" "Entrez le mot à rechercher" "value" "nil"))
+	(let ((ok (xCreateWidget '--AC-- "awCommand" dial "label" "Rechercher"))
+	      (qt (xCreateWidget '--AC-- "awCommand" dial "label" "Annulation")))
+	  (xAddCallback ok "callback" (strcat "(xaide_do_recherche '" fichier " '" r-dial " '" dial " t)"))
+	  (xAddCallback qt "callback" (strcat "(xaide_do_recherche '" fichier " '" r-dial " '" dial ")"))))
+      (xRealize r-dial)))
+
+(de xaide_do_recherche (fichier rw dw ok)
+    (let (topic (implode (explode (xGetValues dw "value"))))
+      (xRemoveWidget rw)
+      (when (and ok topic) 
+	; recherche de la section du topic
+	(let (n-sec (length (sections fichier)))
+	  (cond
+	   ((< n-sec 0) nil) ; topic pas trouvé dans les sections
+	   ((member topic (listesection n-sec fichier)) (xaide_affiche_section nil fichier n-sec))
+	   (t (self (1- n-sec)))))
+	(xaide_affiche_aide topic (get xaide 'text) fichier))))
+	  
+
+(de xaide_affiche_aide (topic wdg fichier)
+    (let (c_pos (xGetPosPointer (get xaide 'list)))
+      (aide topic wdg fichier)
+      (xChangeWin (get xaide 'main-i))
+      (xPosPointer (get xaide 'list) (caddr c_pos) (car (last c_pos)))))
+      
+(de xaide (topic section fichier)
+    (ifn (and (boundp 'xaide) (iswidget xaide)) (xaide_cree_widgets fichier)) ; l'arborescence des widgets n'existe pas
+    (ifn (get xaide 'main-i) (put xaide 'main-i (xwinp)))
+    (xaide_affiche_section nil fichier (if section section 0))
+    (if topic (aide topic (get xaide 'text) fichier)))
+

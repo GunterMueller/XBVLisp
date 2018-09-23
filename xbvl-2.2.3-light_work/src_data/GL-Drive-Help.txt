@@ -1,0 +1,117 @@
+^%H Aide en ligne de GLdrive
+^^Fichier d'aide de GLdrive 
+^
+Introduction 
+
+	GLdrive  offre    une   interface  permettant    d'appliquer  des
+	transformations  graphiques    aux  fenetres    de  visualisation
+	Open/Mesa GL. Le principe de base est le suivant : 
+	
+	Une serie de boutons   de  commande permettent d'appliquer    une
+	translation, rotation   ou changement d'echelle du  graphique par
+	selection avec la souris. La selection par le bouton 1 permet une
+	transformation continue, par le bouton 2 de specifier les valeurs
+	et par  le bouton 3   une  transformations etape  par etape.  (cf
+	Transformations, Translation, Rotation, Echelle). 
+
+	La selection d'une portion du graphique avec le bouton 3 maintenu
+	presse permet d'effectue   un Zoom sur la  portion  designee.  La
+	selection du bouton  de commande Z- effectue l'operation  inverse
+	et  repositionne   le   graphique  dans    l'etat  precedent   la
+	selection. (cf Zoom). 
+
+	Le  bouton  de  commande   labelle  "Ortho"  ou   "Persp"  permet
+	alternativement  de   passer d'une  projection  orthonormee a une
+	projection en perspective. (cf Projection). 
+
+	Le bouton de commande labelle "GL Status" permet de controler une
+	partie    des  options de   dessin    utilise  pour le  rendu  du
+	graphique. (cf Status). 
+
+	Enfin,   le  bouton de commande   Kill  GL permet  de desinstalle
+	l'interface. (cf Terminaison).  
+^
+transformations 
+
+	L'implementation    de GL    dans Xbvl   prend   en  compte   les
+	transformations de l'image dans l'ordre suivant :
+
+		Echelle -> Rotations -> Translations. 
+
+	Ainsi,  une translation   de   l'image sera  effective  apres  le
+	changement d'echelle et les rotations appliquees a l'image. Cette
+	consideration est  a prendre en compte  puisqu'une transformation
+	de 10 unite   apres un changement d'echelle  n'aura   pas le meme
+	effet que si aucun changement d'echelle n'a eut lieu.
+^
+rotations 
+
+	Les  boutons  de commande    correspondants  aux  rotations  sont
+	representes par l'axe  auquel il s'applique  et un cercle oriente
+	pour  indique le sens : dans  le sens des  aiguilles d'une montre
+	pour une rotation incrementale et dans le sens contraire pour une
+	rotation decrementale.
+^
+translations
+
+	Les  boutons  de commande   correspondants aux  translations sont
+	representes  par des fleches  :  horizontale pour une translation
+	sur l'axe des X, verticale pour l'axe des Y et oblique pour l'axe
+	des Z. 
+^
+echelle
+
+	Les   deux boutons de   commande  correspondants a un  changement
+	d'echelle sont  representes   par  une serie   de  quatre  fleche
+	dirigees  vers le centre pour  une decrementation de l'echelle et
+	vers l'exterieur pour incrementation de l'echelle.
+^
+vitesse
+
+	Les boutons de commande Speed Up et Speed Down permettent de fixe
+	l'increment applique aux transformations.
+^
+zoom
+
+	Le  bouton  de  commande Z-  permet de   revenir  a  une position
+	precedent   la  selection  d'une   partie    de l'image avec   le
+	bouton  3. Toutes les  transformations sont conservees  et il est
+	possible de revenir  a l'etat precedent  la premiere operation de
+	selection. 
+^
+projection
+
+	Les projections utilisent les donnees suivantes :
+	Pour la projection Orthogonale :
+^%T2
+		gauche		0
+		droite		largeur de la fenetre
+		bas		0
+		haut		hauteur de la fenetre
+		proche		-32000
+		loint		32000
+
+	Pour la projection en Perspective :
+^%T2
+		fovy		900
+		aspect		liee a la taille de la fenetre
+		z-proche	250
+		z-eloigne	100000
+^
+status
+
+	Les donnees de  GL utilisees  pour la  realisation  des images et
+	controlable via l'interface GL Status sont :
+
+^%T2
+		Z-Buffuring 	Utilisation de l'algorithme du Z buffuring
+		Dither		Utilisation des bits disponibles  pour  la
+		 		couleur ou extrapolation dans le  cas d'un
+		 		ecran 8 bits.
+		Test Alpha	Utilisation du Test Alpha lors du rendu.
+^
+terminaison 
+
+	Le bouton de commande  Kill GL permet  de desinstaller la fenetre
+	GL drive. 
+

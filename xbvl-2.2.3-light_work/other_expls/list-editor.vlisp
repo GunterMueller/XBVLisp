@@ -1,0 +1,271 @@
+; ;
+; Un editeur de list utilisant l'enterface X de bVLISP ;
+; ;
+
+					; construction d'une chaine a partir d'une liste ;
+
+(setq LE-vSpace 20 LE-hSpace 20)
+
+(defmacro real-atom (exp)
+  `(and (atom ,exp)
+       (not (null ,exp))))
+
+(de clear-draw (draww)
+    (let ((o-f (xGetValues (get list-editor-root 'draw) "foreground"))
+	  (o-b (xGetValues (get list-editor-root 'draw) "background")))
+      (xSetValues draww "foreground" o-b)
+      (xFillRectangles draww 0 0 (xGetValues draww "width") (xGetValues draww "height"))
+      (xSetValues draww "foreground" o-f)))
+
+(defmacro clear-children (and-do-what)
+  `(mapc (xGetValues (get list-editor-root 'draw) "children") ,and-do-what))
+
+(de init-LE-widgets ()
+    (let (draww (get list-editor-root 'draw))
+      (if (iswidget draww) 
+	  (progn
+	    (clear-children 'xRemoveWidget)
+	    (clear-draw draww))
+	(setq draww (xCreateWidget (gensym) "ApplicationShell" 
+				   "title" "list editor" 
+				   "iconName" "list editor"))
+	(setq tmp-form (xCreateWidget (gensym) "awForm" draww))
+	(put list-editor-root 'label (xCreateLabel tmp-form " " 566 () () t t))
+	(setq tmp-view (xCreateWidget (gensym) "awViewport" tmp-form 
+				      "allowVert" "True" "allowHoriz" "True"
+				      "height" 200       "width" 566
+				      "top" 0            "left" "ChainLeft"))
+	(xSetValues tmp-view "vertDistance" (xGetVert (get list-editor-root 'label)))
+	(put list-editor-root 'draw (xCreateWidget (gensym) "Drawxbvl" tmp-view
+						   "width" 1000 "height" 1000))
+	(xRealizeWaiting draww))))
+				    
+(de draw-link (wsrc wdes is_left x_wdes y_wdes)
+    (cond
+     ((iswidget wsrc)  ; valeurs par widgets ;
+      (setq x_wsrc (xGetValues wsrc "x"))           (setq y_wsrc (xGetValues wsrc "y"))
+      (setq w_wsrc (/ (xGetValues wsrc "width") 2)) (setq h_wsrc (/ (xGetValues wsrc "height") 2))
+      (setq x_wdes (xGetValues wdes "x"))           (setq y_wdes (xGetValues wdes "y"))
+      (setq w_wdes (/ (xGetValues wdes "width") 2)) (setq h_wdes (/ (xGetValues wdes "height") 2)))
+     (t               ; ou par valeur ;
+      (setq x_wsrc wsrc) (setq y_wsrc wdes)     
+      (setq w_wsrc 0)    (setq h_wsrc 0)
+      (setq w_wdes 0)    (setq h_wdes 0)))
+    (setq a_w (/ LE-hSpace 4))
+    (setq a_h (/ LE-vSpace 4))
+    (if is_left
+	(xDrawLines (get list-editor-root 'draw)
+		    (+ x_wsrc w_wsrc) (+ y_wsrc h_wsrc)
+		    (+ x_wsrc w_wsrc) (+ y_wdes h_wdes)
+		    x_wdes            (+ y_wdes h_wdes)
+		    (- x_wdes a_w)    (+ y_wdes (- h_wdes a_h))
+		    x_wdes            (+ y_wdes h_wdes)
+		    (- x_wdes a_w)    (+ y_wdes (+ h_wdes a_h)))
+      (xDrawLines (get list-editor-root 'draw)
+		  (+ x_wsrc w_wsrc)   (+ y_wsrc h_wsrc)
+		  (+ x_wdes w_wdes)   (+ y_wsrc h_wsrc)
+		  (+ x_wdes w_wdes)         y_wdes
+		  (+ x_wdes (- w_wdes a_w)) (- y_wdes a_h)
+		  (+ x_wdes w_wdes)         y_wdes
+		  (+ x_wdes (+ w_wdes a_w)) (- y_wdes a_h))))
+
+(de create-real-node (x y value)
+    (let (ret (gensym))
+      (cond
+       ((stringp value)
+	(xCreateWidget ret "awCommand" wroot "label" value
+				 "x" x "y" y "font" "9x15")
+	(xAddCallback ret "callback" (strcat "(modify-link '" ret " '" value ")")))
+       (t
+	(xCreateWidget ret "Drawxbvl" wroot "width" 17 "height" 19 "x" x "y" y)
+	(xAugment ret "<Btn1Down>" (strcat "(modify-link '" ret ")"))
+	(if (equal value '(n)) (xDrawLines ret 0 19 17 -19 1)
+	  (let ((cx (- (/ 17 2) 1)) (cy (- (/ 19 2) 1)))
+	    (xFillArcs ret (- cx 2) (- cy 2) 4 4 0 (* 360 64))
+	    (cond
+	     ((equal value '(r)) (xDrawLines ret cx cy (- 17 cx) 0 1)) ; right ;
+	     ((equal value '(d)) (xDrawLines ret cx cy 0 (- 19 cy) 1))))))) ; down ;
+      ret))
+
+(de create-new-node (x y value-car value-cdr previous is_left)
+    (let ((wroot (get list-editor-root 'draw))
+	  (printed-car (if (atom value-car) (strcat value-car) '(d)))
+	  (printed-cdr (if (atom value-cdr) (strcar value-cdr) value-cdr)))
+      (setq val-node (create-real-node x y printed-car))
+      (setq lnk-node (create-real-node (+ x (xGetValues val-node "width")) y printed-cdr))
+      (put val-node 'value printed-car)
+      (put lnk-node 'value printed-cdr)
+      (put val-node 'cdr lnk-node)
+      (put lnk-node 'car val-node)
+      (setq x-margin (+ (+ x LE-hSpace)
+			(+ (xGetValues lnk-node "width") (xGetValues val-node "width"))))
+      (ifn previous ()
+	   (draw-link previous val-node is_left)
+	   (put previous 'is_left is_left)
+	   (put previous 'to val-node)
+	   (put val-node 'from previous))
+      `(,val-node 
+	,lnk-node 
+	,(- x-margin x)
+	,(xGetValues lnk-node "height"))))
+		  
+		    
+(de fill-list-loop (sexp x y previous is_left)	 
+    (if (atom sexp) ()
+      (cond
+       ((and (real-atom (cdr sexp)) (atom (car sexp)))
+	(put list-editor-root 'last  (create-new-node x y (car sexp) (cdr sexp) previous is_left)))
+       
+       ((real-atom (cdr sexp))
+	(let (new-node (create-new-node x y '((d)) (cdr sexp) previous is_left))
+	  (if (car sexp)
+	      (fill-list-loop (car sexp) x (+ y (+ (cadddr new-node) LE-vSpace)) (cadr new-node) t))))
+	
+       ((eq (car sexp) (cdr sexp))
+	(let (new-node (create-new-node x y '((d)) '(d) previous is_left))
+	  (draw-link (+ (xGetValues (cadr new-node) "x")
+			(/ (xGetValues (cadr new-node) "width") 2))
+		     (+ y (cadddr new-node)) 
+		     ()
+		     (+ (xGetValues (cadr new-node) "x")
+			(/ (xGetValues (cadr new-node) "width") 2))
+		     (+ (+ y (cadddr new-node)) LE-vSpace))
+	  (fill-list-loop (car sexp) x (+ y (+ (cadddr new-node) LE-vSpace)) (car new-node))))
+       
+       ((eq (car sexp) (cadr sexp))
+	(let (new-node (create-new-node x y '((d)) '(r) previous is_left))
+	  (let (cdr-node (create-new-node (+ (+ x (/ (xGetValues (car new-node) "width") 2)) 
+					     (+ LE-hSpace (caddr new-node))) y 
+					  '((d)) (ifn (cddr sexp) '(n) 
+						      (if (atom (cddr sexp)) (cddr sexp) '(r)))
+					  (cadr new-node) t))
+	    (draw-link (+ (xGetValues (car cdr-node) "x") 
+			  (/ (xGetValues (car cdr-node) "width") 2))
+		       (+ y (xGetValues (car cdr-node) "height"))
+		       ()
+		       (+ (xGetValues (car cdr-node) "x") 
+			  (/ (xGetValues (car cdr-node) "width") 2))
+		       (+ (+ y LE-vSpace) (xGetValues (car cdr-node) "height")))
+	    (fill-list-loop (car sexp) 
+			    (+ (+ x (/ (xGetValues (car new-node) "width") 2)) 
+
+
+
+			       (+ LE-hSpace (caddr new-node)))
+			    (+ (+ y (cadddr new-node)) LE-vSpace)
+			    (car new-node) t)
+	    (if (cddr sexp) 
+		(fill-list-loop (cddr sexp) x-margin y (cadr cdr-node))))))
+       
+       ((null (cdr sexp))
+	(let (new-node (create-new-node x y (car sexp) '(n) previous is_left))
+	  (if (listp (car sexp))
+	      (fill-list-loop (car sexp) x (+ y (+ (cadddr new-node) LE-vSpace)) (car new-node))
+	    (put list-editor-root 'last new-node))))
+       
+       (t
+	(if (and (listp (car sexp)) (in? (car sexp) (cdr sexp)))
+	    (progn (print "Mutation inconnuue -- non dessinable" sexp) (error))
+	  (let (new-node (create-new-node x y (car sexp) '(r) previous is_left))
+	    (fill-list-loop (car sexp) x (+ y (+ (cadddr new-node) LE-vSpace)) (car new-node))
+	    (fill-list-loop (cdr sexp) x-margin y (cadr new-node) t)))))))
+
+(de in? (exp big-exp)
+  (cond ((eq exp big-exp) t)
+        ((null big-exp) nil)
+        ((listp (car big-exp))
+         (or (in? exp (car big-exp))
+             (in? exp (cdr big-exp))))
+        (t (in? exp (cdr big-exp)))))
+    
+(de list-edit (l)
+    (ifn (boundp 'list-editor-root) (setq list-editor-root (gensym)))
+    (init-LE-widgets)
+    (setq x-margin 0)
+    (fill-list-loop l 10 10 ()))
+
+
+					; modification des liens ;
+
+
+
+(de reconstruct-list (root kill-from kill-to)
+    (put kill-from 'to kill-to)
+    (put kill-from 'value '(r))
+    (put kill-to 'from kill-from))
+
+(de display-node (node x y)
+    (setq x-margin (+ (+ x LE-hSpace)
+		      (+ (xGetValues node "width") 
+			 (xGetValues (get node 'cdr) "width"))))
+    (xSetValues node "x" x "y" y)
+    (xSetValues (get node 'cdr) "x" (+ x (xGetValues node "width")) "y" y)
+    (xRealize node)
+    (xMap node)
+    (let (cdr-node (get node 'cdr))
+      (xRealize cdr-node)
+      (xMap cdr-node)
+      (ifn (eq cdr-node (get list-editor-root 'in-modify)) ()
+	   (clear-draw cdr-node)
+	   (print (get cdr-node 'value) (get cdr-node 'to))
+	   (cond
+	    ((equal (get cdr-node 'value) '(r))
+	     (let ((cx (- (/ 17 2) 1)) (cy (- (/ 19 2) 1)))
+	       (xFillArcs cdr-node (- cx 2) (- cy 2) 4 4 0 (* 360 43))
+	       (xDrawLines cdr-node cx cy (- 17 cx) 0 1)))
+	    ((equal (get cdr-node 'value) '(n))
+	     (xDrawLines cdr-node 
+			 0 (xGetValues cdr-node "width") 
+			 (xGetValues cdr-node "height") 0))))))
+			 
+	  
+
+(de redisplay-list (node x y is_left)
+    (ifn node ()
+	 (let (node-cdr (get node 'cdr))
+	   (if (member node done) 
+	       (draw-link (get node 'from) node is_left)
+	     (display-node node x y)
+	     (ifn (get node 'to) ()
+		  (setq done `(,node ,node-cdr ,@done))
+		  (redisplay-list (get node 'to) x
+				  (+ y (+ (xGetValues node "width") LE-vSpace))
+				  (get node-cdr 'is_left))
+		  (draw-link node (get node 'to)))
+	     (ifn (get node-cdr 'to) ()
+		  (setq done `(,node ,node-cdr ,@done))
+		  (redisplay-list (get node-cdr 'to)
+				  x-margin y (get node-cdr 'is_left)))
+	     (if (and node-cdr (get node-cdr 'to))
+		 (draw-link node-cdr (get node-cdr 'to) t))))))
+
+(de change-link (node)
+    (let (root-node (car (get list-editor-root 'last)))
+      (cond
+       ((null root-node) (print "erreur dans la recherche de la racine ... ") (error))
+       ((get root-node 'from) (self (get root-node 'from)))
+       ((get root-node 'car)  (self (get root-node 'car)))
+       (t  ; trouvee ... ;
+	(clear-children 'xUnrealize)
+	(clear-draw (get list-editor-root 'draw))
+	(if (eq (get list-editor-root 'in-modify) node)
+	    (progn 
+	      (put node 'to ())
+	      (put node 'value '(n)))
+	  (reconstruct-list root-node 
+			    (get list-editor-root 'in-modify) 
+			    (if (get node 'car) (get node 'car) node)))
+	(setq x-margin 0)
+	(setq done ())
+	(redisplay-list root-node (xGetValues root-node "x") (xGetValues root-node "y")))))
+    (put list-editor-root 'in-modify ())
+    (xSetValues (get list-editor-root 'label) "label" " "))
+			
+
+(de modify-link (node value)
+    (if (get list-editor-root 'in-modify) (change-link node)
+      (if value value
+	(put list-editor-root 'in-modify node)
+	(xSetValues (get list-editor-root 'label) 
+		    "label" "Clickez le noeud destinataire"))))
+

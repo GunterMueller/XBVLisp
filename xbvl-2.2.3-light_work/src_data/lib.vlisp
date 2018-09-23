@@ -1,0 +1,12 @@
+;
+(de bar (n)(if (zerop n) 1 
+	(* n (bar (1- n)))
+	))
+;
+(de rev (l res)( if (null l) res 
+		(rev (cdr l) (cons (car l) res ))
+		))
+
+(de del (ele liste) ( cond
+	((null liste) nil)
+	((equal ele (car liste)) (del ele (cdr liste)))

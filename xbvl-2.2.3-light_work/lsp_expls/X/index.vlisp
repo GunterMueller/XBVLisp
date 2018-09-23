@@ -1,0 +1,62 @@
+;;
+;;; trouve les elements a l'interieur de 'l' qui contiennent la chaine 'str'
+(de trouve-objs (fonc l)                                                               
+    (if	(or (null l) (atom l)) 'mauvais-arguments
+      (obj-index fonc l ())
+      )
+    )
+;;
+(de obj-index (fonc l result)
+    (cond
+     ((null l) ())
+     ((fonc (car l))
+      (cons (car l) (obj-index fonc  (cdr l) result )))
+     (t (obj-index fonc (cdr l) result))
+     )
+    )
+;;
+(de undefp ( at ) (and (eq 'undef (car at))(= (ftyp at) 0)))
+;;
+(de undefs-objs ()
+    (trouve-objs 'undefp (oblist)))
+;;
+;;; trouve les elements a l'interieur de 'l' qui contiennent la chaine 'str'
+(de index (str l)                                                               
+    (if	(or (null l) (atom l)) 'mauvais-arguments
+      (m-index str l ())
+      )
+    )
+(de m-index (str l result)
+    (cond
+     ((null l) ())
+     ((strincp str (car l))
+      (cons (car l) (m-index str  (cdr l) result )))
+     (t (m-index str (cdr l) result))
+     )
+    )
+     
+;;
+;;	; pour tester si l'oblist a des atomes repetes ;
+;;
+
+(de teste-uniq(l)
+    (cond
+     ((null l) t)
+     ((memq (car l) (cdr l))
+      (print "<" (car l) "> repete !")(teste-uniq (cdr l)))
+     (t (teste-uniq (cdr l)))
+     )
+    )
+;;;
+; trouve les elements a l'interieur de 'l' qui contiennent la chaine 'str'
+(de viewIndex  (str l)                                                               
+    (cond                                                                         
+     ((null l) 'fini)                                                           
+     ((strincp str (car l))                                                     
+      (princ (car l))                                                         
+         (viewIndex str (cdr l)))                                                   
+     (t (viewIndex str (cdr l)))))                                                 
+
+
+
+
