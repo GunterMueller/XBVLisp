@@ -29,8 +29,8 @@ sysconfdir = ${prefix}/etc
 sharedstatedir = ${prefix}/com
 localstatedir = ${prefix}/var
 libdir = ${exec_prefix}/lib
-infodir = ${prefix}/info
-mandir = ${prefix}/man
+infodir = ${prefix}/share/info
+mandir = ${prefix}/share/man
 includedir = ${prefix}/include
 oldincludedir = /usr/include
 
@@ -42,9 +42,9 @@ pkgincludedir = $(includedir)/xbvl
 
 top_builddir = ..
 
-ACLOCAL = /home/gunter/GM_LANGUAGES/Functional_Languages/LISP_Dialects/XBVLisp/xbvl-2.2.3-light_work/missing aclocal-1.4
+ACLOCAL = /home/gunter/GM_LANGUAGES/Functional_Languages/LISP_Dialects/XBVLisp_GM/xbvl-2.2.3-light/missing aclocal-1.4
 AUTOCONF = autoconf
-AUTOMAKE = /home/gunter/GM_LANGUAGES/Functional_Languages/LISP_Dialects/XBVLisp/xbvl-2.2.3-light_work/missing automake-1.4
+AUTOMAKE = /home/gunter/GM_LANGUAGES/Functional_Languages/LISP_Dialects/XBVLisp_GM/xbvl-2.2.3-light/missing automake-1.4
 AUTOHEADER = autoheader
 
 INSTALL = /usr/bin/install -c
@@ -63,7 +63,8 @@ host_alias =
 host_triplet = x86_64-unknown-linux-gnu
 ARFLAGS = ruv
 CC = gcc
-CFLAGS = -O3  -pipe -DSHM
+#CFLAGS = -O3  -pipe -DSHM
+CFLAGS = -m32 -g  -pipe -DSHM
 CPP = gcc -E
 DATA_TYPE = int
 EMACS = /usr/bin/emacs
@@ -104,7 +105,7 @@ CONFIG_CLEAN_FILES =
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"xbvl\" -DVERSION=\"2.2.3-light\" -DSTDC_HEADERS=1  -I. -I$(srcdir) 
+DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"xbvl\" -DVERSION=\"2.2.3-light\" -DSTDC_HEADERS=1 -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 LIBS = 
