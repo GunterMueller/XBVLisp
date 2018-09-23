@@ -93,8 +93,7 @@ Int tnum,tstr,tat,tlst,twin,tswin,tfrlst,tpil;
    aux1+=LISFR;aux1 &= ~LISFR;blst=(CHAR*)aux1;
 
 
-   /* aux1=(Int)bpil=hlst+SIZLST; */ /* GM */
-   aux1=bpil=hlst+SIZLST;
+   aux1=(Int)bpil=hlst+SIZLST;
 
    aligner(aux1);bpil=(CHAR*)aux1;
    hpil=bpil+tpil-SIZPIL;
