@@ -1,0 +1,6 @@
+(de bin-dec (n)(let ((n n)(res 0))
+	(if n (self (cdr n)
+	   (+ (* res 2)(car n))) res)))
+
+(de dec-bin (n)(if (> n 0)
+	(append (self (/ n 2))(append (rem n 2) nil)) nil))

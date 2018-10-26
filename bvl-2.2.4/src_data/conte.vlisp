@@ -1,0 +1,144 @@
+; un conte a votre facon par SM
+
+(print "Si vous voulez connaitre l'histoire tapez : (un)")
+(print "Repondez ensuite aux questions proposees par oui/non")
+
+(de test ()
+  (setq l (read))
+  (cond
+	((equal l "oui") t)
+	((equal l "non") nil)
+	(t (print "Afin de repondre aux questions du conte, veuillez
+		  repondre par oui ou par non, merci.")
+	   (print "Si vous voulez sortir avant la fin du conte,
+		  veuillez taper SHIFT DEL, merci.")
+	   (test)))))
+
+(de un ()
+  (print "Desirez-vous connaitre l'histoire des alertes petits pois?")
+  (if (test)(quatre)(deux))))
+
+(de deux ()
+  (print "Preferez-vous celle des trois minces grands echalas?")
+  (if (test)(seize)(trois))))
+
+(de trois ()
+  (print "Preferez-vous celle des trois moyens mediocres arbustes?")
+  (if (test)(dix-sept)(vingt-et-un))))
+
+(de quatre ()
+  (print "Il y avait une fois trois petits pois vetus de vert qui dormaient
+	 gentiment dans leur cosse. Leur visage bien rond respirait par
+	 les trous de leurs narines et l'on entendait leur ronflement
+	 doux et harmonieux.")
+  (print "Preferez-vous une autre description?")
+  (if (test)(neuf)(cinq))))
+
+(de cinq ()
+  (print "Ils ne revaient pas. Ces petits etres en effet ne revent jamais")
+  (print "Preferez-vous qu'ils revent?")
+  (if (test)(six)(sept))))
+
+(de six ()
+  (print "Ils revaient. Ces petits etres en effet revent toujours et leurs
+         nuits secretent des songes charmants.")
+  (print "Desirez-vous connaitre ces songes?")
+  (if (test)(onze)(sept)))
+
+(de sept ()
+  (print "Leurs pieds mignons trempaient dans de chaudes chaussettes et ils
+         portaient au lit des gants de velours noir.")
+  (print "Preferez-vous des gants d'une autre couleur?")
+  (if (test)(huit)(dix))))
+
+(de huit ()
+  (print "Ils portaient au lit des gants de velours bleu.")
+  (print "Preferez-vous des gants d'une autre couleur?")
+  (if (test)(setp)(dix))))
+
+(de neuf ()
+  (print "Il y avait une fois trois petits pois qui roulaient leur bosse
+         s'endormirent tres rapidement.")
+  (print "Desirez-vous connaitre la suite?")
+  (if (test)(cinq)(vingt-et-un)))))
+
+(de dix ()
+  (print "Tous les trois faisaient le meme reve, ils s'aimaient en effet
+ 	 tendrement et, en bons fiers trumeaux, songeaient toujours
+	 semblablement.")
+  (print "Desirez-vous connaitre leur reve?")
+  (if (test)(onze)(douze))))
+
+(de onze ()
+  (print "Ils revaient qu'ils allaient chercher leur soupe a la cantine
+	 populaire et qu'en ouvrant leur gamelle ils decouvraient que
+	 c'etait de la soupe d'ers. D'horreur, ils s'eveillent.")
+  (print "Voulez-vous savoir pourquoi ils s'eveillent d'horreur, consulter
+	 le Larousse au mot << ers >> et n'en parlons plus.")
+  (print "juger-vous inutile d'approfondir la question?")
+  (if (test)(douze)(print "A bientot"))))
+
+(de douze ()
+  (print "Opopoi! s'ecrient-ils en ouvrant les yeux. Opopoi! quel songe
+	 avons-nous enfante la! Mauvais presage, dit le premier. Oui-da,
+	 dit le second, c'est bien vrai, me voila triste. Ne vous troublez
+	 pas ainsi, dit le troisieme qui etait le plus fute, il ne s'agit
+	 pas de s'emouvoir, mais de comprendre, bref, je m'en vais vous
+	 analyser ca.")
+  (print "Desirez-vous connaitre tout de suite l'interpretation de ce songe?")
+   (if (test)(quinze)(treize)))) 
+ 
+(de treize ()
+  (print "Tu nous la bailles belle, dit le premier. Depuis quand sais-tu 
+	 analyser les songes? Oui, depuis quand? ajouta le second.")
+  (print "Desirez-vous aussi savoir depuis quand?")
+  (if (test)(quatorze)(quatorze))))
+
+(de quatorze ()
+  (print "Depuis quand? s'ecria le troisieme. Est-ce que je sais! Le fait
+	 est que je pratique la chose. Vous allez voir!")
+  (print "Voulez-vous aussi voir?")
+  (if (test)(quinze)(quinze))))
+
+(de quinze ()
+  (print "Eh bien, voyons, dirent ses freres. Votre ironie ne me plait pas,
+	 repliqua l'autre, et vous ne saurez rien. D'ailleurs, au cours de
+	 cette conversation d'un ton assez vif, votre sentiment d'horreur ne
+	 s'est-il pas estompe? efface meme? Alors a quoi bon remuer le bourbier
+	 de votre inconscient de papilionacees? Allons plutot nous laver a la
+	 fontaine et saluer ce gai matin dans l'hygiene et la sainte euphorie!
+	 Aussitot dit, aussitot fait : les voila qui se glissent hors de leur
+	 cosse, se laissent doucement rouler sur le sol et puis au petit trot
+	 gagnent joyeusement le theatre de leurs ablutions.")
+  (print "Desirez-vous savoir ce qui se passe sur le theatre de leurs 
+	 ablutions?")
+  (if (test)(seize)(vingt-et-un))))))
+
+(de seize ()
+  (print "Trois echalas les regardaient faire.")
+  (print "Les trois grands echalas vous deplaisent-ils?")
+  (if (test)(vingt-et-un)(dix-huit)))))
+
+(de dix-sept ()
+  (print "Trois motens mediocres arbustes les regardaient faire.")
+  (print "Les trois moyens mediocres arbustes vous deplaisent-ils?")
+  (if (test)(vingt-et-un)(dix-huit))))
+
+(de dix-huit ()
+  (print "Se voyant ainsi zyeutes, les trois alertes petits pois qui
+	 etaient fort pudiques s'ensauverent.")
+  (print "Desirez-vous savoir ce qu'ils firent ensuite?")
+  (if (test)(dix-neuf)(vingt-et-un)))))
+
+(de dix-neuf ()
+  (print "Ils coururent bien fort pour regagner leur cosse et, refermant
+  	 celle-ci derriere eux, s'y endormirent de nouveau.")
+  (print "Desirez-vous connaitre la suite?")
+  (if (test)(vingt)(vingt-et-un)))))
+
+(de vingt () "Il n'y a pas de suite le conte est termine.")
+
+(de vingt-et-un () "Dans ce cas, le conte est egalement termine.")
+
+
+

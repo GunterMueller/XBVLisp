@@ -1,0 +1,106 @@
+; dessin pas a pas d'une fonction... ;
+
+					; enleve dans l'ival ;
+	  
+					; ajoute dans l'ival ;
+(de add-to-fdraw (f x y)
+    (ifn (get root-draw f) (put root-draw f (gensym)))
+    (let (cur (get root-draw f))
+      (ifn (get cur 'x) (put cur 'x `(,x))
+	   (put cur 'x (cons x (get cur 'x))))
+      (ifn (get cur 'y) (put cur 'y `(,y))
+	   (put cur 'y (cons y (get cur 'y))))))
+
+
+(df f-draw (f) 
+    (ifn (and f (not (= (ftyp (car f)) 0))) (print (car f) " not a function")
+	 (setq flis ())
+	 (setq root-draw (gensym))
+	 (construitFDraw (car f) () 0 0)
+	 (put root-draw 'tree (cons (car f) (cons (%suprev (%indexx f (%find (ival (car f)) 4))))))
+	 (dessineFDraw (get root-draw 'tree))))
+
+(de get-epure (l1 l2)
+    (let ((reste l1) (ret ()))
+      (cond 
+       ((null reste) (reverse ret))
+       ((member (car reste) l2) (self (cdr reste) ret))
+       (t
+	(self (cdr reste) (cons (car reste) ret))))))
+
+(de construitFDraw (func done x y)
+      (let (Child (get-epure (%find (ival func) 4) done))
+	(cond
+	 ((= (length Child) 0) (print "End x:" x " y:" y " done:" done))
+	 ((= (length Child) 1) 
+	  (print "One Node x:" x " y:" y)
+	  (add-to-fdraw (car Child) x (1+ y))
+	  (construitFDraw (car Child) (cons func done) x (1+ y)))
+	 (t
+	  (let ((new-done (append func done))
+		(totLen (/ (length Child) 2)))
+	    (mapc Child
+		  (lambda (aChild)
+		    (let (incr-x (- totLen (length (member aChild Child))))
+		      (add-to-fdraw aChild (+ x incr-x) (1+ y))
+		      (construitFDraw aChild new-done (+ x incr-x) (1+ y)))))))))
+      (if (%find (ival func) 'x) ()
+	(add-to-fdraw func x y)))
+
+
+
+(de dessineFDraw (func-tree)
+    (ifn (get root-draw 'draw) (InitFDraw root-draw 300 300))
+    (let ((f (flat func-tree)) (cF (car (flat func-tree))) (x 150) (y 150))
+      (ifn f ()
+	   (let ((cX (get (get root-draw cF) 'x))
+		 (cY (get (get root-draw cF) 'y)))
+	     (ifn cX ()
+		  (put (get root-draw cF) 'cmd
+		       (cons (xCreateWidget cF "awCommand" (get root-draw 'draw)
+				      "x" (+ x (* 50 (car cX)))
+				      "y" (+ y (* 50 (car cY))))
+			     (get (get root-draw cF) 'cmd)))
+		  (print "x" (+ x (* 50 (car cX)))
+			 "y" (+ y (* 50 (car cY))))
+		  (self (cdr cX) (cdr cY))))
+	   (self (cdr f) (cadr f) x y))))
+	
+
+(de InitFDraw (root width height)
+    (put root 'draw (xCreate "Drawxbvl" "FunctionDraw" () width height))
+    (xRealize (xGetSupWidget (get root 'draw) "ApplicationShell")))
+
+
+
+(de construitF (f)
+    (let (body (cdr (fval f)))
+      (cond
+       ((null body) t)
+       ((atom body) t)
+       ((atom (car body)) (self (cdr body)))
+       (t
+	(test-entree body `(f-entree ',f ',(car body)))
+	(test-sortie body `(f-sortie ',f ',(car body)))
+	(self (car body))
+	(self (cdr body))))))
+
+(df enleve-f-draw (f) 
+    (ifn f () 
+         (mapc f 
+	       (lambda (x) (detruitDraw x)))))
+
+(de detruitDraw (f)
+    (let (body (cdr (fval f)))
+      (cond
+       ((null body) t)
+       ((atom body) t)
+       ((atom (car body)) (self (cdr body)))
+       (t
+	(rplacd (getcar body) ())
+	(self (car body))
+	(self (cdr body))))))
+
+(package)
+
+(setq careful --x--)

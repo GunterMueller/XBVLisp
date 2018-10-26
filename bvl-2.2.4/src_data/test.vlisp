@@ -1,0 +1,5 @@
+(de quoi (n)
+  (if (zerop (rem n 2)) (/ n 2)
+      (quoi (quoi (1+ (* n 3))))))
+
+

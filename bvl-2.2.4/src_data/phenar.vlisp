@@ -1,0 +1,1999 @@
+;      Phenaretes
+; 
+;     Harald Wertz
+
+
+(princ "je charge phenar.vlisp")
+
+(de prettyp (x)
+   (pretty)
+   (status print 3)(p-p x)(status print 0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;	 init 
+; 00003	 while  
+; 00004	 eq null nextl setq cond  
+; 00005	 testarg mc1 testa test3 init props meval qqc 
+; 00006	 wht wht1 
+; 00007	 nimmarg combc pusc pob  
+; 00008	 pprin test 
+; 00009	 eqq 
+; 00010	 erftn add getarg but unput 
+; 00011	 kond kondk fsub iprog 
+; 00012	 ade errgrave aux aux1 predic 
+; 00013	 aehnlich trr  
+; 00014	 erreur eti etiq1 etiq2 ervarl ervara varan 
+; 00015	 cond0 cond1 cond2 cond3 
+; 00016	 getall finconv find1 find2 hypval null1 caddar 
+; 00017	 delete insert insert1 test1 test2 
+; 00018	 PHENAR---- 
+; 00019	 rec -rec4 com 
+; 00020	 meval2 rec1 shorter longer greater smaller 
+; 00021	 meval1 
+; 00022	 find rec2 rec22 rec3 gettyp insert2 
+
+;(package phe)
+;(setq --aux-- careful careful nil)
+
+; init ;
+ 
+(de linear (l)(cond
+	((null l) ())
+	((atom l) l)
+	((atom (car l))(cons (car l)(linear (cdr l))))
+	(t (append (linear (car l))(linear (cdr l))))))
+
+(df setqq (x)
+  (let ((var (car x))(val (cadr x))(rest (cddr x)))
+	(set var val)
+	(if rest (eval (cons 'setqq rest)) val)))))))
+
+(de maps (l f)(cond
+	((null l)())
+	((atom l)(f l))
+	(t (f l)(maps (car l) f)(maps (cdr l) f)))))))))
+
+(de spaces (n)(spcs (/ n 2))))
+(de spcs (n)(if (zerop n)()(prin1 " ")(spcs (1- n)))))))
+
+(de abs (x)(if (ge x 0) x (- 0 x)))
+
+(de max l (max0 l 0))
+(de max0 (l n)(if (null l) n (if (> (car l) n)(max0 (cdr l)(car l))
+	(max0 (cdr l) n))))
+
+(de gzp (x)(> x 0))
+
+(de pput (x y z)(put x z y))
+
+(de nconc1 (x y)(nconc x [y]))
+   (setq p 'phenaretes)
+   (setq null)
+   (setq ffnvar)
+   (setq refav)
+   (setq label)
+   (setq varloc)
+   (setq ffn)
+   
+   (de init1 () 
+      (setq f-n-subr)
+      (setq %%c)
+      (setqq qqc qqc)
+      (setqq
+         %%1 
+          (loopvar icond iprog retrn %lll1 %lll2 find modif typ val 
+           lcond %lll3 wht help))
+      (mapc '(+ 1+ 1- -) 
+         '(lambda (-x) (pput -x 0 'neutre)))
+      (mapc '(* / rem) '(lambda (-x) (pput -x 1 'neutre)))
+      (mapc 
+       '(terpri clrbit setbit print nextl prin1 spaces eval page go goto 
+         setq apply rplaca rplacd mapc map nconc set pput progn cond and 
+         or while escape return) '(lambda (-x) (pput -x t 'topl)))
+      (mapc '(nextl setq rplaca rplacd nconc1 nconc set put) 
+         '(lambda (-x) (pput -x t 'phys)))
+      (mapc 
+       '(car cdr caar cdar cadr cddr caddr cadar caadr cadadr length 
+         reverse caaddr cadaddr cadddr cdddr nextl nconc append) 
+         '(lambda (-x) (pput -x 'listp 'arg1)))
+      (mapc 
+       '(1+ gtz 1- zerop page switch spaces - * / + 
+         rem 1+ 1- * +  > ge < le nth) 
+         '(lambda (-x) (pput -x 'numbp 'arg1)))
+      (mapc '(/ * + rem * + - > ge < le) 
+         '(lambda (-x) (pput -x 'numbp 'arg2)))
+      (mapc '(go eq neq memq) '(lambda (-x) (pput -x 'atom 'arg1)))
+      (mapc '(1+ 1- length - / rem * + * + 1+ 1-) 
+         '(lambda (-x) (pput -x 'numbp 'val)))
+      (mapc 
+       '(cdr reverse cdar cddr cons nth nconc1 nconc oblist append subst 
+         list) '(lambda (-x) (pput -x 'listp 'val)))
+      (mapc '(pput gensym atom zerop > < le ge gzp gtz) 
+         '(lambda (-x) (pput -x 'atom 'val)))
+      (mapc '(oblist gensym read terpri) 
+         '(lambda (-x) 
+            (pput -x 0 'numarg)
+            (setq f-n-subr (cons -x f-n-subr))))
+      (mapc 
+       '(clrbit setbit quote 1+ evlis eprogn atom plength ttab gzp car 
+         1+ 1- cdr not null gtz numbp 1- length reverse caar cdar cadr 
+         cddr caddr cadar caadr cadadr caaddr cadaddr cadddr listp zerop 
+         print nextl prin1 spaces eval page go goto switch) 
+         '(lambda (-x) (pput -x 1 'numarg) (nconc f-n-subr [-x])))
+      (mapc 
+       '(setq apply rplaca rplacd cons eq neq get - rem / > ge 
+         < le nth mapc map nconc1 nconc memq logand logor logshift 
+         append equal set assq cassq) 
+         '(lambda (-x) (pput -x 2 'numarg) (nconc f-n-subr [-x])))
+      (pput 'if 3 'numarg)
+      (pput 'pput 3 'numarg)
+      (pput 'subst 3 'numarg)
+      (mapc 
+       '(progn cond * + and or while prog df de escape quote * 
+         + status return list) 
+         '(lambda (-x) (pput -x 4 'numarg) (nconc f-n-subr [-x])))
+      (nconc1 f-n-subr 'if)
+      (nconc1 f-n-subr 'put)
+      (nconc1 f-n-subr 'subst)
+      (mapc 
+       '(not null gtz numbp listp zerop switch eq neq > ge < le atom 
+         memq equal or and) '(lambda (-x) (pput -x 'predicat 'typ)))
+      (mapc '(memq nconc nconc1 cons nth append) 
+         '(lambda (-x) (pput -x 'listp 'arg2)))
+      (mapc '(eq neq) '(lambda (-x) (pput -x 'atom 'arg2)))
+      (pput 'cond '(lambda -x (cond0 -x)) 'ftn)
+      (pput 'car 'un 'val)
+      (pput 'return 
+         (lambda -x 
+            (if (null iprog) 
+               (progn 
+                  (setq iprog t)
+                  (rplacd (cddr aux) 
+                    [(append '(prog nil) (cdddr aux))])
+                  (print "erreur :" !! 
+                   "return ne peut etre utilise"        
+		   "l'interieur d'un prog"))
+               (progn 
+                  (mapc -x 
+                     (lambda (xx) 
+                        (cond
+                           ((eq (car xx) 'go) 
+                              (print "erreur :" !! 
+                                "je ne comprends pas votre intention"   
+                                "dans"  
+                                  (cons 'return -x)))
+                           ((meval xx)))))
+                  (setq retrn (union val retrn)))))
+         'ftn1)
+      (pput 'de 
+         (lambda -x 
+            (cond
+               ((or ffn iprog) (errgrave 'de -x))
+               (t (while (listp (car -x)) 
+                     (setq -x (append (car -x) (cdr -x))))
+                  (setq ffn (car -x))
+                  (rplacd ffn nil)
+                  (or (memq ffn f-n-subr) (newl f-n-subr ffn))
+                  (setq %lll1 (car (last -x)))
+                  (add 'de)
+                  (add ffn)
+                  (varan (ervarl (cdr -x)) 'ffnvar)
+                  (pput ffn ffnvar 'duvar)
+                  (pput ffn (length ffnvar) 'numarg)
+                  (add ffnvar)
+                  (nimmarg -x)
+                  (and (numbp %lll2) (eq %lll1 %lll2) (add %lll1))
+                  (setq aux (reverse aux))
+                  (ade))))
+         'ftn)
+      (pput 'cons 
+         (lambda -x 
+            (setq yy '(arg1 arg2))
+            (incr profo)
+            (newl %lll3 'cons)
+            (meval (car -x))
+            (push hypval)
+            (pusc val)
+            (incr profo)
+            (meval (cadr -x))
+            (nextl %lll3)
+            (cond
+               ((eq typ 'un) 
+                  (cond
+                     ((null (cadr -x)))
+                     ((atom (cadr -x)) (pput (cadr -x) 'listp 'typ))
+                     ((eq (caadr -x) ffn) (pput ffn 'listp 'val))))
+               ((or (eq typ 'atom) (eq typ 'numbp)) 
+                  (print "attention ! dans " (cons 'cons -x) 
+                    "le deuxieme argument est atomique")
+                  (props ['cons (car -x) ['list (cadr -x)]])))
+            (setq
+               val 
+                (cond
+                   ((null val) 
+                      (cond
+                         ((eq (car stack) 'nill) (nextl stack) nil)
+                         ((null (car stack)) (nextl stack))
+                         ((atom (car stack)) [(nextl stack)])
+                         ((nextl stack))))
+                   ((eq val 'nill) 
+                      (cond
+                         ((eq (car stack) 'nill) 
+                            (nextl stack)
+                            (cons))
+                         ((null (car stack)) (nextl stack))
+                         ((cons (nextl stack)))))
+                   ((atom val) 
+                      (cond
+                         ((null (car stack)) (nextl stack) [val])
+                         ((eq (car stack) 'nill) 
+                            (nextl stack)
+                            [nil val])
+                         ([(nextl stack) val])))
+                   ((null (car stack)) (nextl stack) val)
+                   ((eq (car stack) 'nill) 
+                      (nextl stack)
+                      (cons nil val))
+                   ((cons (nextl stack) val))))
+            (setq typ 'listp hypval (cons (pop) hypval))
+            (setq modif 'longer)
+            (if (gzp profo) 
+               (decr profo)
+               (erreur "niveau" (cons 'cons -x))))
+         'ftn1)
+      (pput 'if 
+         (lambda -x 
+            (insert ['cond [(car -x) (cadr -x)] [t (caddr -x)]] 
+              (cons 'if -x) t))
+         'ftn1)
+      (pput 'quote 
+         (lambda -x 
+            (if (atom (car -x)) (setq typ 'atom) (setq typ 'listp))
+            (and 
+               (or 
+                  (memq (car -x) '(nil t expr fexpr lambda))
+                  (numbp (car -x)))
+               (insert (car -x) (cons quote -x) t))
+            (setq val (car -x) hypval (car -x))
+            (if (zerop profo) 
+               (erreur "niveau" (cons quote -x))
+               (decr profo)))
+         'ftn1)
+      (pput 'prog 
+         (lambda -x 
+            (cond
+               (iprog (errgrave 'prog -x))
+               ((setq iprog t) 
+                  (varan (ervarl -x) 'varloc)
+                  (pusc aux)
+                  (setq aux)
+                  (and ffn (pput ffn varloc 'varloc))
+                  (add 'prog)
+                  (add varloc)
+                  (nimmarg -x t)
+                  (setq aux (reverse aux))
+                  (iprog)
+                  (pusc aux)
+                  (setq aux (cadr stack))
+                  (add (pob))
+                  (pob)
+                  (or ffn (setq aux (car aux))))))
+         'ftn)
+      (pput 'go 
+         (lambda -x 
+            (cond
+               ((atom (car -x)) 
+                  (and (numbp (car -x)) (rplaca -x (eti (car -x))))
+                  (cond
+                     ((memq (car -x) label) (pput (car -x) t 'ap))
+                     ((memq (car -x) refav))
+                     ((setq refav (cons (car -x) refav)) 
+                        (pput (car -x) t 'ap)))
+                  (add ['go (car -x)])
+                  (nextl help))
+               ((or (memq (caar -x) f-n-subr) (eq (car -x) ffn)) 
+                  (errgrave 'go -x))
+               (t (apply (get 'go 'ftn) (append (car -x) (cdr -x)))))
+            t)
+         'ftn)
+      (pput 'or '(lambda -x (fsub -x 'or)) 'ftn)
+      (pput 'status '(lambda -x (fsub -x 'status)) 'ftn)
+      (pput 'and '(lambda -x (fsub -x 'and)) 'ftn)
+      (pput 'list '(lambda -x (fsub -x 'list)) 'ftn)
+      (pput '* '(lambda -x (fsub -x '*)) 'ftn)
+      (pput '+ '(lambda -x (fsub -x '+)) 'ftn)
+      (pput 'return '(lambda -x (fsub -x 'return)) 'ftn)
+      (pput 'while '(lambda -x (fsub -x 'while)) 'ftn)
+      (pput 'progn '(lambda -x (fsub -x 'progn)) 'ftn)
+      (pput quote 
+         '(lambda -x 
+            (add (cons quote (if (> (length -x) 1) [-x] -x)))
+            (nextl help))
+         'ftn)
+      (pput 'de 
+         '(lambda -x 
+            (and ibeisp (ibeisp (cadr -x)))
+            (mapc (cddr -x) 'meval)
+            (pput ffn typ 'val)
+            (setq aux1 '(arg1 arg2 arg3))
+            (mapc (get ffn 'duvar) 
+               (lambda (xx) 
+                  (pput ffn (get xx 'typ) (nextl aux1)))))
+         'ftn1)
+      (pput 'prog 
+         (lambda -x 
+            (pusc profo)
+            (setq profo 0)
+            (mapc (cdr -x) 'meval)
+            (setq profo (pob))
+            (or (zerop profo) (decr profo))
+            (and retrn (setq val retrn)))
+         'ftn1)
+      (pput 'print '(lambda (-x) (incr profo) (meval -x)) 'ftn1)
+      (pput 'gtz 
+         '(lambda (-x) 
+            [['setq -x ['1- -x]] ['setq -x ['- -x 'qqc]]])
+         'wht)
+      (pput 'ge 
+         '(lambda (-x y) 
+            [['setq -x ['1- -x]]
+             ['setq y ['1+ y]]
+             ['setq -x ['- -x 'qqc]]
+             ['setq y ['+ y 'qqc]]])
+         'wht)
+      (pput 'le 
+         '(lambda (-x y) 
+            [['setq -x ['1+ -x]]
+             ['setq y ['1- y]]
+             ['setq -x ['+ -x 'qqc]]
+             ['setq y ['- y 'qqc]]])
+         'wht);
+
+; while ; 
+       
+      (pput 'while 
+         (lambda -x 
+            (pusc profo)
+            (setq profo 1)
+            (meval (car -x))
+            (pusc typ)
+            (pusc val)
+            (cond
+               ((memq (caar -x) '(> ge < le)) 
+                  (cond
+                     ((or (numbp (cadar -x)) (numbp (caddar -x))) )
+                     (t (newl %lll3 (caar -x))
+                        (meval (cadar -x))
+                        (newl wht2 hypval)
+                        (meval (caddar -x))
+                        (nextl %lll3)
+                        (newl wht2 
+                          (eval ['- (nextl wht2) hypval])))))
+               ((and 
+                   (memq (caar -x) '(null not))
+                   (eq (car (cadr (car -x))) 'zerop)) 
+                  (newl %lll3 'zerop)
+                  (meval (cadr (cadr (car -x))))
+                  (nextl %lll3)
+                  (newl wht2 hypval)))
+            (and 
+               (atom (car -x))
+               (newl wht (car -x))
+               (eq typ 'un)
+               (pput (car -x) 'listp 'typ))
+            (mapc (cdr -x) 'meval)
+            (setq val (pob) typ (pob) profo (pob))
+            (setq aux1 nil)
+            (if (listp (car -x)) (combc (car -x)))
+            (cond
+               ((or (null (car -x)) (eq val 'nill)) 
+                  (print "ca va pas ptite tete ...")
+                  (prettyp (cons 'while -x)))
+               ((or (eq typ 'numbp) (eq val t)) 
+                  (erreur "ca boucle" (cons 'while -x)))
+               (aux1 (wht aux1 -x))
+               (t (wht (car -x) (cdr -x))
+                  (cond
+                     (wht2 
+                        (escape ex 
+                           (setq yy '(arg1 arg2))
+                           (newl %lll3 (caar -x))
+                           (if (memq (caar -x) '(not null)) 
+                              (meval (cadr (cadr (car -x))))
+                              (meval (cadr (car -x))))
+                           (newl wht2 hypval)
+                           (if (memq (caar -x) '(null not)) (ex))
+                           (meval (caddar -x))
+                           (nextl %lll3)
+                           (newl wht2 
+                             (eval ['- (nextl wht2) hypval]))
+                           (newl wht2 
+                             (- (nextl wht2) (nextl wht2))))
+                        (selectq  
+                         (or 
+                            (and 
+                               (memq (caar -x) '(null not))
+                               (eq (car (cadr (car -x))) 'zerop)
+                               'zerop)
+                            (caar -x))
+                           ((> ge) 
+                              (if (ge (nextl wht2) 0) 
+                                 (progn 
+                                    (setq
+                                       help 
+                                        (cond
+                                           ((combc (cadar -x)) 
+                                              (car 
+                                                ( (get (caar -x) 
+                                                    'wht) aux1)))
+                                           ((combc (caddr (car -x))) 
+                                              (cadr 
+                                                ( (get (caar -x) 
+                                                    'wht) aux1)))))
+                                    (and 
+                                       help
+                                       (insert1 help 
+                                         (cons 'while -x))))))
+                           ((le lt) 
+                              (if (gzp (nextl wht2)) 
+                                 nil
+                                 (setq
+                                    help 
+                                     (cond
+                                        ((combc (cadar -x)) 
+                                           (car 
+                                             ((get (caar -x) 'wht) 
+                                               aux1)))
+                                        ((combc (caddr (car -x))) 
+                                           (cadr 
+                                             ((get (caar -x) 'wht) 
+                                               aux1)))))
+                                 (and 
+                                    help
+                                    (insert1 help (cons 'while -x)))))
+                           ('zerop 
+                              (newl wht2 
+                                (- (car wht2) (cadr wht2)))
+                              (cond
+                                 ((gzp (cadr wht2)) 
+                                    (cond
+                                       ((eq (car wht2) -1) nil)
+                                       ((zerop (car wht2)) 
+                                          (combc (cadr (cadar -x)))
+                                          (if aux1 
+                                             (insert1 
+                                               ['setq
+                                                aux1
+                                                ['1- aux1]] 
+                                               (cons 'while -x))))
+                                       ((< (car wht2) 0) 
+                                          (cond
+                                             ((zerop 
+                                                (rem (cadr wht2) 
+                                                  (- 
+                                                     0
+                                                     (car wht2)))) )
+                                             (t (print "dans" 
+                                                  (cons 'while -x) 
+                                                  "vous ne tomber jamais" 
+                                                   "sur zero")
+                                                (insert1 
+                                                  ['setq
+                                                   aux1
+                                                   ['1- aux1]] 
+                                                  (cons 'while -x)))))
+                                       (t (erreur "ca boucle" 
+                                            (cons 'while -x))))
+                                    (setq wht2 (cddr wht2)))))(nil))))))
+            (and (gzp profo) (decr profo))
+            (and 
+               (or 
+                  (and (atom (car -x)) (setq aux1 (car -x)))
+                  (combc (car -x)))
+               (if 
+                (or 
+                   (and (get aux1 'val) (eq (get aux1 'val) val))
+                   (eq (get aux1 'valat) aux1)) 
+                  (progn 
+                     (erreur "ca risque de boucler" 
+                       (cons 'while -x))
+                     (find1 aux1 (cdr -x))
+                     (insert aux4 aux1 t nil nil aux3 t))
+                  t)
+               (nextl wht))
+            (setq val 'nill typ 'un hypval 'nill))
+         'ftn1)
+; eq null nextl setq cond ; 
+ 
+      (pput 'eq '(lambda (-x y) (eqq -x y)) 'ftn1)
+      (pput 'null 
+         (lambda (-x) 
+            (cond
+               ((null -x) (insert t ['null -x] t))
+               ((memq -x wht) 
+                  (print "ca va pas , ptite tete ...:" ['null -x])
+                  (insert nil ['null -x] t))
+               ((or (numbp -x) (eq -x t)) 
+                  (insert nil ['null -x] t))
+               ((incr profo) 
+                  (meval -x)
+                  (cond
+                     ((or (eq typ 'numbp) (and val (litatom val))) 
+                        (print "attention dans" ['null -x] -x 
+                          "n'est pas une liste"))
+                     ((eq val 'nill) (setq val t typ 'atom))
+                     ((null val) 
+                        (if (atom -x) (pput -x 'listp 'typ))
+                        (setq typ 'listp))
+                     ((setq typ 'un val 'nill) 
+                        (if (atom -x) (pput -x 'listp 'typ))))))
+            (setq hypval (null1 hypval))
+            (if (zerop profo) 
+               (erreur "niveau" ['null -x])
+               (decr profo)))
+         'ftn1)
+      (pput 'nextl 
+         (lambda (-x) 
+            (escape exitt 
+               (setq modif)
+               (and 
+                  (null -x)
+                  (setq val 'nill hypval 'nill)
+                  (if (zerop profo) 
+                     (delete ['nextl -x])
+                     (insert -x ['nextl -x] t))
+                  (exitt))
+               (incr profo)
+               (newl %lll3 'nextl)
+               (meval -x)
+               (nextl %lll3)
+               (and 
+                  (eq val 'nill)
+                  (exitt (setq typ 'un hypval 'nill)))
+               (and (eq typ 'un) (atom -x) (but -x 'listp 'typ))
+               (cond
+                  ((eq typ 'listp) 
+                     (and val (but -x (cdr val) 'val))
+                     (and (atom -x) (pput -x 'shorter 'modif)))
+                  ((exitt 
+                      (erreur 
+                        "nextl n'admet pas des arguments a valeur"  
+                         "atomique"
+                           ['nextl -x]))))
+               (setq
+                  typ 
+                   (cond
+                      (val (typep (setq val (car val))))
+                      ('un)))
+               (if (and (neq val 'nill) val) 
+                  (setq hypval val)
+                  (setq hypval (car hypval)))
+               (and (eq typ 'litatom) (setq typ 'atom))))
+         'ftn1)
+      (pput 'cond '(lambda -x (kond -x)) 'ftn1)
+      (pput 'setq 
+         (lambda -x 
+            (setq modif)
+            (cond
+               ((listp (car -x)) 
+                  (insert (cons 'set -x) (cons 'setq -x) t)
+                  (print 
+                    "setq n'evalue pas son premier argument, je change" 
+                    !! '(!++ 10) (cons 'setq -x) !! "en" !! '(!++ 10) 
+                    (cons 'set -x)))
+               ((or 
+                   (numbp (car -x))
+                   (eq (car -x) (cadr -x))
+                   (memq (car -x) '(nil t expr fexpr lambda))) 
+                  (if (zerop profo) 
+                     (delete (cons 'setq -x))
+                     (insert (cadr -x) (cons 'setq -x) t))
+                  (print "j'enleve" (cons 'setq -x)))
+               ((incr profo) 
+                  (meval (cadr -x))
+                  (if (atom (cadr -x)) 
+                     (but (car -x) 
+                       (or (get (cadr -x) 'valat) (cadr -x)) 'valat)
+                     (but (car -x) nil 'valat))
+                  (but (car -x) hypval 'hypval)
+                  (but (car -x) val 'val)
+                  (but (car -x) typ 'typ)
+                  (but (car -x) modif 'modif)))
+            (and (gzp profo) (decr profo)))
+         'ftn1)
+      (rplacd 'prin1 (cdr 'print))
+      (rplacd '> (cdr 'ge))
+      (rplacd 'gzp (cdr 'gtz))
+      (rplacd '+ (cdr '+))  
+      (rplacd '* (cdr '*)) 
+      (rplacd '1- (cdr '1-)) 
+      (rplacd '1+ (cdr '1+)) 
+      (rplacd '< (cdr 'le)))
+ 
+   (init1)
+   (rplacd 'init1)
+;   (status 2 27)
+   (setqq !! (!!))
+   (dmo !! () (terpri))
+   (dmo !++ (n) (spaces n))
+   
+; testarg mc1 testa test3 init props meval qqc ;
+  
+   (de testarg (-x -z zz ww) 
+      (setq yy '(arg1 arg2 arg3))
+      (setq zz (memq (car -x) f-n-subr))
+      (setq
+         ww 
+          (mapcar (if zz (cdr -x) -x) 
+             (lambda (xx) 
+               (incr profo)
+               (if (and zz (listp xx) (eq (car xx) ffn)) 
+                  (setq %lll3 (cons (car zz) %lll3)))
+               (meval xx)
+               (push hypval)
+               (and zz (listp xx) (eq (car xx) ffn) (nextl %lll3))
+               (and 
+                  yy
+                  zz
+                  (setq -z (car yy))
+                  (cond
+                     ((null typ))
+                     ((null (setq -z (get (car -x) -z))))
+                     ((eq typ -z))
+                     ((atom xx) 
+                        (cond
+                           ((and (eq -z 'atom) (eq typ 'numbp)))
+                           ((if (eq typ 'un) 
+                               (pput xx -z 'typ)
+                               (testa -x (car yy) xx -z typ)))))
+                     ((eq typ 'un))
+                     ((testa -x (car yy) xx -z typ))))
+               (nextl yy)
+               (pop))))
+      (and 
+         zz
+         (setq val nil typ (get (car -x) 'val t t))
+         (setq
+            hypval 
+             (cond
+                ((memq (car zz) '(1- 1+)) 
+                   (if (numbp hypval) (eval [(car zz) hypval])))
+                ((memq (car zz) '(+ - *)) 
+                   (if (mc1 ww 'numbp) (eval (cons (car zz) ww))))))))
+   
+   (de mc1 (-x f) 
+      (escape ex 
+         (cond
+            ((null -x) nil)
+            ((f (car -x)) (cons (car -x) (mc1 (cdr -x) f)))
+            ((ex)))))
+   
+   (de testa (-x yy xx z typ) 
+      (print "erreur :" !! "dans " -x yy ":" xx "doit etre du typ" z !! 
+       "ici c'est du typ" typ))
+   
+   (de init (-x) 
+      (or -x (setq rec))
+      (mapc ffnvar 'rplacd)
+      (mapc ffnvar 'set)    
+      (mapc varloc 'set)   
+      (mapc varloc 'rplacd)
+      (mapc label 'rplacd)
+      (mapc refav 'rplacd)
+      (if -x nil (setq test1 1))
+      (setq
+         avance '(cdr car cddr cadr caar cdar cdddr caddr cadar))
+      (mapc 
+       '(ffn ffnvar refav loopvar icond iprog varloc label retrn %lll1 
+         %lll3 hypval hypo wht2 %lll2 ibeisp help1 find wht modif typ 
+         val lcond aux help stack) 'set)
+      (setq profo 0))
+   
+   (de conversation () (setq %%c t))
+   
+   (de union (-x y) (if (member -x y) y (cons -x y)))
+   
+   (de props (-x) 
+      (print "il vaudrait peut-etre mieux ecrire :")
+      (ttab 10)
+      (print -x !!))
+   
+   (de meval (-x) 
+      (and 
+         (listp -x)
+         (atom (car -x))
+         (memq (car -x) 
+           '(* + 1+ 1+ 1- cons cdr car cddr / rem cdddr))
+         (setq %lll3 (cons (car -x) %lll3)))
+      (cond
+         ((null -x) (setq val 'nill typ 'un hypval 'nill))
+         ((eq -x t) (setq val t typ 'atom hypval t))
+         ((numbp -x) (setq val -x typ 'numbp hypval -x))
+         ((atom -x) 
+            (cond
+               ((memq -x label))
+               ((null (setq typ (get -x 'typ))) 
+                  (erreur 'undefinie -x)
+                  (setq val)
+                  (pput -x 'un 'typ)
+                  (setq hypval nil)
+                  (setq typ 'un))
+               (t (setq
+                     val (get -x 'val)
+                     hypval 
+                      (or val (get -x 'hypval) (hypval typ -x)))
+                  hypval)))
+         ((and (null rec) (eq (car -x) ffn)) (rec (cdr -x)))
+         ((setq aux1 (get (car -x) 'ftn1)) (apply aux1 (cdr -x)))
+         ((listp (car -x)) 
+            (meval (car -x))
+            (incr profo)
+            (meval (cdr -x)))
+         ((testarg -x)))
+      (and 
+         (listp -x)
+         (memq (car -x) 
+           '(* + 1+ 1+ 1- cons cdr cddr cdddr car / rem))
+         (nextl %lll3))
+      (or (zerop profo) (decr profo)))
+   
+   (de test3 (-x) 
+      (setq aux3)
+      (escape ex 
+         (maps -x 
+            (lambda (xx) 
+               (mapc help 
+                  (lambda (y) 
+                     (cond
+                        ((atom xx))
+                        ((or 
+                            (and loopvar (not (numbp (car xx)))
+					 (eq (caar xx) 'return))
+                            (equal (car xx) y)) (ex (setq aux3 t)))
+                        ((member 'qqc (caddr y)) 
+                           (and 
+                              (qqc (car xx) y)
+                              (ex (setq aux3 t)))))))))))
+   
+   (de qqc (-x y) 
+      (and 
+         (eq (car -x) (car y))
+         (eq (cadr -x) (cadr y))
+         (listp (caddr -x))
+         (eq (car (caddr -x)) (car (caddr y)))
+         (eq (cadr (caddr -x)) (cadr (caddr y)))))
+   
+; wht wht1 ;
+ 
+   (de wht (-x y) 
+      (escape ex1 
+         (setq help)
+         (cond
+            ((atom -x) 
+               (setq
+                  help 
+                   [['nextl -x]
+                    ['setq -x ['cdr -x]]
+                    ['setq -x ['cddr -x]]]))
+            ((memq (car -x) '(gtz gzp)) 
+               (incr profo)
+               (meval (cadr -x))
+               (cond
+                  ((or (eq typ 'listp) (eq val t)) 
+                     (erreur "ca boucle" (cons 'while (cons -x y))))
+                  ((numbp (cadr -x)) 
+                     (if (gzp (cadr -x)) 
+                        (erreur "ca boucle :" 
+                          (cons 'while (cons -x y)))
+                        (erreur 
+                          "votre boucle ne sera jamais executee" 
+                          (cons 'while (cons -x y)))))
+                  ((listp (cadr -x)))
+                  ((setq help (apply (get 'gtz 'wht) (cdr -x))))))
+            ((and (numbp (cadr -x)) (numbp (caddr -x))) 
+               (wht1 -x y)
+               (setq y))
+            ((and (listp (cadr -x)) (listp (caddr -x))))
+            ((and 
+                (or (numbp (cadr -x)) (listp (cadr -x)))
+                (memq (car -x) '(gtz gzp > le < ge))) 
+               (setq
+                  help (cdr (apply (get (car -x) 'wht) (cdr -x)))))
+            ((or (numbp (caddr -x)) (listp (caddr -x))) 
+               (setq
+                  help 
+                   (cons (car (apply (get (car -x) 'wht) (cdr -x))) 
+                     (cddr (apply (get (car -x) 'wht) (cdr -x))))))
+            ((setq
+                help 
+                 (and 
+                    (get (car -x) 'wht)
+                    (apply (get (car -x) 'wht) (cdr -x))))))
+         (cond
+            (help 
+               (maps y 
+                  (lambda (yy) 
+                     (mapc help 
+                        (lambda (xx) 
+                           (cond
+                              ((atom yy))
+                              ((and (not (numbp (car yy)))
+				    (eq (caar yy) 'cond))
+                                 (cond
+                                    ((test3 (cdr yy)) (ex1))
+                                    (t (escape ex2 
+                                          (mapc (cdar yy) 
+                                             (lambda (xxx) 
+                                                (and 
+                                                   (test3 xxx)
+                                                   (ex2)))))
+                                       (cond
+                                          (aux3 
+                                             (setq loopvar t)
+                                             (mapc (cdar yy) 
+                                                (lambda 
+                                                 (xxx) 
+                                                   (cond
+                                                      ((and 
+                                                          (atom -x)
+                                                          (equal 
+                                                            ['null
+                                                             -x] 
+                                                            (car xxx))) )
+                                                      ((test3 xxx) )
+                                                      ((insert 
+                                                         (car help) 
+                                                         xxx))))))
+                                          (t (insert1 (car help) 
+                                               (if aux1 
+                                                  (cons 'while y)
+                                                  (cons 'while 
+                                                    (cons -x y))))))))
+                                 (ex1 (setq loopvar)))
+                              ((member 'qqc (caddr xx)) 
+                                 (and (qqc (car yy) xx) (ex1)))
+                              ((equal (car yy) xx) (ex1)))))))
+               (insert1 (car help) 
+                 (if aux1 
+                    (cons 'while y)
+                    (cons 'while (cons -x y)))))
+            ((erreur 'while 
+               ["peux pas verifier votre boucle"
+                (cons 'while (cons -x y))])))))
+   
+   (de wht1 (-x y) 
+      (erreur 
+        (if (eval -x) 
+           "ca boucle"
+           "votre boucle ne sera jamais executee") 
+        (cons 'while (cons -x y)))
+      (ex1))
+   
+; nimmarg combc pusc pob ; 
+ 
+   (de nimmarg (-x y) 
+      (while (setq -x help) 
+         (cond
+            ((listp (car -x)) 
+               (cond
+                  ((setq
+                      aux1 
+                       (and (atom (caar -x)) (get (caar -x) 'ftn))) 
+                     (apply aux1 (cdar -x)))
+                  ((and 
+                      lcond
+                      aux
+                      (or 
+                         (eq (caar -x) t)
+                         (predic (caar -x))
+                         (and 
+                            (listp (caar -x))
+                            (predic (car (caar -x)))))) 
+                     (setq aux1 (pob))
+                     (pusc (cons (reverse aux) (pob)))
+                     (setq aux)
+                     (pusc aux1)
+                     (and 
+                        (eq (caar -x) t)
+                        (setq help (append (car -x) (cdr -x)))))
+                  ((listp (caar -x)) 
+                     (setq
+                        help 
+                         (if (eq (get (caaar -x) 'typ) 'predicat) 
+                            (cons 'cond -x)
+                            (append (car -x) (cdr -x)))))
+                  ((setq help (append (car -x) (cdr -x))))))
+            (t (erftn -x y)))))
+   
+   (de combc (-x) 
+      (cond
+         ((atom -x) (if (null -x) (setq val 'nill)) (setq aux1 -x))
+         ((memq (car -x) avance) (combc (cadr -x)))
+         ((memq (car -x) '(1- 1+)) (combc (cadr -x)))
+         ((eq (car -x) 'setq) (setq aux1 (combc (caddr -x))))
+         ((eq (car -x) 'cons) (setq val t) nil)))
+   
+   (de pusc (-x) (newl stack -x))
+   
+   (de pob () (nextl stack))
+   
+; pprin test ;
+ 
+   (df pprin (-x) 
+      (setq -x (cdar -x))
+      (while -x 
+         (print (nextl -x))
+         (ttab 10)
+         (prin1 (nextl -x))
+         (terpri)))
+   
+   (de test (-x y) 
+      (init y)
+      (while (listp (car -x)) (setq -x (nconc (car -x) (cdr -x))))
+      (escape exitt 
+         (cond
+            ((atom -x) (setq aux -x))
+            ((numbp (car -x)) (test (cdr -x)))
+            ((setq aux1 (get (car -x) 'ftn)) 
+               (apply aux1 (cdr -x))
+               (or (test1) (setq aux) (eval aux)))
+            ((memq (car -x) f-n-subr) 
+               (setq help -x)
+               (nimmarg -x)
+               (or (test1) (setq aux) (eval aux)))
+            ((setq aux -x)))
+         (terpri)
+         (cond
+            (aux 
+               (print "p r o p o s i t i o n :")
+               (terpri)
+		(setq PROPOSITION aux)
+               (prettyp aux)))
+         (print !! '(!++ 20) "a part ca votre fonction semble ok." " "
+           )))
+   
+; eqq ;
+ 
+   (de eqq (-x y) 
+      (cond
+         ((equal -x y) (insert t ['eq -x y] t))
+         (t (incr profo)
+            (meval y)
+            (push val typ)
+            (incr profo)
+            (meval -x)
+            (selectq  typ
+               (listp 
+                  (testa ['eq -x y] 'arg1 -x "atomique" 'listp)
+                  (setq typ (pop))
+                  (pop)
+                  (cond
+                     ((eq typ 'listp) 
+                        (testa ['eq -x y] 'arg2 y "atomique" 'listp)
+                        (insert ['equal -x y] ['eq -x y] t)
+                        (print "je change" !! '(!++ 10) ['eq -x y] 
+                          !! "en" !! '(!++ 10) ['equal -x y])))
+                  (setq val 'nill typ 'un hypval 'nill))
+               (numbp 
+                  (cond
+                     ((eq (setq typ (pop)) 'numbp) 
+                        (cond
+                           (val 
+                              (cond
+                                 ((eq (setq help (pop)) val) 
+                                    (setq typ 'atom val t))
+                                 ((null help) 
+                                    (setq typ 'un val nil))
+                                 ((setq typ 'un val 'nill))))
+                           ((setq typ 'un val nil))))
+                     ((eq typ 'un) 
+                        (and (atom y) (pput y 'numbp 'typ))
+                        (setq val)
+                        (pop))
+                     ((eq typ 'listp) 
+                        (testa ['eq -x y] 'arg2 y "atomique" 'listp)
+                        (pop)
+                        (setq typ 'un val 'nill))
+                     ((testa ['eq -x y] 'arg2 y "numerique" 
+                        "atomique") (setq typ 'un val 'nill) (pop))))
+               ((atom litatom stringp) 
+                  (cond
+                     ((eq (setq typ (pop)) 'listp) 
+                        (testa ['eq -x y] 'arg2 y "atomique" 'listp)
+                        (pop)
+                        (setq typ 'un val 'nill))
+                     ((eq typ 'un) 
+                        (and (atom y) (pput y 'atom 'typ))
+                        (setq val)
+                        (pop))
+                     ((eq typ 'numbp) 
+                        (testa ['eq -x y] 'arg1 -x "numerique" 
+                          'atom)
+                        (pop)
+                        (setq typ 'un val 'nill))
+                     (t (setq help (pop))
+                        (cond
+                           (val 
+                              (cond
+                                 ((eq help val) 
+                                    (setq typ 'atom val t))
+                                 (help (setq typ 'un val 'nill))))
+                           ((setq typ 'un val nil))))))
+               (un 
+                  (cond
+                     ((eq (setq typ (pop)) 'un) (setq val) (pop))
+                     (t (pop) (eqq y -x))))
+               (nil 
+                  (print "eqq attention d" typ "!!!! x=" -x "y=" y)))))
+      (or (zerop profo) (decr profo)))
+   
+; erftn add getarg but unpput ;
+  
+   (de erftn (-x y) 
+      (cond
+         ((eq (car -x) ffn) 
+            (getarg (car -x) (cdr -x) (get ffn 'numarg))
+            (pput ffn 'rec 'typ))
+         ((memq (car -x) f-n-subr) 
+            (cond
+               ((setq aux1 (get (car -x) 'ftn)) 
+                  (nextl help)
+                  (newl find t)
+                  (apply aux1 (cdr -x))
+                  (nextl find))
+               ((setq aux1 (get (car -x) 'numarg)) 
+                  (getarg (car -x) (cdr -x) aux1))))
+         ((and lcond aux (eq (car -x) t)) 
+            (setq aux1 (pob))
+            (pusc (cons (reverse aux) (pob)))
+            (setq aux)
+            (pusc aux1)
+            (add (nextl -x))
+            (setq help -x))
+         ((setq aux1 (aehnlich (car -x))) 
+            (erftn (cons aux1 (cdr -x)) y))
+         ((eq y 1) (setq help (cdr -x)) (add (car -x)))
+         (t (setq help (cdr -x))
+            (newl label (eti (car -x)))
+            (setq %lll2 (car -x))
+            (add (eti (car -x)))
+            (or y (erreur 2 (car -x))))))
+   
+   (de add (-x) (newl aux -x))
+   
+   (de getarg (ca cd no a) 
+      (cond
+         ((zerop no) (setq help cd) (add (cons ca (reverse a))))
+         ((listp (car cd)) 
+            (cond
+               ((setq
+                   aux1 
+                    (and (litatom (caar cd)) (get (caar cd) 'ftn))) 
+                  (apply aux1 (cdar cd))
+                  (setq help (cdr cd))
+                  (getarg ca help (1- no) (cons (nextl aux) a)))
+               ((setq aux1 (aehnlich (caar cd))) 
+                  (setq help (cons (cons aux1 (cdar cd)) (cdr cd)))
+                  (getarg ca help no a))
+               (t (setq help (append (car cd) (cdr cd)))
+                  (getarg ca help no a))))
+         ((memq (car cd) f-n-subr) 
+            (cond
+               ((setq aux1 (get (car cd) 'ftn)) 
+                  (nextl help)
+                  (apply aux1 (cdr cd))
+                  (getarg ca help (1- no) (cons (nextl aux) a)))
+               ((setq aux1 (get (car cd) 'numarg)) 
+                  (getarg (car cd) (cdr cd) aux1)
+                  (and 
+                     (eq (car cd) ffn)
+                     (pput ffn 
+                        (cons (cdar aux) (get ffn 'varec))
+                        'varec)
+                     (pput ffn 'rec 'typ))
+                  (getarg ca help (1- no) (cons (nextl aux) a)))))
+         ((setq aux1 (aehnlich (car cd))) 
+            (getarg ca (cons aux1 (cdr cd)) no a))
+         ((and (eq ca ffn) (null cd)) 
+            (setq aux1 (car (last (get ffn 'duvar) no)))
+            (print !! "je suppose que vous ne voulez" "pas changer le" 
+              (strcat (1+ (- (length (get ffn 'duvar)) no)) 
+			"-ieme argument") "dans" 
+              !! '(!++ 10) (cons ca (reverse a)))
+            (getarg ca cd (1- no) (cons aux1 a)))
+         (t (getarg ca (cdr cd) (1- no) (cons (car cd) a)))))
+   
+   (de but (-x y -z) 
+      (cond
+         (icond 
+            (cond
+               ((or (eq (get -x -z) 'un) (null (get -x -z))) 
+                  (pput -x y -z))
+               (t (newl help1 -x) (push -z y) (pput -x y -z))))
+         ((pput -x y -z))))
+   
+   (de unpput () (while help1 (pput (nextl help1) (pop) (pop))))
+   
+; kond kondk fsub iprog ;
+ 
+   (de kond (-x --y --z) 
+      (setq aux2 (cdr (member (cons 'cond -x) aux)))
+      (newl icond t)
+      (newl lcond nil)
+      (mapc -x 
+         (lambda (xx) 
+            (escape ex 
+               (and (null (car xx)) (ex (delete xx)))
+               (setq %lll2 xx)
+               (incr profo)
+               (meval (car xx))
+               (cond
+                  ((memq (car xx) wht) (kondk xx -x))
+                  ((and (eq (car xx) t) (null (cadr xx))) 
+                     (delete xx))
+                  ((and (eq (car xx) t) (eq (car (cadr xx)) 'cond)) 
+                     (setq aux1 (reverse (cdr (cadr xx))))
+                     (insert (car aux1) xx t)
+                     (while (cdr aux1) 
+                        (insert (cadr aux1) (nextl aux1) nil nil t))
+                     (ex))
+                  ((eq val 'nill) 
+                     (print "dans")
+                     (prettyp (cons 'cond -x))
+                     (print "la  clause" (car xx) 
+                       "a des chances d'etre toujours faux")))
+               (mapc (cdr xx) 
+                  '(lambda (xxx) (incr profo) (meval xxx)))
+               (setq
+                  lcond (cons (cons xx (car lcond)) (cdr lcond)))
+               (and (gzp profo) (decr profo))
+               (mapc aux2 'meval)
+               (unpput))))
+      (setq --y)
+      (escape ex 
+         (mapc -x 
+            (lambda (xx) 
+               (if (not (memq ffn (linear xx))) (ex) (setq --y t)))))
+      (if (null --y) 
+         nil
+         (setq --y nil --z nil)
+         (mapc -x 
+            (lambda (xx) 
+               (if (memq ffn (linear xx)) 
+                  (newl --y xx)
+                  (newl --z xx))))
+         (insert 
+           [(cons 'cond (append (reverse --z) (reverse --y)))] 
+           (cons 'cond -x) nil nil nil nil t))
+      (nextl lcond)
+      (nextl icond))
+   
+   (de kondk (xx -x) 
+      (cond
+         ((cdr (member xx -x)) 
+            (print "les clauses suivant" !! '(!++ 10) xx !! 
+              "ne seront jamais utilisees : je les enleve" !!)
+            (mapc (cdr (member xx -x)) 'delete))
+         ((and 
+             (listp (car xx))
+             (memq (caar xx) '(setq set rplaca rplacd nextl))))
+         ((print "pas besoin de faire le test :" (car xx) "dans" !! 
+            '(!++ 10) xx) (insert t xx t t))))
+   
+   (de fsub (-x y) 
+      (pusc aux)
+      (setq aux)
+      (cond
+         (find (pusc))
+         ((listp (car help)) (pusc (cdr help)))
+         (t (pusc)))
+      (setq help -x)
+      (nimmarg -x 1)
+      (setq help (pob))
+      (pusc (cons y (reverse aux)))
+      (setq aux (cadr stack))
+      (add (pob))
+      (pob))
+   
+   (de iprog () 
+      (cond
+         ((etiq2 'varloc) 
+            (and refav (erreur 'go refav))
+            (and ffn (pput ffn varloc 'varloc))))
+      (etiq1))
+   
+; ade errgrave aux aux1 predic ;
+ 
+   (de ade () 
+      (cond
+         ((null iprog) 
+            (cond
+               ((etiq2 'ffnvar) 
+                  (and refav (erreur 'go refav))
+                  (pput ffn ffnvar 'duvar)
+                  (pput ffn (length ffnvar) 'numarg)))
+            (and 
+               (etiq1)
+               (setq iprog t)
+               (setq
+                  aux 
+                   (nconc [(car aux) (cadr aux) (caddr aux)] 
+                     [(cons 'prog (cons nil (cdddr aux)))]))))))
+   
+   (de errgrave (-x y) (exitt ["errgrave" -x "-->" y]))
+   
+   (de aux () (pusc aux) (pusc help) (setq aux))
+   
+   (de aux1 () 
+      (setq help (cdr (pob)))
+      (setq aux (cons (reverse aux) (pob))))
+   
+   (de predic (-x) 
+      (and (not (memq -x '(or and))) (eq (get -x 'typ) 'predicat)))
+   
+; aehnlich trr ; 
+ 
+   (de aehnlich (-x yy -z) 
+      (if 
+       (or 
+          (numbp -x)
+          (listp -x)
+          (eq -x t)
+          (null -x)
+          (memq -x f-n-subr)
+          (and iprog (memq -x varloc))
+          (and ffn (memq -x ffnvar))) (exit))
+      (mapc (if yy (eval yy) f-n-subr) 
+         (lambda (xx) 
+            (cond
+               ((> (abs (- (plength xx) (plength -x))) 1))
+               (t (escape exi 
+                     (setq
+                        aux1 (explode xx)
+                        yy (explode -x)
+                        compt 0)
+                     (while (or aux1 yy) 
+                        (incr compt)
+                        (cond
+                           ((eq (car aux1) (car yy)) 
+                              (nextl aux1)
+                              (nextl yy))
+                           ((or 
+                               (equal (cdr aux1) yy)
+                               (equal (cdr yy) aux1)
+                               (equal (cdr aux1) (cdr yy))
+                               (and 
+                                  (eq (cadr yy) (car aux1))
+                                  (eq (car yy) (cadr aux1))
+                                  (equal (cddr yy) (cddr aux1)))) 
+                              (addprop 'propo compt xx)
+                              (exi))
+                           ((exi)))))))))
+      (escape ex 
+         (cond
+            ((null (cdr 'propo)) 
+               (and -z (ex))
+               (setq
+                  aux1 
+                   (or 
+                      (aehnlich -x 'varloc t)
+                      (aehnlich -x 'ffnvar t)))
+               (ex aux1))
+            (t (setq aux1)
+               (mapc (cdr 'propo) 
+                  (lambda (xx) 
+                     (and (numbp xx) (setq aux1 (cons xx aux1)))))
+               (cond
+                  ((trr aux1) 
+                     (cond
+                        (%%c 
+                           (print "?" -x "-->" !!)
+                           (rplacd 'propo)
+                           (setq aux1 (read))
+                           (ex aux1))
+                        ((setq
+                            aux1 (getall 'propo (apply 'max aux1))) 
+                           (rplacd 'propo)
+                           (errgrave -x aux1))))
+                  ((setq aux1 (get 'propo (apply 'max aux1))) 
+                     (rplacd 'propo)
+                     (erreur "nom" ["?" -x "-->" aux1])
+                     (ex aux1)))))))
+   
+   (de trr (-x y -z) 
+      (setq y (apply 'max -x))
+      (setq -z 0)
+      (while -x (and (eq (nextl -x) y) (setq -z (1+ -z))))
+      (> -z 1))
+   
+; erreur eti etiq1 etiq2 ervarl ervara varan ;
+ 
+   
+   (de eti (-x) (cond
+      ((numbp -x) (gensym 'a -x))
+      (t -x)))
+   
+   (de etiq1 (-x) 
+      (cond
+         (label 
+            (setq aux1 label)
+            (while aux1 
+               (cond
+                  ((get (car aux1) 'ap) 
+                     (pput (car aux1) 
+                        (cdr (memq (car aux1) aux))
+                        'val)
+                     (setq -x t))
+                  ((eq (length (memq (car aux1) aux)) 1))
+                  ((setq aux (delq (car aux1) aux))))
+               (nextl aux1))
+            -x)))
+
+   (de erreur (-x y) (print "erreur:" !! '(!++ 10) -x "-->" y))
+   ;                  ;
+  
+   
+   (de etiq2 (lvar) 
+      (escape ex 
+         (cond
+            (refav 
+               (mapc refav 
+                  (lambda (-x) 
+                     (cond
+                        ((memq -x label) 
+                           (setq refav (delq -x refav)))
+                        ((memq -x (eval lvar)) 
+                           (setq refav (delq -x refav))
+                           (newl label -x)
+                           (pput -x 
+                              (if (eq lvar 'ffnvar) 
+                                 (cdddr aux)
+                                 (cddr aux))
+                              'val)
+                           (rplacd 
+                             (if (eq lvar 'ffnvar) (cdr aux) aux) 
+                             (cons (set lvar (delq -x (eval lvar))) 
+                               (cons -x 
+                                 (if (eq lvar 'ffnvar) 
+                                    (cdddr aux)
+                                    (cddr aux)))))
+                           (ex t)))))))))
+   
+   (de ervarl (-x) 
+      (cond
+         ((atom (car -x)) (ervara -x))
+         ((ervara (append (car -x) (cdr -x))))))
+   
+   (de ervara (-x) 
+      (cond
+         ((null (car -x)) (setq help (cdr -x)) nil)
+         ((atom (car -x)) 
+            (cond
+               ((memq (car -x) '(d g l)) 
+                  (cons (car -x) (ervara (cdr -x))))
+               ((memq (car -x) f-n-subr) (setq help [-x]) nil)
+               ((cons (eti (car -x)) (ervara (cdr -x))))))
+         ((or 
+             (and (listp (caar -x)) (memq (caaar -x) f-n-subr))
+             (memq (caar -x) f-n-subr)
+             (and 
+                (> (length (explode ffn)) 1)
+                (aehnlich (caar -x)))) (setq help -x) nil)
+         ((ervara (append (car -x) (cdr -x))))))
+   
+   (de varan (-x y) 
+      (and 
+         -x
+         (mapc -x 
+            (lambda (xx) 
+               (cond
+                  ((or (memq xx ffnvar) (memq xx varloc)) 
+                     (erreur 1 xx))
+                  ((set y (cons xx (eval y))) 
+                     (pput xx 'un 'typ)
+                     (pput xx nil 'val))))))
+      (set y (reverse (eval y))))
+   
+; cond0 cond1 cond2 cond3 ;
+ 
+   (de cond0 (-x) 
+      (aux)
+      (setq help -x)
+      (while (setq -x help) 
+         (cond
+            ((listp (car -x)) 
+               (aux)
+               (newl lcond t)
+               (nimmarg (setq help (car -x)) 1)
+               (setq help (cdar stack))
+               (cond2)
+               (nextl lcond))
+            (t (cond1 -x))))
+      (setq help (pob))
+      (cond
+         (find (setq help))
+         ((listp (nextl help)))
+         ((setq help)))
+      (escape ex 
+         (while t 
+            (setq -x help)
+            (cond
+               ((listp (car help)) 
+                  (cond
+                     ((or 
+                         (eq (caar -x) t)
+                         (predic (caar -x))
+                         (and 
+                            (atom (caar -x))
+                            (setq aux1 (aehnlich (caar -x)))
+                            (eq (get aux1 'typ) 'predicat)
+                            (rplaca (car help) aux1))
+                         (and 
+                            (listp (caar -x))
+                            (or 
+                               (eq (get (car (caar -x)) 'typ) 
+                                 'predicat)
+                               (and 
+                                  (setq
+                                     aux1 (aehnlich (car (caar -x))))
+                                  (eq (get aux1 'typ) 'predicat)
+                                  (rplaca (caar help) aux1))))) 
+                        (aux)
+                        (newl lcond t)
+                        (nimmarg (setq help (car help)) 1)
+                        (setq help (cdar stack))
+                        (cond2)
+                        (nextl lcond))
+                     (t (ex))))
+               ((and (eq (car help) t) (neq (caar aux) t)) 
+		(let ((--t-- nil))
+                  (setq
+                     help 
+; !!!!!! ;
+;                     (cons [(car help) (cadr help)] (cddr help))));
+                      (cons [(car help) (if (listp (cadr help))
+			    (progn (setq --t-- t)(cadr help))
+			    (nimmarg (cadr help) 1))] 
+			 (if --t-- (cddr help) help)))))
+;;
+               ((> (length (car aux)) 1) (ex))
+               ((memq (car help) label) (ex))
+               ((or (null help) (null (car help))) (ex))
+               ((not 
+                  (or 
+                     (memq (car help) f-n-subr)
+                     (memq (aehnlich (car help)) f-n-subr))) 
+                  (rplaca aux (cons (car aux) (cons (car help))))
+                  (nextl help))
+               (t (ex)))))
+      (setq -x (setq aux1))
+      (while aux 
+         (cond
+            ((null (caar aux)) (nextl aux))
+            ((or (numbp (caar aux)) (eq (caar aux) t)) 
+               (setq -x (cons (nextl aux) -x)))
+            (t (setq aux1 (cons (nextl aux) aux1)))))
+      (setq
+         aux 
+          (cons 
+            (cons 'cond 
+              (append aux1 
+                (cond
+                   ((> (length -x) 1) 
+                      (print "erreur :" !! "il y a trop des clauses" 
+                       "constantes : " -x)
+                      (last -x))
+                   (-x)))) (pob))))
+   
+   (de cond1 (-x) 
+      (aux)
+      (pob)
+      (erftn -x 1)
+      (escape exx 
+         (while help 
+            (cond
+               ((listp (car help)) 
+                  (cond
+                     ((or 
+                         (listp (setq aux1 (caar help)))
+                         (eq aux1 t)
+                         (numbp aux1)
+                         (predic aux1)) (exx))
+                     ((setq aux1 (get (caar help) 'numarg)) 
+                        (if (> aux1 3) 
+                           (apply (get (caar help) 'ftn) 
+                             (cdar help))
+                           (erftn (nconc (car help) (cdr help)) 1)))
+                     ((setq help (append (car help) (cdr help))))))
+               ((numbp (car help)) (add (car help)) (nextl help))
+               ((or 
+                   (predic (car help))
+                   (predic (aehnlich (car help)))
+                   (and (cdr help) (eq (car help) t))) (exx))
+               (t (erftn help 1)))))
+      (setq aux (cons (reverse aux) (pob))))
+   
+   (de cond2 () 
+      (cond
+         ((> (length aux) 1) (aux1))
+         ((cond3 help) (aux1))
+         ((and (eq (car help) t) (not (cond3 (cdr help)))) (aux1))
+         (t (pob)
+            (pusc (reverse aux))
+            (push (cdr help))
+            (setq aux)
+            (nimmarg (setq help (cons (car help))) 1)
+            (setq
+               help (pop)
+               aux (cons (append (pob) (reverse aux)) (pob))))))
+   
+   (de cond3 (-x) 
+      (and 
+         (listp (car -x))
+         (or 
+            (listp (setq aux1 (caar -x)))
+            (eq aux1 t)
+            (predic (setq aux1 (or (aehnlich aux1) aux1)))
+            (memq aux1 varloc)
+            (memq aux1 ffnvar))))
+   
+; getall finconv find1 find2 hypval null1 caddar ;
+ 
+   (de getall (at ind) 
+      (mapct (cdr at) ;       (mapt (cdr at) 
+         (lambda (-x) (and (eq (car -x) ind) (cadr -x)))))
+   
+   (de finconv () (setq %%c))
+   
+   (de find1 (-x y) 
+      (maps y 
+         (lambda (xx) 
+            (cond
+               ((atom xx))
+               ((and 
+                   (eq (caar (cdr xx)) 'setq)
+                   (eq (cadr (cadr xx)) -x)) 
+                  (setq aux1 (cadr xx) aux4 (cddr xx) aux3 xx))))))
+   
+   (de find2 (-x) 
+      (escape ex 
+         (mapc aux 
+            (lambda (xx) 
+               (cond
+                  ((eq (car xx) 'cond) nil)
+                  ((equal xx -x) (ex -x))
+                  (t (maps xx 
+                        (lambda (xxx) 
+                           (cond
+                              ((atom xxx))
+                              ((equal (car xxx) -x) (ex xx)))))))))))
+   
+   (de hypval (typ -x) 
+      (setq
+         hypval 
+          (selectq  typ
+             (numbp 7)
+             (listp [(gensym) (gensym) (gensym)])
+             (atom (gensym))
+             (un 
+                (or 
+                   (hypval 
+                     (get (car %lll3) 
+                       (if (boundp 'yy) (car yy) 'arg1)) -x)))
+             (nil)))
+      (cond
+         ((atom -x) 
+            (but -x hypval 'hypval)
+            (if (null (get -x 'inithyp)) (pput -x hypval 'inithyp))))
+      hypval)
+   
+   (de null1 (-x) (if (eq -x 'nill) t 'nill))
+   
+   (de caddar (-x) (caddr (car -x)))
+   
+; delete insert insert1 test1 test2 ;
+ 
+   (de delete (-x -y) 
+      (escape ex 
+         (maps (or -y aux) 
+            (lambda (-xx) 
+               (cond
+                  ((atom -xx))
+                  ((equal (cadr -xx) -x) 
+                     (ex (rplacd -xx (cddr -xx)))))))))
+   
+   (de insert (-x apr yy zz ww vv uu) 
+      (escape ex 
+         (maps (or vv aux) 
+            (lambda (-xx) 
+               (cond
+                  ((atom -xx))
+                  ((and 
+                      uu
+                      (equal (cadr -xx) apr)
+                      (ex (rplacd -xx -x))))
+                  ((equal (car -xx) apr) 
+                     (cond
+                        (ww (ex (attach -x -xx)))
+                        (zz (ex (rplaca (car -xx) -x)))
+                        (yy (ex (rplaca -xx -x)))
+                        ((ex (attach -x (cdar -xx)))))))))))
+   
+   (de insert1 (-x apr) 
+      (escape ex 
+         (maps aux 
+            (lambda (-xx) 
+               (cond
+                  ((atom -xx))
+                  ((equal (car -xx) apr) 
+                     (ex (nconc (car -xx) [-x]))))))))
+   
+   (de test1 () 
+      (print !! !! (if (eq test1 1)   
+ 			"ameliorations de surface :"
+			(strcat "proposition " (1- test1) " :")) !!)
+      (and (listp (car aux)) (setq aux (car aux)))
+      (prettyp aux)
+      (push (subst nil nil aux))
+      (terpri)
+      (mapc '(lcond refav %lll1 %lll2 find) 'set)
+      (and 
+         (setq aux1 (get (car aux) 'ftn1))
+         (apply aux1 (cdr aux)))
+      (if (equal (setq PROPOSITION aux) (pop)) nil (test2)))
+   
+   (de test2 () 
+      (push (subst nil nil aux))
+      (apply (get (car aux) 'ftn1) (cdr aux))
+      (if (equal aux (pop)) t (test2)))
+   
+; phenar---- ;
+ 
+   (de phenaretefile (filo   fili) 
+     (escape &eof
+      (de eof () 
+            (input)
+            (output)
+            (remprop 'eof 'expr)
+            (&eof filo))
+      (outpput filo)
+      (inpput fili)
+      (while t
+           (phenaretes (print (read)))
+           (spaces 10)
+           (princ '- 40)
+	   (terpri) 
+	   (terpri))))))))
+    
+   (de phenaretes (-x) (test -x))
+   
+   (df phenarete (-x) 
+      (while -x 
+         (init)
+         (setq aux1 (fval (car -x)))
+         (cond
+            ((null aux1) 
+               (print !! !! "je ne peut comprendre que des exprs :" 
+                 !! (nextl -x) "n'en fait pas partie"))
+            ((setq aux1 (cons 'de (cons (nextl -x) (cdr aux1)))) 
+               (terpri)
+               (push aux1)
+               (prettyp aux1)
+               (escape exitt 
+                  (apply (get 'de 'ftn) (cdr aux1))
+                  (apply (get 'de 'ftn1) (cdr aux)))
+               (cond
+                  ((equal (pop) aux) 
+                     (print !! '(!++ 20) "votre fonction semble ok.")
+                     (eval aux))
+                  (t (prin1 "p r o p o s i t i o n :")
+                     (test2)
+                     (eval aux)
+                     (prettyp aux)
+                     (print !! '(!++ 20) 
+                       " a part ca votre fonction semble ok.")
+                     (terpri)))))))
+   
+; rec -rec4 com ;
+ 
+   (de rec (-x) 
+      (escape ex 
+         (or 
+            icond
+            (ex 
+               (insert 
+                 ['cond [t (setq aux1 (find2 (cons ffn -x)))]] aux1 
+                 t)))
+         (mapc -x '(lambda (xx) (incr profo) (meval xx)))
+         (setq aux1 -x)
+         (escape exx (rec1 -x))
+         (or rec (rec2))
+         (or 
+            rec
+            (and (-rec4 -x) (or (rec -x) t))
+            (com (cons ffn -x))))
+      (setq rec))
+   
+   (de -rec4 (-x -xxx) 
+      (escape -exx 
+         (while -x 
+            (if 
+             (and 
+                (atom (car -x))
+                (memq (car -x) (get ffn 'duvar))
+                (memq (setq -xxx (get (car -x) 'typ)) 
+                  '(numbp listp))) 
+               (-exx 
+                  (rplaca -x 
+                    [(selectq  -xxx
+                        (numbp '1-)
+                        (listp 'cdr)
+                        (nil))
+                     (car -x)])))
+            (nextl -x))))
+   
+   (de com (-x) 
+      (print 
+        "je ne peut pas encore verifier votre appel recursif :" !! 
+        '(!++ 10) -x))
+   
+; meval2 rec1 shorter longer greater smaller ;
+ 
+   (de meval2 (-x xx y) 
+      (cond
+         ((eq (cadr -x) xx) (setq modif y))
+         ((listp (cadr -x)) 
+            (meval1 (cadr -x) xx)
+            (select  modif
+               (y t)
+               ((setq modif))))))
+   
+   (de rec1 (-x) 
+      (mapc (get ffn 'duvar) 
+         (lambda (xx) 
+            (escape ex 
+               (pput xx (cons (car aux1) (get xx 'varec)) 'varec)
+               (setq modif)
+               (meval1 (nextl aux1) xx)
+               (or modif (ex))
+               (set xx modif)
+               (cond
+                  ((atom modif) (find (modif xx)))
+                  (t (mapc modif 
+                        '(lambda (xxx) 
+                           (find (xxx xx))
+                           (cond
+                              (rec (set xx xxx) (exx))))))))
+            (and rec (exx)))))
+   
+   (de shorter (-x) 
+      [['null -x]
+       ['< ['length -x] qqc]
+       ['le ['length -x] qqc]
+       ['eq ['length -x] qqc]])
+   
+   (de longer (-x) 
+      [['> ['length -x] qqc]
+       ['ge ['length -x] qqc]
+       ['eq ['length -x] qqc]])
+   
+   (de greater (-x) [['> -x qqc] ['ge -x qqc] ['eq -x qqc]])
+   
+   (de smaller (-x) 
+      [['le -x 0]
+       ['zerop -x]
+       ['< -x qqc]
+       ['le -x qqc]
+       ['eq -x qqc]])
+   
+; meval1 ;
+ 
+   (de meval1 (-x xx) 
+      (if (atom -x) 
+         nil
+         (selectq  (car -x)
+            ((cdr cddr car caar) 
+               (cond
+                  ((null modif) (meval2 -x xx 'shorter))
+                  (t (selectq  modif
+                     (shorter t)
+                     ((setq modif))))))
+            (cons 
+               (cond
+                  ((null modif) 
+                     (cond
+                        ((eq (caddr -x) xx) (setq modif 'longer))
+                        ((listp (caddr -x)) 
+                           (meval1 (caddr -x) xx)
+                           (selectq  modif
+                              ((longer shorter) t)
+                              ((setq modif))))))))
+            (1- 
+               (cond
+                  ((null modif) (meval2 -x xx 'smaller))
+                  (t (selectq  modif
+                     (smaller t)
+                     ((setq modif))))))
+            (1+ 
+               (cond
+                  ((null modif) (meval2 -x xx 'greater))
+                  (t (selectq  modif
+                     (greater t)
+                     ((setq modif))))))
+            ((print prin1) (meval1 (cadr -x) xx))
+            (+ 
+               (cond
+                  ((null modif) 
+                     (cond
+                        ((memq xx (cdr -x)) (setq modif 'greater))
+                        (t (escape ex 
+                              (mapc (cdr -x) 
+                                 '(lambda (xxx) 
+                                    (meval1 xxx xx)
+                                    (cond
+                                       ((eq modif 'greater) (ex t))
+                                       ((eq modif 'smaller) 
+                                          (ex 
+                                             (setq
+                                                modif 
+                                                 ['greater
+                                                  'smaller])))
+                                       ((memq 'greater modif) 
+                                          (ex t))
+                                       ((setq modif)))))))))
+                  (t (selectq  modif
+                        (greater t)
+                        (smaller (setq modif [modif 'smaller]))
+                        ((setq modif))))))
+            (nil))))
+   
+; find rec2 rec22 rec3 gettyp insert2 ;
+ 
+   (de find (-x -y) 
+      (mapc -x 
+         (lambda (xx) 
+            (mapc (or -y (car lcond)) 
+               (lambda (xxx) 
+                  (maps xxx 
+                     (lambda (yy) 
+			(or (atom yy)
+                        (and 
+                           (or 
+                              (eq (length (car yy)) 2)
+                              (and 
+                                 (eq (length (car yy)) 3)
+                                 (memq qqc xx)))
+                           (eq (car xx) (caar yy))
+                           (equal (cadr xx) (cadr (car yy)))
+                           (exx (setq rec t)))))))))))
+   
+   (de rec2 (yy) 
+      (push (subst nil nil aux))
+      (escape exx (rec22))
+      (cond
+         (rec 
+            (setq yy (pop))
+            (push (subst nil nil aux))
+            (setq aux yy)
+            (mapc %%1 '(lambda (xx) (push (eval xx))))
+            (push (cdr ffn))
+            (mapc (get ffn 'duvar) '(lambda (xx) (push (cdr xx))))
+            (rec3)
+            (and rec (incr test1) (test aux t))
+            (mapc (reverse (get ffn 'duvar)) 
+               '(lambda (xx) (rplacd xx (pop))))
+            (rplacd ffn (pop))
+            (mapc (reverse %%1) '(lambda (xx) (set xx (pop))))
+            (setq aux (pop)))
+         (t (pop) (rec3))))
+   
+   (de rec22 (-z zz) 
+      (mapc (car lcond) 
+         (lambda (-x) 
+            (cond
+               ((null (setq zz (gettyp (car -x)))))
+               ((or 
+                   (null (car (last -x)))
+                   (numbp (car (last -x)))
+                   (and 
+                      (listp (car (last -x)))
+                      (eq (caar (last -x)) quote))))
+               ((atom (setq -z (car (last -x)))) 
+                  (selectq  zz
+		     ((smaller shorter) 
+			(cond 
+			   ((memq (car -z) '(longer greater)))
+			   ((eq (car -z) zz) 
+				(mapc (get ffn 'duvar)
+				  (lambda (xx)
+				    (cond 
+					((memq (car xx) '(longer greater))
+					 (rplaca (last -x) xx)
+					 (exx (setq rec t))))))))) 
+                     ((setq rec))))))))
+   
+   (de rec3 (-z -xx) 
+      (escape exx 
+         (mapc (get ffn 'duvar) 
+            (lambda (-x) 
+               (cond
+                  ((or 
+                      (eq (car -x) 'shorter)
+                      (eq (car -x) 'smaller)) 
+                     (setq -z (car ((car -x) -x)))
+                     (find [-z] aux)
+                     (insert2 (setq -xx   
+                       [-z
+                        (or 
+                           (escape ex 
+                              (mapc (get ffn 'duvar) 
+                                 '(lambda (xx) 
+                                    (and 
+                                       (memq (car xx) 
+                                         '(longer greater))
+                                       (ex xx)))))
+                           (and %lll3 (get (car %lll3) 'neutre)))]))
+			   (setq lcond (cons (cons -xx (car lcond)) 
+					     (cdr lcond)))  
+                     (exx (setq rec t))))))))
+   
+   (de gettyp (-x -z -xx -y) 
+      (escape ex 
+         (cond
+            ((atom -x))
+            (t (selectq  (car -x)
+                  ((null zerop)   
+                     (if (eq (car -x) 'null)
+			 (setqq -xx shorter -y (car cdr cadr cddr caar caddr))
+			 (setqq -xx smaller -y (1+ 1-))) 
+                     (cond
+                        ((or 
+                            (atom (setq -z (cadr -x)))
+                            (and 
+                               (memq (caadr -x) -y)
+                               (atom (setq -z (cadadr -x))))) 
+                           (cond
+                              ((eq (car -z) -xx) -xx)
+                              (t (mapc (get ffn 'duvar) 
+                                    (lambda (xx) 
+                                       (and 
+                                          (eq (car xx) -xx)
+                                          (setq -z (subst xx -z -x))
+                                          (insert -z -x t)
+                                          (ex -xx)))))))))
+                  (nil))))))
+   
+   (de insert2 (-x) 
+      (escape ex 
+         (maps aux 
+            (lambda (xx) 
+               (cond
+                  ((atom xx))
+                  ((equal (car xx) %lll2) (ex (attach -x xx))))))))
+   
+   (progn 
+      '(load : phenarete phenaretes phenaretefile))
+  
+;(careful --aux--)
+;(package)
+
+  ; end of file : (dsk (phe . vli) nil)  3-aug-78 02:03:42 ;
+
+  

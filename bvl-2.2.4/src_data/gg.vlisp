@@ -1,0 +1,96 @@
+
+(de gg (l1 l2)
+  {NVNUM (6)
+   VNUM (5)
+   TIMEPTR ("84:01:29:02:25:13" "84:01:25:01:06:19" "84:01:24:21:09:01" 
+	    "84:01:24:21:08:25" "0")
+   INIT t}
+   (if l1
+      (gg
+        {VERSION-NUM (5 4 3)
+         TIMES ("84:01:25:01:06:19")
+         OLD-VERSION (re
+           {TIMES ("0")
+            VERSION-NUM (0 1 2 3)}
+          (cddr
+              {VERSION-NUM (3 2)
+               TIMES ("84:01:24:21:09:01")
+               OLD-VERSION (cadr
+                 {VERSION-NUM (2 1)
+                  TIMES ("84:01:24:21:08:25")
+                  OLD-VERSION (cdr
+                    {TIMES ("0")
+                     VERSION-NUM (0 1)}
+                   l1)}
+                l1)}
+             l1)
+              {sortie ((if (< (length sortie) 4)
+                  ()
+                  (print l1 "c'est encore une bien longue liste")))
+               entree ((if (< (length l1) 5)
+                  ()
+                  (print l1 "c'est une bien longue liste")))}
+             (cons (car l1) l2))}
+       (cdr
+           {VERSION-NUM (5 4)
+            TIMES ("84:01:29:02:25:13")
+            OLD-VERSION (cddr
+              {VERSION-NUM (4 3 2)
+               TIMES ("84:01:24:21:09:01")
+               OLD-VERSION (cadr
+                 {VERSION-NUM (2 1)
+                  TIMES ("84:01:24:21:08:25")
+                  OLD-VERSION (cdr
+                    {TIMES ("0")
+                     VERSION-NUM (0 1)}
+                   l1)}
+                l1)}
+             l1)}
+          l1)
+           {sortie ((if (< (length sortie) 4)
+               ()
+               (print l1 "c'est encore une bien longue liste")))
+            entree ((if (<
+              {VERSION-NUM (1)
+               TIMES ("86:01:21:12:39:26")
+               OLD-VERSION (<
+                 {TIMES ("0")
+                  VERSION-NUM (0 1)}
+                (length l1) 5)}
+             (length l1) 6)
+               ()
+               (print l1 "c'est une bien longue liste"))
+              {NVNUM (2)
+               VNUM (1)
+               TIMEPTR ("86:01:21:12:39:26" "0")
+               INIT t}
+            )}
+          (cons (car l1) l2))
+        {entree ((print "tiens?"))}
+      
+      l2))
+
+(example 'gg '(
+   ((gg
+     {VERSION-NUM (1)
+      TIMES ("84:01:25:01:08:44")
+      OLD-VERSION (re
+        {TIMES ("0")
+         VERSION-NUM (0 1)}
+       '(a b c))}
+    '(a b c)) (b c a))
+   ((gg
+     {VERSION-NUM (1)
+      TIMES ("84:01:25:01:08:46")
+      OLD-VERSION (re
+        {TIMES ("0")
+         VERSION-NUM (0 1)}
+       ())}
+    ()) ())
+   ))
+(assert-entree 'gg
+   '(listp l1)
+   )
+(assert-sortie 'gg
+   '(equal (car sortie) (car (last l1)))
+   )

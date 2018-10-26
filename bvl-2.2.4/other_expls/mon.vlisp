@@ -1,0 +1,39 @@
+(princ "je charge mon.vlisp")
+
+(de changewin (l)
+    (xChangeWin (car l) (cadr l)))
+
+(de m_changewin (w)
+    (xChangeWin w w 1))
+	 
+(de monitor (var ycoord  xcoord quoi quand)
+    (if (listp var)()
+      (cond ((and (null quoi)(null quand))
+	     (ival var (cons `(entree
+			       (print ,var))
+			     (ival var))))
+		((and quoi (null quand))
+		 (ival var (cons `(entree
+				   (print ,quoi))
+				 (ival var))))
+		((and quand (null quoi))
+		 (ival var (cons `(entree
+				   (if (null ,quand)()
+				     (print ,var)))
+				 (ival var))))
+		(t (ival var (cons `(entree
+				     (if (null ,quand)()
+				       (print ,quoi)))
+				   (ival var)))))
+      `(,var monitored)))))
+
+(df unmonitor (-x-)
+    (mapc -x- (lambda (-y- -z-)
+		(setq -z-
+		      (let ((-z- (ival -y-)))
+			(if (null -z-) ()
+			  (if (eq (caar -z-) 'entree) (self (cdr -z-))
+			    (cons (car -z-)(self (cdr -z-)))))))
+		(if (null -z-) (clrival -y-)(ival -y- -z-)))))
+(print "mon.vlisp charge")
+

@@ -1,0 +1,99 @@
+; librairie de fonctions pour la simplification de l'utilisation des ival...
+
+; getival     : var element : retourne l'ival correspondant (valeur uniquement) (macro)
+; delival     : var element : effacement dans l'ival
+; replaceival : var valeur  : remplacement d'une valeur dans l'ival
+; addival     : var valeur  : ajout d'une valeur dans l'ival
+
+(setq defun 'de defvar 'setq)
+
+(defun delete-nth (i l)
+    (if (< i 2) (cdr l)
+      (rplacd (nth (- i 1) l) (nth (1+ i) l))
+      l))
+
+(defun delete-one (l e)
+    (if (eq e (car l)) (cdr l)
+      (let (lst l)
+	(cond
+	 ((null lst) l)
+	 ((eq (cadr lst) e) (rplacd lst (cddr lst)) l)
+	 (t (self (cdr lst)))))))
+
+
+(defmacro getival (var elem)  `(%find (ival ,var) ,elem))
+
+; effacement d'un element de l'ival d'un atome
+(defun delival (v elem)
+  (let ((i-value (cons elem (%find (ival v) elem)))
+	(o-ival  (ival v)))
+    (cond
+     ((null (cdr i-value)) o-ival)
+     ((eq (ival v (append (reverse (cdr (member i-value (reverse o-ival))))
+			  (cdr (member i-value o-ival))))
+	  o-ival) 
+      (clrival v)))))
+
+; remplacement d'une valeur dans l'ival d'un atome
+(defun replaceival (v value)
+  (delival v (if (atom value) value (car value)))
+  (ival v (cons value (ival v)))
+  value)
+
+; ajout d'une valeur dans l'ival d'un atome
+(defun addival (v value)
+  (when (cadr value)
+	(ival v (cons value (ival v)))
+	value))
+
+
+(defun addinival (v elem value)
+  (let (o-value (%find (ival v) elem))
+    (replaceival v `(,elem ,value ,@o-value))
+    value))
+
+(defun del-ival (v elem)
+  (let ((i-value (cons elem (%find (ival v) elem)))
+	(o-ival  (ival v)))
+    (ifn (cdr i-value) o-ival
+	 (ival v (append (reverse (cdr (member i-value (reverse o-ival))))
+			 (cdr (member i-value o-ival)))))))
+
+; remplacement d'une valeur dans l'ival d'un atome
+(defun replace-ival (v value)
+  (del-ival v (if (atom value) value (car value)))
+  (ival v (cons value (ival v)))
+  value)
+
+; ajout d'une valeur dans l'ival d'un atom
+(defun add-ival (v value)
+  (ival v (cons value (ival v)))
+  value)
+
+; ajoute un valeur dans un ival d'un atom
+(defun add-in-ival (v value)
+  (let (new-value (append (cdr value) (%find (ival v) (car value))))
+    (replace-ival v `(,(car value) ,new-value))
+    new-value))
+
+
+; ajout dans le quasi-car avec remplacement
+(defun replace-car (l des elem)
+  (if (member des (cdr (getcar l))) (rplacd (getcar l) (cdr (delete-one (cdr (getcar l)) des))))
+  (putcar l elem)
+  (putcar l des)
+  elem)
+
+(defun add-in-car (l des val)
+  (let (o-val (cdr (member des (cdr (getcar l)))))
+    (cond 
+     (o-val  (rplaca o-val (cons val (car o-val))))
+     (t      (putcar l val) (putcar l des))))
+  val)
+
+(defun delete-car (l des)
+  (rplacd (getcar l) (cdr (delete-one (cdr (getcar l)) des))))
+
+(defun get-car-value (l des)
+  (cadr (member des (cdr (getcar l)))))
+

@@ -1,0 +1,30 @@
+
+(de rev (l acc)
+  {NVNUM (2)
+   VNUM (1)
+   TIMEPTR ("0")
+   INIT t}
+   (if l
+      (rev (cdr l) (cons (car l) acc))
+        {entree ((print "l =" l))}
+      
+      acc))
+
+(example 'rev '(
+   ((rev ()) ())
+   ((rev '(a b c)) '(b c a))
+   ))
+(assert-entree 'rev
+   '(listp l)
+   )
+(entree 'rev
+   '(if (chemin-entree ba fo rev)
+      (print "j'entre venant de ba -> fo -> rev"))
+   )
+(assert-sortie 'rev
+   '(equal (car l) (car (last sortie)))
+   )
+(sortie 'rev
+   '(if (chemin-sortie ba fo rev)
+      (print "je sorte de rev retour vers fo et ba"))
+   )

@@ -1,0 +1,427 @@
+%! a2ps 3.0
+
+/$a2psdict 100 dict def
+$a2psdict begin
+% Initialize page description variables.
+/inch {72 mul} bind def
+/landscape false def
+/twinpage false def
+/sheetheight 11.64 inch def
+/sheetwidth 8.27 inch def
+/margin 1.2 inch def
+/noborder false def
+/noheader false def
+/headersize 0.29 inch def
+/bodyfontsize 5.5 def
+/lines 131 def
+/columns 153 def
+/date (Sep 29 1993 16:37:33) def
+%!  PostScript Source Code
+%
+%  File: imag:/users/local/a2ps/header.ps
+%  Created: Tue Nov 29 12:14:02 1988 by miguel@imag (Miguel Santana)
+%  Version: 2.0
+%  Description: PostScript prolog for a2ps ascii to PostScript program.
+% 
+%  Edit History:
+%  - Original version by evan@csli (Evan Kirshenbaum).
+%  - Modified by miguel@imag to:
+%    1) Correct an overflow bug when printing page number 10 (operator
+%	cvs).
+%    2) Define two other variables (sheetwidth, sheetheight) describing
+%	the physical page (by default A4 format).
+%    3) Minor changes (reorganization, comments, etc).
+%  - Modified by tullemans@apolloway.prl.philips.nl
+%    1) Correct stack overflows with regard to operators cvs and copy.
+%       The resulting substrings where in some cases not popped off 
+%       the stack, what can result in a stack overflow.
+%    2) Replaced copypage and erasepage by showpage. Page througput
+%       degrades severely (see red book page 140) on our ps-printer
+%       after printing sheet 16 (i.e. page 8) of a file which was 
+%       actually bigger. For this purpose the definitions of startdoc
+%       and startpage are changed.
+%  - Modified by Tim Clark <T.Clark@uk.ac.warwick> to:
+%    1) Print one page per sheet (portrait) as an option.
+%    2) Reduce size of file name heading, if it's too big.
+%    3) Save and restore PostScript state at begining/end. It now uses
+%	conventional %%Page %%Trailer markers.
+%    4) Print one wide page per sheet in landscape mode as an option.
+%  - Modified by miguel@imag.fr to
+%    1) Add new option to print n copies of a file.
+%    2) Add new option to suppress heading printing.
+%    3) Add new option to suppress page surrounding border printing.
+%    4) Add new option to change font size. Number of lines and columns
+%	are now automatically adjusted, depending on font size and
+%	printing mode used.
+%    5) Minor changes (best layout, usage message, etc).
+%
+
+% Copyright (c) 1988, Miguel Santana, miguel@imag.imag.fr
+%
+% Permission is granted to copy and distribute this file in modified
+% or unmodified form, for noncommercial use, provided (a) this copyright
+% notice is preserved, (b) no attempt is made to restrict redistribution
+% of this file, and (c) this file is not distributed as part of any
+% collection whose redistribution is restricted by a compilation copyright.
+%
+
+
+% General macros.
+/xdef {exch def} bind def
+/getfont {exch findfont exch scalefont} bind def
+
+% Page description variables and inch function are defined by a2ps program.
+
+% Character size for differents fonts.
+   landscape
+   { /filenamefontsize 12 def }
+   { /filenamefontsize 16 def }
+ifelse
+/datefontsize filenamefontsize 0.8 mul def
+/headermargin filenamefontsize 0.25 mul def
+/bodymargin bodyfontsize 0.7 mul def
+
+% Font assignment to differents kinds of "objects"
+/filenamefontname /Helvetica-Bold def
+/stdfilenamefont filenamefontname filenamefontsize getfont def
+/datefont /Helvetica datefontsize getfont def
+/bodyfont /Courier-Bold bodyfontsize getfont def
+
+% Logical page attributs (a half of a real page or sheet).
+/pagewidth
+   bodyfont setfont (0) stringwidth pop columns mul bodymargin dup add add
+   def
+/pageheight
+   bodyfontsize lines mul bodymargin dup add add headersize add
+   def
+
+% Coordinates for upper corner of a logical page and for sheet number.
+% Coordinates depend on format mode used.
+% In twinpage mode, coordinate x of upper corner is not the same for left
+% and right pages: upperx is an array of two elements, indexed by sheetside.
+/rightmargin margin 3 div def
+/leftmargin margin 2 mul 3 div def
+/topmargin margin twinpage {3} {2} ifelse div def
+landscape
+{  % Landscape format
+   /uppery rightmargin pageheight add bodymargin add def
+   /sheetnumbery sheetwidth leftmargin pageheight add datefontsize add sub def
+   twinpage
+   {  % Two logical pages
+      /upperx [ topmargin			% upperx for left page
+		dup 2 mul pagewidth add		% upperx for right page
+	      ] def
+      /sheetnumberx sheetheight topmargin sub def
+   }
+   {  /upperx [ topmargin dup ] def
+      /sheetnumberx sheetheight topmargin sub datefontsize sub def
+   }
+   ifelse
+}
+{  % Portrait format
+   /uppery topmargin pageheight add def
+   /upperx [ leftmargin dup ] def
+   /sheetnumberx sheetwidth rightmargin sub datefontsize sub def
+   /sheetnumbery
+	 sheetheight 
+	 topmargin pageheight add datefontsize add headermargin add
+      sub
+      def
+
+}
+ifelse
+
+% Strings used to make easy printing numbers
+/pnum 12 string def
+/empty 12 string def
+
+% Other initializations.
+/datewidth date stringwidth pop def
+/filenameroom
+         pagewidth
+	 filenamefontsize 4 mul datewidth add (Page 999) stringwidth pop add
+      sub
+   def
+
+
+% Function startdoc: initializes printer and global variables.
+/startdoc
+    { /sheetside 0 def			% sheet side that contains current page
+      /sheet 1 def			% sheet number
+   } bind def
+
+% Function newfile: init file name and reset page number for each new file.
+/newfile
+    { cleanup
+      /filename xdef
+      /filenamewidth filename stringwidth pop def
+      /filenamefont
+	 filenamewidth filenameroom gt
+	 {
+	       filenamefontname
+	       filenamefontsize filenameroom mul filenamewidth div
+	    getfont
+	 }
+	 {  stdfilenamefont }
+	 ifelse
+	 def
+      /pagenum 1 def
+    } bind def
+
+% Function printpage: Print a physical page.
+/printpage
+    { /sheetside 0 def
+      twinpage
+      {  noborder not
+	    { sheetnumber }
+	 if
+      }
+      {  noheader noborder not and
+	    { sheetnumber }
+	 if
+      }
+      ifelse
+      showpage 
+%      pagesave restore
+      /sheet sheet 1 add def
+    } bind def
+
+% Function cleanup: terminates printing, flushing last page if necessary.
+/cleanup
+    { twinpage sheetside 1 eq and
+         { printpage }
+      if
+    } bind def
+
+%
+% Function startpage: prints page header and page border and initializes
+% printing of the file lines.
+/startpage
+    { sheetside 0 eq
+	{ % /pagesave save def
+	  landscape
+	    { sheetwidth 0 inch translate	% new coordinates system origin
+	      90 rotate				% landscape format
+	    } if
+	} if
+      noborder not { printborder } if
+      noheader not { printheader } if
+	 upperx sheetside get  bodymargin  add
+	    uppery
+	    bodymargin bodyfontsize add  noheader {0} {headersize} ifelse  add
+	 sub
+      moveto
+      bodyfont setfont
+    } bind def
+
+% Function printheader: prints page header.
+/printheader
+    { upperx sheetside get  uppery headersize sub 1 add  moveto
+      datefont setfont
+      gsave
+        datefontsize headermargin rmoveto
+	date show					% date/hour
+      grestore
+      gsave
+	pagenum pnum cvs pop
+	   pagewidth (Page 999) stringwidth pop sub
+	   headermargin
+	rmoveto
+        (Page ) show pnum show				% page number
+      grestore
+      empty pnum copy pop
+      gsave
+        filenamefont setfont
+	      filenameroom filename stringwidth pop sub 2 div datewidth add
+	      bodymargin 2 mul 
+	   add 
+	   headermargin
+	rmoveto
+        filename show						% file name
+      grestore
+    } bind def
+
+% Function printborder: prints border page.
+/printborder 
+    { upperx sheetside get uppery moveto
+      gsave					% print the four sides
+        pagewidth 0 rlineto			% of the square
+        0 pageheight neg rlineto
+        pagewidth neg 0 rlineto
+        closepath stroke
+      grestore
+      noheader not
+         { 0 headersize neg rmoveto pagewidth 0 rlineto stroke }
+      if
+    } bind def
+
+%
+% Function endpage: adds a sheet number to the page (footnote) and prints
+% the formatted page (physical impression). Activated at the end of each
+% source page (lines reached or FF character).
+/endpage
+   { /pagenum pagenum 1 add def
+     twinpage  sheetside 0 eq  and
+        { /sheetside 1 def }
+        { printpage }
+     ifelse
+   } bind def
+
+% Function sheetnumber: prints the sheet number.
+/sheetnumber
+    { sheetnumberx sheetnumbery moveto
+      datefont setfont
+      sheet pnum cvs
+	 dup stringwidth pop (0) stringwidth pop sub neg 0 rmoveto show
+      empty pnum copy pop
+    } bind def
+
+% Function s: print a source line
+/s  { gsave
+        show
+      grestore
+      0 bodyfontsize neg rmoveto
+    } bind def
+%%EndProlog
+
+/docsave save def
+startdoc
+(consp.vlisp) newfile
+/sheet 1 def
+%%Page: 1 1
+startpage
+( ;       cons-print) s
+( ;               Pour voir les doublets \(quand c'est possible\)) s
+( ) s
+( ) s
+( \(de append-n l) s
+(   \(let \(\(l l\)\)) s
+(     \(if \(null \(cdr l\)\) l \(append \(car l\) \(self \(cdr l\)\)\)\)\)\)) s
+( ) s
+( \(de cursorpos \(x y\)) s
+(       \(poscur x y\)\)\)) s
+( ) s
+( \(de cons-print \(sexp\)) s
+(   \(status print 2\)) s
+(   \(home\) \(cleos\)) s
+(   \(setq right-margin 1\)) s
+( ;  \(dot-print sexp\) ;) s
+(   \(cons-print-loop sexp 3 1\)) s
+(   \(status print 0\)) s
+(   \(poscur 22 1\)) s
+(   t\)) s
+( ) s
+( \(de cons-print-loop \(sexp xpos ypos\)) s
+(   \(cond \(\(atom sexp\)) s
+(          \(print-in-place sexp xpos \(+ 2 ypos\)\)\)) s
+( ) s
+(         \(\(and \(real-atom \(cdr sexp\)\) \(atom \(car sexp\)\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(print-in-place \(car sexp\) \(+ 4 xpos\) \(+ 2 ypos\)\)) s
+(          \(print-in-place-list) s
+(           [\(+ 1 xpos\) \(+ ypos 6\) "!") s
+(            \(+ 2 xpos\) \(+ ypos 6\) "!") s
+(            \(+ 3 xpos\) \(+ ypos 6\) "v"]\)) s
+(          \(print-in-place \(cdr sexp\) \(+ 4 xpos\) \(+ 6 ypos\)\)\)) s
+( ) s
+(         \(\(real-atom \(cdr sexp\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(cons-print-loop \(car sexp\) \(+ 4 xpos\) ypos\)) s
+(          \(print-in-place-list \(list \(1+ xpos\)\(+ 7 ypos\) "-+->"\)\)) s
+(          \(print-in-place \(cdr sexp\) \(+ 1 xpos\) \(+ 12 ypos\)\)\)) s
+( ) s
+(         \(\(eq \(car sexp\) \(cdr sexp\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(print-in-place-list) s
+(           [\(+ 1 xpos\)\(+ ypos 6\) "!") s
+(            \(+ 2 xpos\)\(+ ypos 6\) "!") s
+(            \(+ 3 xpos\)\(+ ypos 6\) "v"]\)) s
+(          \(cons-print-loop \(car sexp\) \(+ xpos 4\) ypos\)\)) s
+( ) s
+(         \(\(eq \(car sexp\)\(cadr sexp\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(print-in-place "!" \(+ xpos 3\) \(+ ypos 2\)\)) s
+(          \(print-in-place "!" \(+ xpos 4\) \(+ ypos 2\)\)) s
+(          \(print-in-place-list [\(+ xpos 5\) \(+ ypos 2\) "+------->"]\)) s
+(          \(print-in-place-list [\(+ xpos 1\) \(+ ypos 7\) "-+->"]\)) s
+(          \(print-cons-cell xpos \(+ 11 ypos\)\)) s
+(          \(cons-print-loop \(car sexp\) \(+ xpos 4\) \(+ ypos 11\)\)) s
+(          \(if \(cddr sexp\)) s
+(              \(let \(\(newy \(print-arrow \(+ 1 xpos\) \(+ ypos 18\)\)\)\)) s
+(                \(cons-print-loop \(cddr sexp\) xpos newy\)\)) s
+(              \(print-in-place "/" \(+ xpos 1\) \(+ ypos 17\)\)\)\)) s
+( ) s
+(         \(\(null \(cdr sexp\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(cons-print-loop \(car sexp\) \(+ xpos 4\) ypos\)) s
+(          \(print-in-place "/" \(+ 1 xpos\) \(+ 6 ypos\)\)\)) s
+( ) s
+(         \(t) s
+(          \(if \(and \(listp \(car sexp\)\)\(in? \(car sexp\) \(cdr sexp\)\)\)) s
+(              \(b-error "Mutation inconnue --- non dessinable\\n") s
+(                       sexp\)\)) s
+(          \(print-cons-cell xpos ypos\)) s
+(          \(cons-print-loop \(car sexp\) \(+ 4 xpos\) ypos\)           ) s
+(          \(let \(\(newy \(print-arrow \(+ 1 xpos\) \(+ ypos 7\)\)\)\)) s
+(            \(cons-print-loop \(cdr sexp\) xpos newy\)\)\)\)\)) s
+( ) s
+( \(de print-in-place \(string x y\)) s
+(     \(poscur x y\) \(princ string\)\)) s
+( ) s
+( \(de print-in-place-list \(lst\)) s
+(   \(cond \(\(null lst\) t\)) s
+(         \(t \(print-in-place \(caddr lst\) \(car lst\) \(cadr lst\)\)) s
+(               \(print-in-place-list \(cdddr lst\)\)\)\)\)) s
+( ) s
+( \(de print-arrow \(x y\)) s
+(   \(print-in-place-list \(list x y "-+-"\)\)) s
+(   \(print-arrow-1 x \(+ y 3\)\)\)) s
+( ) s
+( \(de print-arrow-1 \(x y\)) s
+(   \(cond \(\(> y right-margin\)) s
+(          \(print-in-place ">" x y\)) s
+(          \(1+ y\)\)) s
+(         \(t \(print-in-place-list [x y "-----------"]\)) s
+(               \(print-arrow-1 x \(+ 11 y\)\)\)\)\)\)) s
+( ) s
+( \(de print-cons-cell \(x y\)) s
+(   \(setq right-margin \(+ y 9\)\)) s
+(   \(print-in-place-list) s
+(    [x       y "+---+---+") s
+(     \(1+ x\)  y "!   !   !") s
+(     \(+ x 2\) y "+---+---+") s
+(     \(+ 1 x\) \(+ y 2\) "!") s
+(     \(+ 2 x\) \(+ y 2\) "!") s
+(     \(+ 3 x\) \(+ y 2\) "v"]\)\)) s
+( ) s
+( ) s
+( \(de real-atom \(exp\)) s
+(   \(and \(atom exp\)) s
+(        \(not \(null exp\)\)\)\)) s
+( ) s
+( \(de in? \(exp big-exp\)) s
+(   \(cond \(\(eq exp big-exp\) t\)) s
+(         \(\(null big-exp\) nil\)) s
+(         \(\(listp \(car big-exp\)\)) s
+(          \(or \(in? exp \(car big-exp\)\)) s
+(              \(in? exp \(cdr big-exp\)\)\)\)) s
+(         \(t \(in? exp \(cdr big-exp\)\)\)\)\)) s
+( ) s
+( \(de b-error \(arg1 arg2\)) s
+(   \(poscur 22 1\) \(print arg1 arg2\) \(status print 0\) \(error\)\)) s
+( ) s
+( ) s
+( \(de dot-print \(sexp\)) s
+(   \(cond \(\(atom sexp\) \(princ sexp\)\)) s
+(         \(t \(princ "\("\)) s
+(               \(dot-print \(car sexp\)\)) s
+(               \(princ " . "\)) s
+(               \(dot-print \(cdr sexp\)\)) s
+(               \(princ "\)"\)\)\)\)) s
+( ) s
+( \(print "Faites \(cons-print LA-LISTE\)"\)) s
+endpage
+
+%%Trailer
+cleanup
+docsave restore end

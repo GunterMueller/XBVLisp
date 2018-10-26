@@ -1,0 +1,72 @@
+;;
+; Prog de dessin d'arbre a gravite variable
+;;
+
+; mechanisme :
+;    Un pere peut avoir :
+; 	- un ou plusieur groupe-de-fils chacun de gravite en rotation par rapport au pere
+;	  de maniere a ce que toute les gravite soit utilise sauf celle du pere et que
+;	  la repartition soit homogene
+;    Un groupe-de-fils est compose d'un ensemble de noeud/feuille de meme gravite et joint
+;    par des raccords de meme origine (route)
+;
+; example :
+;
+;
+;
+;
+;		   +-+
+;		   | |
+;		   +++
+;	+-+         |
+;	| |    +-+ +++ +-+
+;	+++  +-+ +-+ +-+ |
+;	 |   | +-+ +++ +-+
+[	 |   |      |
+;	+++  | +-+ +-+
+;   ----+ +--+-+ | | |
+;	+-+  | +-+ +-+
+;	     |
+;	     | +-+ +-+
+;	     +-+ +-+ |
+;	       +-+ +-+
+;
+;
+;
+;
+; Methode de resolution : 
+;   - calcul en parallele de :	
+;	- l'occupation spaciale de chaque famille (family-size)
+;	- l'occupation du plan (plan-filling)
+;
+
+
+; definition des donnees : stockage dans la p-liste de :
+;	dx, dy : taille en x y
+;	family : groupes de fils (liste de listes contenant les fils)
+;	grav   : gravite du noeud (d'arrivee au)
+;
+; distribution de la gravitee :
+;	si nb groupe de fils =
+;	0 	: pas de pb...
+;	1	: identique au pere
+;	2	: rotation de + 90 pour le premier, - 90 pour le second
+;	+ de 2  : repartition par division entiere par trois dans les trois directions
+;		  si non multiple de trois, le reste de la division (partie du milieu
+;		  de la liste de groupe) a la meme gravite que le pere.
+;
+; 
+
+; premiere partie : calcul de la taille
+
+(de leaf_size (aLeaf)
+    `(,(car (get aLeaf 'dx)) . ,(cdr (get aLeaf 'dy))))
+
+(de node_size (aNode)
+    (let ((groupe (get aNode 'family))
+	  (size '(0 . 0)))
+      (ifn groupe size
+      (cond
+       ((atom (car groupe)) (add-to-size size 
+       (t
+	(let (fils (car groupe)

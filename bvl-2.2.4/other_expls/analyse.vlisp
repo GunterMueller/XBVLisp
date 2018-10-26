@@ -1,0 +1,73 @@
+
+; package d'analyse d'une fonction ;
+; ;
+; les criteres d'analyse sont (place dans la i-val de la fonction) : ;
+;   En analyse statique du corps de la subr : ;
+; --------+------------------------------------------------------------------------------ ;
+; i-val   |  description                                                                  ;
+; --------+------------------------------------------------------------------------------ ;
+; length  | la longeur du code                                                            ;
+; lambda  | le nombre de lambda                                                           ;
+; loop    | boucle interne (while, let, letf, mapc, mapct, mapcar)                        ;
+; icond   | conditions sans branchement externe                                           ;
+; econd   | conditions avec branchement externe                                           ;
+; types   | liste de repartition des appels suivant leurs type (numerique)                ;
+; term    | la detection de recursion terminale                                           ;
+;         | l'influance / usage des variables : placement dans la ival des variables d'un ;
+;	  |			                element contenant le nom de la fonction   ;
+;	  |dans les variables		        et de son utilisation dans celle-ci :     ;
+;	  |				        t = externe, nil = interne                ;
+; vtype   | types des arguments : dans la i-val d'une liste de type detecte correspondant ;
+;         |                       a chaque variable                                       ;
+; vval    | detection des limites pour les valeurs des arguments                          ;
+; ftype   | type de la valeur retournee                                                   ;
+;         | denombrement du nombre d'appel a des fonctions avec distinction entre :       ;
+; user    |  - les fonctions utilisateur (all_functions)                                  ;
+; local   |  - les fonctions descendantes                                                 ;
+; --------+------------------------------------------------------------------------------ ;
+
+; (setq --x-- careful careful nil) ;
+
+(de analyse (f)
+    (ifn f ()
+	 (let ((n-local-call 0) 
+	       (n-loop 0)
+	       (n-lambda 0)
+	       (n-careful-call 0)
+	       (n-types-call (gensym))
+	       (n-calls 0))
+	   (let (ex-l (cdr (fval f)))
+	     (if (or (null ex-l) (atom ex-l)) t
+	       (if (atom (car ex-l)) (self (cdr ex-l))
+		 (if (not (atom (caar ex-l))) ()
+		   (cond
+		    ((member (caar ex-l) (%find (ival f) 4))
+		     (setq n-local-call (1+ n-local-call)))
+		    ((member (caar ex-l) all_functions)
+		     (setq n-careful-call (1+ n-careful-call)))
+		    ((member (caar ex-l) '(while let letf mapc mapcar mapct))
+		     (setq n-loop (1+ n-loop)))
+		    ((equal (caar ex-l) 'lambda)
+		     (setq n-lambda (1+ n-lambda))))
+		   (let (old (get n-types-call (ftyp (caar ex-l))))
+		     (put n-types-call (ftyp (caar ex-l)) (1+ (if old old 0))))
+		   (setq n-calls (1+ n-calls)))
+		 (self (car ex-l))
+		 (self (cdr ex-l)))))
+	   (add-ival f ['local   n-local-call])
+	   (add-ival f ['careful n-careful-call])
+	   (add-ival f ['types   (cdr n-types-call)])
+	   (add-ival f ['loop    n-loop])
+	   (add-ival f ['lambda  n-lambda])
+	   (add-ival f ['calls   n-calls]))))
+    
+
+
+(de f-analyse (f)
+    (ifn (member f all_functions) ()
+	 (analyse f)
+	 (add-ival f ['length (length (flat (cdr (fval f))))])))
+
+; (package) ;
+
+; (setq careful --x--) ;

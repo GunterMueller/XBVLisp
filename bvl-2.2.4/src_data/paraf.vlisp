@@ -1,0 +1,153 @@
+; ------ paraf : une merveille de programme par Daniel Goossens
+
+
+(print "       PARAPHRASER    par Daniel Goossens")
+(setq DE "de"
+      A  "a"
+      LE "le"
+)
+
+(de paraphraser (p)
+  (nextl p)
+  (prin1 (setq fct-definie (nextl p)))
+  (setq m (nextl p))
+  (if (null m) nil
+      (prin1 DE)
+      (if (null (cdr m)) (prin1 (car m))
+          (while (cdr m)
+                 (prin1 (nextl m)))
+          (prin1 "et")
+          (prin1 (car m))))
+  (if (null p) (print "retourne" nil)
+      (if (null (cdr p))
+          (progn (prin1 "retourne")
+                 (pprint (par (car p))))
+          (print "fait ceci :")
+          (setq lmargin 4)
+          (while (cdr p)
+                 (pprin1 (par (nextl p)))
+                 (prin1 "puis"))
+          (setq lmargin 0)
+          (prin1 fct-definie "retourne")
+          (pprint (par (car p))))))
+
+(de par (exp)
+  (if (stringp exp) [['q . exp]]
+      (if (atom exp) [exp]
+          (let (def (cdr (assoc (car exp) defs)))
+            (if def (apply def (cdr exp))
+                ["la valeur de"
+                  (if (eq (car exp) fct-definie)
+                      "l'appel recursif"
+                      "l'appel")
+                  DE (car exp)
+                  . (parevlis (cdr exp))])))))
+
+(de parevlis (l ac)
+  (if (null l) nil
+      (cons "avec"
+            (if (null (cdr l)) (par (car l))
+                (while (cdr l)
+                       (setq ac (nconc ac (par (nextl l))))
+                       (if (cdr l)
+                           (setq ac (nconc ac ',))))
+                (nconc (nconc ac "et") (par (car l)))))))
+
+(de ppar (l)
+  (let (l (par l))
+    (if (neq (car l) 'cas) l
+        ["vrai si" . (append (cadr l) "et faux sinon")])))
+
+(de pprin1 (l)
+  (if (neq (car l) 'cas)
+      (ppprin1 l)
+      (prin1 "vrai si")
+      (ppprin1 (cadr l))
+      (prin1 "et faux si")
+      (ppprin1 (caddr l)) )))))
+
+(de ppprin1 (l)
+  (mapc l 'prin1))
+
+(de pprint (l)
+  (pprin1 l)
+  (terpri))
+
+(de contracter (p l) (cond
+  ((and (eq p DE) (eq (car l) LE)) ["du" . (cdr l)])
+  ((and (eq p "A") (eq (car l) LE)) ["au" (cdr l)])
+  (t [p . l])))
+
+(de type (x)
+  (if (atom x) "l'atome" "la liste"))
+
+(de p ()
+  (while (setq mm (read))
+         (terpri)
+         (paraphraser mm)
+         (terpri)))
+
+; ----------    REGLES
+
+(dmc "$" () (progn (newl defs (read)) t))
+
+(setq defs nil)
+            $(car . (lambda (x)
+                        (let (rx (par x))
+                          [LE "premier element" . (contracter DE rx)])))
+             $(cdr . (lambda (x)
+                        (let (rx (par x))
+                          (append rx
+                            (append (if (cdr rx) '(","))
+                                    "sans son premier element")))))
+             $(cons . (lambda (x y)
+                        (let ((rx (par x)) (ry (par y)))
+                          (append ry
+                            (append (if (cdr ry) '(","))
+                                    ["en y ajoutant"
+                                     . (append rx "par le debut")])))))
+             $(append . (lambda (x y)
+                         (let ((rx (par x)) (ry (par y)))
+                           ["la" "concatenation"
+                             . (append (contracter DE rx)
+                                 (append (if (cdr rx) '(","))
+                                         ["et" . (contracter DE ry)]))])))
+             $(quote . (lambda (x) [(type x) x]))
+             $(eq . (lambda (x y)
+                     (let ((rx (par x)) (ry (par y)))
+                        ['cas
+                           (append rx ["est egal" . (contracter A ry)])
+                           (append rx ["est different"
+                                        . (contracter DE ry)])])))
+             $(if . (lambda (test e1 . reste)
+                     (let (rtest (par test))
+                        (setq v
+                              (if (eq (car rtest) 'cas)
+                                  (cadr rtest)
+                                  (append rtest "n'est pas vide")))
+                        ["si" . (append v
+                                  ["alors" . (append (ppar e1)
+                                        [", sinon" . (ppar
+                                                ['progn . reste])])])])))
+                $(progn . (lambda x
+                           (if (null x) [nil]
+                             (if (null (cdr x)) (par (car x))
+                                 (append (par (nextl x))
+                                         (par ['progn . x]))))))
+                $(setq . (lambda (i v)
+                            (let (rv (par v))
+                              ["la valeur de" i "est remplacee par" . rv])))
+                $(null . (lambda (x)
+                            (let (rx (par x))
+                              ['cas
+                                 (append rx "est vide")
+                                 (append rx "n'est pas vide")])))
+                $(atom . (lambda (x)
+                             (let (rx (par x))
+                               ['cas
+                                  (append rx "est un atome")
+                                  (append rx "est une liste non vide")])))
+
+(print "Pour lancer, faire (p) et taper des definitions de fonctions.")
+
+(de e () (sh "ed paraf.vlisp") (lib paraf))

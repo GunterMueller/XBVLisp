@@ -1,0 +1,126 @@
+;;
+; Pilotage d'une fenetre GL par la souris (Translation, Rotation)
+; D.P. 12/93
+;;
+
+(package DRIVEGL)
+
+(setq bitmap-dir "/usr/people/damien/xvlisp/bitmap/")
+
+(de mkbmp (n) (strcat bitmap-dir n))
+
+(de |driveGL (glWindow)
+    (if (get glWindow 'drive-win) t
+      (let ((par-name (xGetValues (xGetValues glWindow "parent") "title"))
+	    (title (strcat "drive-" (xGetValues (xGetValues glWindow "parent") "title"))))
+	(let (root (xCreateWidget (gensym) "ApplicationShell" "title" title "iconName" title))	
+	  (put glWindow 'drive-win root)
+	  (put glWindow 'speed-value 1)
+	  (let ((form (xCreateWidget (gensym) "awBox" root "width" 205 "height" 125))
+		(tmp))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-x+"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"x\" (get '" glWindow " 'DRIVEGL|speed-value) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-x-"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"x\" (- (get '" glWindow " 'DRIVEGL|speed-value)) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-y+"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"y\" (get '" glWindow " 'DRIVEGL|speed-value) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-y-"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"y\" (- (get '" glWindow " 'DRIVEGL|speed-value)) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-z+"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"z\" (get '" glWindow " 'DRIVEGL|speed-value) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "rotate-z-"))
+			  "callback" (strcat "(DRIVEGL|Rotate \"z\" (- (get '" glWindow " 'DRIVEGL|speed-value)) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "right"))
+			  "callback" (strcat "(DRIVEGL|Translate (get '" glWindow " 'DRIVEGL|speed-value) 0 0 '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "left"))
+			  "callback" (strcat "(DRIVEGL|Translate (- (get '" glWindow " 'DRIVEGL|speed-value)) 0 0 '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "up"))
+			  "callback" (print (strcat "(DRIVEGL|Translate 0 (get '" glWindow " 'DRIVEGL|speed-value) 0 '" glWindow ")")))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "down"))
+			  "callback" (strcat "(DRIVEGL|Translate 0 (- (get '" glWindow " 'DRIVEGL|speed-value)) 0 '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "front"))
+			  "callback" (strcat "(DRIVEGL|Translate 0 0 (get '" glWindow " 'DRIVEGL|speed-value) '" glWindow ")"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form  "bitmap" (mkbmp "deep"))
+			  "callback" (strcat "(DRIVEGL|Translate 0 0 (- (get '" glWindow " 'DRIVEGL|speed-value)) '" glWindow ")"))
+	    (put glWindow 'drive-stop 
+		 (xCreateWidget (gensym) "awCommand" form "label" "Stop" "vertDistance" 90 "horizDistance" 120))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form "label" "Speed Up")
+			  "callback" (strcat "(DRIVEGL|IncrementSpeed '" glWindow " 1)"))
+	    (put glWindow 'speed (xCreateWidget (gensym) "awLabel" form "label" "1"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form "label" "Speed Down" )
+			  "callback" (strcat "(DRIVEGL|IncrementSpeed '" glWindow " -1)"))
+	    (xAddCallback (xCreateWidget (gensym) "awCommand" form "label" "Reinit" "horizDistance" 290)
+			  "callback" (strcat "(DRIVEGL|reinit-driveGL '" glWindow")"))
+	    (put glWindow 'object 
+		 (xCreateWidget (gensym) "awCommand" form "label" par-name))
+	    (xRealize root)
+;	    (GLcallback "MotionNotify" (strcat "(DRIVEGL|DriveMouseCallback '" glWindow " $B $X $Y)"))
+ 	    (GLcallback "ButtonPress"  (strcat "(DRIVEGL|DriveButtonPress '" glWindow " $G)"))
+	    )))))
+
+(de IncrementSpeed (win i)
+    (let (n-s (+ i (get win 'speed-value)))
+      (put win 'speed-value n-s)
+      (xSetValues (get win 'speed) "label" (strcat n-s)))
+    t)
+
+(de DriveButtonPress (win object)
+    (print object)
+    (if object (put win 'drive-object object)
+      (put win 'drive-object ())))
+
+(de Rotate (o qua win)
+    (GLwinset win)
+    (let ((do (get win 'drive-object)) (r-data) (dir))
+
+      (setq dir (if (equal o "x") 1 (if (equal o "y") 2 3)))
+      (setq r-data (if do (get win 'rot) (cadr (get (car do) (cadr do)))))
+
+      (ifn r-data (setq r-data '(0 0 0)))
+
+      (let ((e (xCheckEvent (get win 'drive-stop) "ButtonPress")) 
+	    (rot (car (nth dir r-data))))
+	(cond
+	 (e
+	  (rplaca (nth dir r-data) rot)
+	  (ifn do (put win 'rot r-data)
+	       (put (car do) (cadr do) `(,(car (get (car do) (cadr do))) ,r-data))))
+	 (t
+	  (setq rot (+ qua rot))
+	  (if do (GLobjrotate (car do) (cadr do) rot o) (GLimrotate rot o))
+	  (self (xCheckEvent (get win 'drive-stop) "ButtonPress") rot))))))
+
+(de Translate (dx dy dz win)
+    (GLwinset win)
+    (let ((do (if (get win 'drive-object) (get win 'drive-object)))
+	  (r-data) (x) (y) (z))
+
+      (setq r-data (if do (car (get (car do) (cadr do))) (get win 'trans)))
+      (print r-data)
+      (ifn r-data (setq r-data '(0 0 0)))
+      (setq x (car r-data))  (setq y (cadr r-data)) (setq z (caddr r-data))
+
+      (let (e (xCheckEvent (get win 'drive-stop) "ButtonPress"))
+	(cond
+	 (e 
+	  (rplaca r-data x)  (rplaca (cdr r-data) y)  (rplaca (cddr r-data) z)
+	  (ifn do (put win 'trans r-data)
+	       (put (car do) (cadr do) `(,r-data ,(cadr (get (car do) (cadr do)))))))
+	 (t
+	  (setq x (+ x dx)) (setq y (+ y dy))  (setq z (+ z dz))
+	  (if do (GLobjtrans (car do) (cadr do) x y z) (GLimtranslate x y z))
+	  (self (xCheckEvent (get win 'drive-stop) "ButtonPress")))))))
+
+(de reinit-driveGL (win)
+    (GLwinset win)
+    (put win 'speed-value 1)
+    (xSetValues (get win 'speed) "label" "1")
+    (let (do (get win 'drive-object))
+      (put win 'trans (0 0 0))
+      (put win 'rot (0 0 0))
+      (GLimrotate 0 "X")
+      (GLimrotate 0 "Y")
+      (GLimrotate 0 "Z")
+      (GLimtranslate 0 0 0)))
+
+(package)

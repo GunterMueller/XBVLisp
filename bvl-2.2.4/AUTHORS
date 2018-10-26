@@ -1,0 +1,8 @@
+see Install
+
+ Patrick Greussay  : Implementation of VLISP dialect
+ Harald Wertz : Implementation of additional activities -> bVLISP
+ Ernesto Sendoya : Interface between bVLISP and X Windows -> Xbvl
+ Damien Ploix : Interface between Xbvl and Open GL
+
+This package is maintained by Valvassori Moïse <moise@valvassori.org>
