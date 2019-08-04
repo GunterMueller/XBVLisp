@@ -53,8 +53,7 @@ Int prob1(){
 }
 
 Int pannot(){/* impression annotations */
-  /* a1=(Int*)prnxt=((Int)'{');rec(pvcch,pann1); */ /* GM */
-  a1=prnxt=('{');rec(pvcch,pann1);
+  a1=(Int*)prnxt=((Int)'{');rec(pvcch,pann1);
 }
 
 Int pann1(){/* suite impression annotations */
@@ -99,8 +98,7 @@ Int probc(){
   else  a3=car(a1);
   if(isatom(a3) && a3==quote && ANot==0)
     {pushf(probc33);push(a1);pushf(popa1);
-     /* a1=(Int*)prnxt=((Int)'\'');pc=pvcch;return;} */ /* GM */
-     a1=prnxt=('\'');pc=pvcch;return;}
+     a1=(Int*)prnxt=((Int)'\'');pc=pvcch;return;}
   if(!TRACE && isatom(a3) && (ATOME_FTYP(a3) == MACOUT))
     {
       if(ANot!=0)pushf(pannot);
@@ -109,12 +107,10 @@ Int probc(){
   if(ANot!=0) {pop_cast(a3,(Int *));
 	       pushf(prob3);push(cdr(a1));pushf(popa1);push(a3);
 	       pushf(pannot);pushf(prspc);pushf(prob1);
-	       /* push(car(a1)); pushf(popa1);a1=(Int*)prnxt=((Int)'(');  */ /* GM */
-	       push(car(a1)); pushf(popa1);a1=prnxt=('('); 
+	       push(car(a1)); pushf(popa1);a1=(Int*)prnxt=((Int)'('); 
 	       pc=pvcch;}
 	else {pushf(prob3); push(a1); pushf(popa1);
-	      /* a1=(Int*)prnxt=((Int)'('); pc=pvcch;} */
-	      a1=prnxt=('('); pc=pvcch;}
+	      a1=(Int*)prnxt=((Int)'('); pc=pvcch;}
 }
      
      
@@ -325,7 +321,6 @@ Int prstr_1(){
 Int tyo(){/* (tyo n)  subr 1 */
   /* inserre le caractere sur l'interface courrante */
   aux1=(Int)a1;
- /* GM xinsch(NULL, (CHAR)aux1, NULL); */
   putchar( (CHAR)aux1);
   derec;
 }
@@ -439,7 +434,6 @@ Int output(){/* (output NOMFILE-ou-())  subr 1 */
   CHAR *pch2;
   if(isnil(a1))
     {
-      /* *atrmarg = getXbvlColonnes(Xbvlisp_courr) - 2; */
       *atrmarg = 80 - 2;
       lcou = *atrmarg + 2 - CARS_MARGE_DROITE;
       if(!isfilout)goto fini;
